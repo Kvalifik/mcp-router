@@ -10,13 +10,13 @@ function fixture(t) {
  fs.mkdirSync(path.join(home,'.local/bin'),{recursive:true});for(const n of ['codex','claude','gemini'])fs.writeFileSync(path.join(home,'.local/bin',n),'');for(const n of ['Claude','Cursor','Visual Studio Code'])fs.mkdirSync(path.join(home,'Applications',n+'.app'),{recursive:true});
  const appData=path.join(home,'Library/Application Support'),expected={command:'/Router.app/Contents/MacOS/Router',args:['/Router.app/Contents/Resources/app/src/stdio.js'],env:{ELECTRON_RUN_AS_NODE:'1',ROUTER_SOCKET:'/private/router.sock'}};
  let codexConfig=null;const calls=[];
- const client=createIntegrations({home,appData,applicationsDirs:[path.join(home,'Applications')],binaryDirs:[path.join(home,'.local/bin')],executable:expected.command,script:expected.args[0],socket:expected.env.ROUTER_SOCKET,run:async(command,args)=>{calls.push(args);if(args[1]==='add'){codexConfig={enabled:true,transport:expected};return {stdout:''};}if(!codexConfig)throw Object.assign(new Error('missing'),{stderr:'No MCP server named webflow_router_poc found.'});return {stdout:JSON.stringify(codexConfig)};}});
+ const client=createIntegrations({home,appData,platform:'darwin',applicationsDirs:[path.join(home,'Applications')],binaryDirs:[path.join(home,'.local/bin')],executable:expected.command,script:expected.args[0],socket:expected.env.ROUTER_SOCKET,run:async(command,args)=>{calls.push(args);if(args[1]==='add'){codexConfig={enabled:true,transport:expected};return {stdout:''};}if(!codexConfig)throw Object.assign(new Error('missing'),{stderr:'No MCP server named webflow_router_poc found.'});return {stdout:JSON.stringify(codexConfig)};}});
  return {home,appData,expected,client,calls,setCodex:d=>codexConfig=d};
 }
 test('Claude registration preserves unrelated settings and reconnect is idempotent',t=>{
  const {home,expected}=fixture(t),file=path.join(home,'config.json');const initial={preferences:{theme:'dark'},mcpServers:{other:{command:'other',env:{secret:'keep'}}}};fs.writeFileSync(file,JSON.stringify(initial));
  writeRegistration(file,expected);writeRegistration(file,expected);
- const result=readConfig(file).data;assert.deepEqual(result.preferences,initial.preferences);assert.deepEqual(result.mcpServers.other,initial.mcpServers.other);assert.deepEqual(result.mcpServers[NAME],expected);assert.equal(Object.keys(result.mcpServers).length,2);assert.equal(fs.statSync(file).mode&0o777,0o600);
+ const result=readConfig(file).data;assert.deepEqual(result.preferences,initial.preferences);assert.deepEqual(result.mcpServers.other,initial.mcpServers.other);assert.deepEqual(result.mcpServers[NAME],expected);assert.equal(Object.keys(result.mcpServers).length,2);if(process.platform !== 'win32')assert.equal(fs.statSync(file).mode&0o777,0o600);
 });
 test('malformed settings are left untouched',t=>{
  const {home,expected}=fixture(t),file=path.join(home,'bad.json');for(const raw of ['{broken','[]','{"mcpServers":[]}']){fs.writeFileSync(file,raw);assert.throws(()=>writeRegistration(file,expected));assert.equal(fs.readFileSync(file,'utf8'),raw);}

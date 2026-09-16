@@ -16,7 +16,11 @@ function migrateUserData(appData) {
  return current;
 }
 function currentSocket(socket) {
- const legacy = `${path.sep}WebflowRouter${path.sep}router${path.sep}router.sock`;
- return socket.endsWith(legacy) ? socket.slice(0, -legacy.length) + `${path.sep}MCPRouter${path.sep}router${path.sep}router.sock` : socket;
+ return socket.replace(/([/\\])WebflowRouter([/\\]router[/\\]router\.sock)$/, '$1MCPRouter$2');
 }
-module.exports = {migrateUserData, currentSocket};
+function ipcEndpoint(socket, platform = process.platform) {
+ if (platform !== 'win32') return socket;
+ const hash = require('node:crypto').createHash('sha256').update(path.win32.resolve(socket).toLowerCase()).digest('hex');
+ return '\\\\.\\pipe\\mcp-router-' + hash;
+}
+module.exports = {migrateUserData, currentSocket, ipcEndpoint};

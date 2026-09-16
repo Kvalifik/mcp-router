@@ -1,4 +1,6 @@
 import http from 'node:http';
+import paths from './paths.cjs';
+import privateDirectories from './private-directory.cjs';
 import { timingSafeEqual } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -135,9 +137,10 @@ export function createDashboard(router, oauth, origin, { managementToken = nonce
   });
 }
 
-export function createIPC(router) {
+export function createIPC(router, token = null) {
   return http.createServer(async (req, res) => {
     try {
+      if (token && req.headers.authorization !== `Bearer ${token}`) return json(res, {error:'Access denied'}, 403);
       if (req.method !== 'POST' || req.url !== '/call') return json(res, { error: 'Not found' }, 404);
       const { name, arguments: args } = await body(req);
       return json(res, { result: await router.call(name, args) });
@@ -146,7 +149,7 @@ export function createIPC(router) {
 }
 
 export async function main() {
-  fs.mkdirSync(DATA_DIR, { recursive: true, mode: 0o700 });
+  privateDirectories.privateDirectory(DATA_DIR);
   const lockFile = path.join(DATA_DIR, 'daemon.lock');
   if (fs.existsSync(lockFile)) {
     const oldPid = Number(fs.readFileSync(lockFile, 'utf8'));
@@ -159,16 +162,19 @@ export async function main() {
   const origin = `http://127.0.0.1:${port}`;
   const store = new Store(DATA_DIR), oauth = new OAuthManager(store, origin), router = new Router(store, oauth);
   const managementToken = nonce(), loginTicket = nonce();
-  const dashboard = createDashboard(router, oauth, origin, {managementToken, loginTicket}), ipc = createIPC(router);
+  const ipcToken = process.platform === 'win32' ? nonce() : null;
+  if (ipcToken) fs.writeFileSync(path.join(DATA_DIR, 'ipc-token'), ipcToken, {mode:0o600});
+  const dashboard = createDashboard(router, oauth, origin, {managementToken, loginTicket}), ipc = createIPC(router, ipcToken);
   // Keep Unix socket path below the macOS limit, under the private state directory.
-  const socket = path.join(DATA_DIR, 'router.sock');
-  if (Buffer.byteLength(socket) > 103) throw new Error('Project path too long for Unix socket');
-  if (fs.existsSync(socket)) fs.unlinkSync(socket);
+  const socket = paths.ipcEndpoint(path.join(DATA_DIR, 'router.sock'));
+  const windows = process.platform === 'win32';
+  if (!windows && Buffer.byteLength(socket) > 103) throw new Error('Project path too long for Unix socket');
+  if (!windows && fs.existsSync(socket)) fs.unlinkSync(socket);
   const cleanup = () => { try { fs.unlinkSync(lockFile); } catch {} };
   process.on('exit', cleanup);
   await new Promise((resolve, reject) => { dashboard.once('error', reject); dashboard.listen(port, '127.0.0.1', resolve); });
   await new Promise((resolve, reject) => { ipc.once('error', reject); ipc.listen(socket, resolve); });
-  fs.chmodSync(socket, 0o600);
+  if (!windows) fs.chmodSync(socket, 0o600);
   for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => { dashboard.close(); ipc.close(); process.exit(0); });
   const loginFile = path.join(DATA_DIR, 'dashboard-login.txt');
   fs.writeFileSync(loginFile, `${origin}/dashboard/login/${loginTicket}\n`, {mode:0o600});

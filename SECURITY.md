@@ -35,3 +35,11 @@ Remove identifiers, URLs, customer names, credentials, and request/response
 content. Never share `.local/`, `.private-release/`, `vault.key`, `vault.enc`,
 client configuration backups, or Application Support data. If credentials may
 have leaked, revoke the authorization at Webflow and reconnect.
+
+### Windows builds
+
+Windows state directories use a protected ACL granting the current user full access.
+The local named pipe requires a random per-launch token stored inside that directory;
+client configuration contains the directory path, not the token. POSIX file modes are
+not relied upon for Windows access control. This does not protect against the same
+OS user, administrators, or software running as that user.

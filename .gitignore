@@ -8,6 +8,7 @@
 !/.github/workflows/release.yml
 !/.github/dependabot.yml
 !/scripts/package-release.py
+!/scripts/smoke-package.mjs
 !/docs/RELEASING.md
 !/.github/ISSUE_TEMPLATE/bug_report.md
 !/.github/PULL_REQUEST_TEMPLATE.md
@@ -24,6 +25,7 @@
 !/assets/brand/README.md
 !/assets/brand/kvalifik.svg
 !/assets/icons/MCPRouter.icns
+!/assets/icons/MCPRouter.ico
 !/assets/icons/MCPRouter.iconset/icon_128x128.png
 !/assets/icons/MCPRouter.iconset/icon_128x128@2x.png
 !/assets/icons/MCPRouter.iconset/icon_16x16.png
@@ -77,6 +79,7 @@
 !/src/integrations.cjs
 !/src/oauth.js
 !/src/paths.cjs
+!/src/private-directory.cjs
 !/src/permissions.js
 !/src/preload.cjs
 !/src/project-links.cjs
@@ -95,6 +98,7 @@
 !/test/mcp.test.js
 !/test/oauth-sdk.test.js
 !/test/paths.test.js
+!/test/platform.test.js
 !/test/permission-presets.test.js
 !/test/project-links.test.js
 !/test/router.test.js

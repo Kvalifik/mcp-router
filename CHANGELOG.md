@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Add Intel Mac and Windows x64 release targets alongside Apple Silicon.
+- Integrate native Windows window controls into a single app header.
+- Use authenticated named pipes and protected state-directory permissions on Windows.
+- Detect common Windows AI client installations and safely launch npm-installed Codex.
+- Test all supported hosts in CI and smoke-test packaged runtimes before releasing.
+
 Changes are listed newest first.
 
 ## 0.7.4 — Update notifications

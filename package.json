@@ -13,7 +13,8 @@
     "build:mac": "npm run build:ui && node build.mjs",
     "mcp": "node src/stdio.js",
     "test": "node --test test/*.test.js",
-    "build:ui": "vite build"
+    "build:ui": "vite build",
+    "build:desktop": "npm run build:ui && node build.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.30.0",

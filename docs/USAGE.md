@@ -35,7 +35,7 @@ The action catalog is a pinned snapshot of Webflow's `tools/list` schema. Future
 
 ## Local trust boundary
 
-OAuth registrations and tokens remain in the daemon under `~/Library/Application Support/MCPRouter/router/`. AES-256-GCM encrypted state uses a local `0600` key and a `0700` directory. This is not an OS-keychain-backed production vault: the same OS user can decrypt or change it. The Unix socket is restricted to the local OS user. Codex receives no OAuth tokens.
+OAuth registrations and tokens remain in the daemon under `~/Library/Application Support/MCPRouter/router/`. AES-256-GCM encrypted state uses a local `0600` key and a `0700` directory. This is not an OS-keychain-backed production vault: the same OS user can decrypt or change it. On Mac the Unix socket is restricted to the local OS user. On Windows, state is stored in `%APPDATA%\MCPRouter\router\` under a protected current-user ACL, and the named pipe requires a random token read from that private directory. Codex receives no OAuth tokens.
 
 The management UI binds to `127.0.0.1`, requires an owner-only session, validates Host/Origin, and requires CSRF headers for changes. The Electron renderer is sandboxed with context isolation. OAuth uses PKCE, independently registered clients, and browser-bound one-use state. Tokens are only sent to Webflow's MCP host.
 
@@ -66,3 +66,5 @@ terms.
 
 Pins mark frequently used projects without enabling them. Use the Pinned filter
 next to search. Reorder connections from Settings using drag handles or arrows.
+
+On Windows, the app header includes the native minimize, maximize, and close controls. Drag the header to move the window; press Alt to reveal the application menu when needed.

@@ -57,7 +57,7 @@ test('unused browser login expires after ten minutes',async t=>{
  assert.equal((await request('/dashboard/login/one-time-ticket')).status,410);
 });
 
-test('reopening a copied vault restores owner-only directory, key and vault permissions',t=>{
+test('reopening a copied vault restores owner-only directory, key and vault permissions',{skip:process.platform === 'win32'},t=>{
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'router-modes-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));
  const store=new Store(dir);store.save();fs.chmodSync(dir,0o755);
  for(const name of ['vault.key','vault.enc'])fs.chmodSync(path.join(dir,name),0o644);
@@ -66,6 +66,6 @@ test('reopening a copied vault restores owner-only directory, key and vault perm
 });
 
 test('packaging includes runtime and legal files, excludes unexpected files and credentials',()=>{
- for(const name of ['', '/', '/src/server.js','/public/assets/index.js','/node_modules/zod/index.js','/assets/icons/MCPRouter.icns','/licenses/shadcn-ui.txt','/LICENSE','/THIRD_PARTY_NOTICES.md','/package.json'])assert.equal(excludeFromPackage(name),false,name);
+ for(const name of ['', '/', '/src/server.js','\\src\\server.js','/public/assets/index.js','/node_modules/zod/index.js','/assets/icons/MCPRouter.icns','/licenses/shadcn-ui.txt','/LICENSE','/THIRD_PARTY_NOTICES.md','/package.json'])assert.equal(excludeFromPackage(name),false,name);
  for(const name of ['/test/test.js','/dist/app.zip','/.private-release/notes.md','/.local/vault.enc','/notes.txt','/.env','/src/.env.production','/src/debug.log','/assets/private.key','/packaging.mjs'])assert.equal(excludeFromPackage(name),true,name);
 });

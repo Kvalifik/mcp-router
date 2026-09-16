@@ -15,7 +15,26 @@ concurrency:
 jobs:
   build:
     if: github.ref == 'refs/heads/main'
-    runs-on: macos-15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15
+            platform: darwin
+            arch: arm64
+          - os: macos-15-intel
+            platform: darwin
+            arch: x64
+          - os: windows-2022
+            platform: win32
+            arch: x64
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    env:
+      BUILD_PLATFORM: ${{ matrix.platform }}
+      BUILD_ARCH: ${{ matrix.arch }}
     timeout-minutes: 25
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -41,12 +60,13 @@ jobs:
           JS
       - run: npm ci --no-audit --no-fund
       - run: npm test
-      - run: npm run build:mac
+      - run: npm run build:desktop
+      - run: node scripts/smoke-package.mjs
       - run: python3 scripts/package-release.py
       - run: git diff --exit-code
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: release
+          name: release-${{ matrix.platform }}-${{ matrix.arch }}
           path: dist/release/
           retention-days: 1
           compression-level: 0
@@ -61,7 +81,8 @@ jobs:
     steps:
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          name: release
+          pattern: release-*
+          merge-multiple: true
           path: release
       - name: Verify and create draft
         env:
@@ -71,7 +92,8 @@ jobs:
           RELEASE_COMMIT: ${{ github.sha }}
         working-directory: release
         run: |
+          cat SHA256SUMS-*.txt > SHA256SUMS.txt
           sha256sum --check SHA256SUMS.txt
-          gh release create "v$RELEASE_VERSION" "MCP-Router-$RELEASE_VERSION-mac-arm64.zip" SHA256SUMS.txt \
+          gh release create "v$RELEASE_VERSION" MCP-Router-*.zip SHA256SUMS.txt \
             --target "$RELEASE_COMMIT" --title "MCP Router v$RELEASE_VERSION" \
             --draft --notes-file release-notes.md

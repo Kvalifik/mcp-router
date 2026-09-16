@@ -2,7 +2,7 @@
 
 **Manage MCP connections for Webflow.**
 
-A local macOS app by Kvalifik ApS for connecting multiple OAuth grants to your
+A local desktop app for macOS and Windows by Kvalifik ApS for connecting multiple OAuth grants to your
 AI tools and controlling access to individual projects.
 
 MCP Router is independent software. It is not affiliated with, endorsed by,
@@ -11,10 +11,10 @@ it connects to. Product names identify compatible services only.
 
 ## Install on macOS
 
-**Requires an Apple Silicon Mac (M1 or later). Intel builds are not available yet.**
+Choose **mac-arm64** for Apple Silicon (M1 or later), or **mac-x64** for Intel Mac.
 
 1. Open the [GitHub Releases page](https://github.com/Kvalifik/mcp-router/releases) and download the latest
-   `MCP-Router-…-mac-arm64.zip`. Choose the app ZIP, not GitHub’s “Source code” ZIP.
+   `MCP-Router-…-mac-arm64.zip` or `MCP-Router-…-mac-x64.zip`. Choose the app ZIP, not GitHub’s “Source code” ZIP.
 2. Extract the ZIP and drag **MCP Router.app** into **Applications**.
 3. Open MCP Router. This release is **not signed or notarized by Apple**.
    If macOS blocks it, first attempt to open it, then go to
@@ -24,6 +24,19 @@ it connects to. Product names identify compatible services only.
 4. Choose **Add connection**, authorize Webflow, then enable the projects and
    permissions you want to use. New projects start disabled.
 5. Open **Apps**, connect your AI app, and follow its restart/reload instructions.
+
+## Install on Windows
+
+1. Download `MCP-Router-…-windows-x64.zip` from the GitHub Releases page when available.
+2. Extract the entire ZIP into a permanent folder, such as `%LOCALAPPDATA%\Programs\MCP Router`.
+3. Run **MCP Router.exe**. Keep its supporting files and `resources` folder together.
+   This build is unsigned; Windows may display an unknown-publisher warning.
+4. Add a connection, authorize Webflow, enable your projects, then connect your AI apps.
+
+Windows support is new and should be smoke-tested before broad distribution. App discovery
+covers common per-user and system installations; Codex integration requires its native
+CLI or npm CLI installation. For custom installation locations, use the copied MCP configuration.
+Quit through the MCP Router menu before replacing the app folder during updates.
 
 ### Updating
 
@@ -55,13 +68,13 @@ Webflow’s applicable terms and availability.
 
 ## Status
 
-MCP Router supports macOS on Apple Silicon. The current build is unsigned and
-unnotarized. See [SECURITY.md](SECURITY.md) for the security model and
+Build targets are macOS on Apple Silicon and Intel, and Windows x64. Builds are unsigned;
+Mac builds are also unnotarized. See [SECURITY.md](SECURITY.md) for the security model and
 known limitations.
 
 ## Build and run
 
-Requires Node.js 22 or later and npm. macOS is required for the desktop workflow.
+Requires Node.js 22 or later and npm. Build Mac releases on macOS and Windows releases on Windows.
 
 ```sh
 npm ci
@@ -72,8 +85,23 @@ npm run desktop
 Run `npm test` for the automated suite and `npm run build:mac` to create
 `dist/MCP Router-darwin-arm64/MCP Router.app`.
 
+For Intel Mac, run `BUILD_ARCH=x64 npm run build:desktop`.
+For Windows, use PowerShell:
+
+```powershell
+$env:BUILD_PLATFORM = "win32"
+$env:BUILD_ARCH = "x64"
+npm run build:desktop
+python scripts/package-release.py
+```
+
+On Mac, run `BUILD_ARCH=arm64 python3 scripts/package-release.py` (or `x64`) after building
+to validate and create the release ZIP. The release workflow builds all three targets,
+runs tests on each host, and combines their checksums before creating an optional draft.
+
 The app stores desktop state in
-`~/Library/Application Support/MCPRouter/router/`. Existing desktop state is moved automatically from the former directory on
+`~/Library/Application Support/MCPRouter/router/` on Mac and
+`%APPDATA%\MCPRouter\router\` on Windows. Existing desktop state is moved automatically from the former directory on
 first launch. The bundle identifier is `dk.kvalifik.mcp-router`; AI clients
 use `mcp_router_for_webflow`. Legacy client entries are migrated with settings preserved. Running `npm start` directly uses `.local/`
 unless `ROUTER_DATA_DIR` is set. Do not run two instances on port 43127.

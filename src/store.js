@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import privateDirectories from './private-directory.cjs';
 import { compareGrants } from './grant-comparison.js';
 import { GROUPS, permissions } from './permissions.js';
 import path from 'node:path';
@@ -8,8 +9,7 @@ export const fingerprint = value => value ? createHash('sha256').update(value).d
 export class Store {
   constructor(dir) {
     this.dir = dir;
-    fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
-    fs.chmodSync(dir, 0o700);
+    privateDirectories.privateDirectory(dir);
     const keyFile = path.join(dir, 'vault.key');
     if (!fs.existsSync(keyFile)) fs.writeFileSync(keyFile, randomBytes(32), { flag: 'wx', mode: 0o600 });
     fs.chmodSync(keyFile, 0o600);

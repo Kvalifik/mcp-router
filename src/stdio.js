@@ -1,4 +1,5 @@
 import http from 'node:http';
+import fs from 'node:fs';
 import paths from './paths.cjs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -9,7 +10,9 @@ import { z } from 'zod';
 const socketPath = paths.currentSocket(process.env.ROUTER_SOCKET || path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../.local/router.sock'));
 function call(name, args) {
   return new Promise((resolve, reject) => {
-    const req = http.request({ socketPath, path: '/call', method: 'POST', headers: { 'Content-Type': 'application/json' } }, res => {
+    const headers = { 'Content-Type': 'application/json' };
+    if (process.platform === 'win32') headers.Authorization = `Bearer ${fs.readFileSync(path.join(path.dirname(socketPath), 'ipc-token'), 'utf8')}`;
+    const req = http.request({ socketPath: paths.ipcEndpoint(socketPath), path: '/call', method: 'POST', headers }, res => {
       let text = ''; res.on('data', chunk => { text += chunk; });
       res.on('end', () => { try { const data = JSON.parse(text); if (data.error) reject(new Error(data.error)); else resolve(data.result); } catch (e) { reject(e); } });
     });

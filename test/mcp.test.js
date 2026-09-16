@@ -1,4 +1,5 @@
 import test from 'node:test';
+import paths from '../src/paths.cjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -20,7 +21,9 @@ test('real MCP stdio client enforces live policy through the daemon', async t =>
   store.connection(id).tokens = { access_token: 'test-only', token_type: 'Bearer' };
   store.connection(id).sites = [{ id, name: 'A' }];
   router.saveProject({ id: 'a', name: 'Project A', connectionId: id, siteId: id, enabled: true });
-  const ipc = createIPC(router); ipc.listen(socket); await once(ipc, 'listening');
+  const token = process.platform === 'win32' ? 'test-ipc-token' : null;
+  if(token) fs.writeFileSync(path.join(dir,'ipc-token'),token);
+  const ipc = createIPC(router,token); ipc.listen(paths.ipcEndpoint(socket)); await once(ipc, 'listening');
   const client = new Client({ name: 'test-codex', version: '1.0.0' });
   t.after(async () => { await client.close(); await new Promise(resolve => ipc.close(resolve)); fs.rmSync(dir, { recursive: true, force: true }); });
   await client.connect(new StdioClientTransport({ command: process.execPath, args: [fileURLToPath(new URL('../src/stdio.js', import.meta.url))], env: { ...process.env, ROUTER_SOCKET: socket } }));

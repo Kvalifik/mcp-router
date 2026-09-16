@@ -37,8 +37,8 @@ else {
     const openLicenses = async () => {
       if (licensesWindow && !licensesWindow.isDestroyed()) { licensesWindow.show(); licensesWindow.focus(); return; }
       const fs = require('node:fs');
-      const file = app.isPackaged ? path.join(process.resourcesPath, 'legal.html') : path.join(__dirname, '../dist/MCP Router-darwin-arm64/MCP Router.app/Contents/Resources/legal.html');
-      if (!fs.existsSync(file)) throw new Error('License viewer is missing. Run npm run build:mac.');
+      const file = app.isPackaged ? path.join(process.resourcesPath, 'legal.html') : path.join(__dirname, `../dist/MCP Router-${process.platform}-${process.arch}/${process.platform === 'darwin' ? 'MCP Router.app/Contents/Resources' : 'resources'}/legal.html`);
+      if (!fs.existsSync(file)) throw new Error('License viewer is missing. Run npm run build:desktop.');
       licensesWindow = new BrowserWindow({ title: 'Third-party licenses — MCP Router', width: 780, height: 680, parent: win,
         webPreferences: { nodeIntegration: false, contextIsolation: true, sandbox: true, javascript: false, partition: 'licenses' } });
       licensesWindow.webContents.session.webRequest.onBeforeRequest((details, callback) => callback({ cancel: !details.url.startsWith('file:') && details.url !== 'about:blank' }));
@@ -83,8 +83,14 @@ else {
     });
     win = new BrowserWindow({ width: 860, height: 640, minWidth: 640, minHeight: 440, title: 'MCP Router', backgroundColor: '#f6f7f9',
       ...(process.platform === 'darwin' ? { titleBarStyle: 'hidden', trafficLightPosition: { x: 16, y: 25 } } : {}),
+      ...(process.platform === 'win32' ? { titleBarStyle: 'hidden', autoHideMenuBar: true, titleBarOverlay: { color: '#00000000', symbolColor: nativeTheme.shouldUseDarkColors ? '#fafafa' : '#18181b', height: 64 } } : {}),
       webPreferences: { preload: path.join(__dirname, 'preload.cjs'), nodeIntegration: false, contextIsolation: true, sandbox: true }
     });
+    if (process.platform === 'win32') {
+      nativeTheme.on('updated', () => {
+        if (!win.isDestroyed()) win.setTitleBarOverlay({ symbolColor: nativeTheme.shouldUseDarkColors ? '#fafafa' : '#18181b' });
+      });
+    }
     win.webContents.session.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
     win.webContents.session.setPermissionCheckHandler(() => false);
     win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));

@@ -12,7 +12,11 @@ concurrency:
 jobs:
   checks:
     name: Tests and UI build
-    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2022, macos-15, macos-15-intel]
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     env:
       ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
