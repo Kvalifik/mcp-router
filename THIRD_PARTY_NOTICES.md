@@ -1,6 +1,6 @@
 # Third-party notices
 
-The pinned Webflow operation schema in `src/catalog.json` is derived from Webflow MCP tool metadata. Webflow retains any applicable rights in that metadata.
+The pinned Webflow operation schema in src/catalog.json is derived from Webflow MCP tool metadata. Webflow retains any applicable rights in that metadata.
 
 Third-party components retain their own licenses, including commercial-use permissions. The router license does not replace them. This inventory covers installed runtime and build dependencies; some platform-specific optional packages are absent. Rebuild notices when dependencies or target platforms change. Electron and Chromium include additional notices with the packaged runtime. Preserve those when distributing binaries.
 
@@ -5169,7 +5169,7 @@ OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 PERFORMANCE OF THIS SOFTWARE.
 ```
 
-## ip-address 10.7.1
+## ip-address 10.7.2
 
 License: MIT. Runtime dependency.
 
