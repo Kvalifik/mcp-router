@@ -1,0 +1,77 @@
+name: Release
+on:
+  workflow_dispatch:
+    inputs:
+      create_draft:
+        description: Create a draft release after building (leave off to validate only)
+        required: true
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: release
+  cancel-in-progress: false
+jobs:
+  build:
+    if: github.ref == 'refs/heads/main'
+    runs-on: macos-15
+    timeout-minutes: 25
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - name: Validate version and release notes
+        id: version
+        run: |
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          const {version} = JSON.parse(fs.readFileSync('package.json'));
+          const lock = JSON.parse(fs.readFileSync('package-lock.json'));
+          if (!/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(version)) throw Error('Expected a stable semantic version');
+          if (lock.version !== version || lock.packages[''].version !== version) throw Error('Lockfile version mismatch');
+          if (!fs.readFileSync('CHANGELOG.md', 'utf8').includes(`## ${version} —`)) throw Error('Add a changelog entry first');
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `version=${version}\n`);
+          JS
+      - run: npm ci --no-audit --no-fund
+      - run: npm test
+      - run: npm run build:mac
+      - run: python3 scripts/package-release.py
+      - run: git diff --exit-code
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release
+          path: dist/release/
+          retention-days: 1
+          compression-level: 0
+          if-no-files-found: error
+  draft:
+    needs: build
+    if: inputs.create_draft
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: release
+          path: release
+      - name: Verify and create draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_VERSION: ${{ needs.build.outputs.version }}
+          RELEASE_COMMIT: ${{ github.sha }}
+        working-directory: release
+        run: |
+          sha256sum --check SHA256SUMS.txt
+          gh release create "v$RELEASE_VERSION" "MCP-Router-$RELEASE_VERSION-mac-arm64.zip" SHA256SUMS.txt \
+            --target "$RELEASE_COMMIT" --title "MCP Router v$RELEASE_VERSION" \
+            --draft --notes-file release-notes.md

@@ -4,6 +4,11 @@
 !*/
 
 # Reviewed public files
+!/.github/workflows/checks.yml
+!/.github/workflows/release.yml
+!/.github/dependabot.yml
+!/scripts/package-release.py
+!/docs/RELEASING.md
 !/.github/ISSUE_TEMPLATE/bug_report.md
 !/.github/PULL_REQUEST_TEMPLATE.md
 !/.gitignore

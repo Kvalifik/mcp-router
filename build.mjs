@@ -4,10 +4,11 @@ import { fileURLToPath } from 'node:url';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 const dir = fileURLToPath(new URL('.', import.meta.url));
+const { version } = JSON.parse(await fs.readFile(path.join(dir, 'package.json'), 'utf8'));
 const paths = await packager({
   icon: `${dir}/assets/icons/MCPRouter.icns`,
   dir, name: 'MCP Router', executableName: 'MCP Router', appBundleId: 'dk.kvalifik.mcp-router',
-  appVersion: '0.7.4', platform: 'darwin', arch: process.env.BUILD_ARCH || 'arm64', out: `${dir}/dist`,
+  appVersion: version, platform: 'darwin', arch: process.env.BUILD_ARCH || 'arm64', out: `${dir}/dist`,
   overwrite: true, prune: true, asar: false,
   ignore: excludeFromPackage,
   usageDescription: {},
