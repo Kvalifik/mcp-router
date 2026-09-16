@@ -1,0 +1,99 @@
+MCP Router Source-Available License 1.1
+Copyright (c) 2026 Kvalifik ApS and contributors.
+
+1. Scope and acceptance
+
+This license applies to original MCP Router code, documentation, and artwork
+provided under this license (the Software). By exercising the permissions
+below, you accept these terms. Third-party components and marks are excluded
+and remain governed by their own licenses and rights.
+
+2. Permission
+
+Each copyright holder grants you a worldwide, non-exclusive, royalty-free
+copyright license to use, reproduce, study, modify, and make derivative works
+of the Software, and to redistribute it in source or executable form, subject
+to this license. Use by businesses and agencies, including internal operations
+and paid client work, is expressly permitted. You may keep modifications
+private. Redistribution of modifications is permitted on the terms below.
+
+3. Prohibited monetization of the Software
+
+Without separate written permission from the relevant rights holders, you may
+not sell, rent, sublicense for a fee, or charge for copies of, access to, or
+use of the Software or a modified version. You may not offer a paid hosted,
+managed, subscription, or API service whose principal functionality is the
+Software's MCP connection routing, authorization, or permission management.
+You may not bundle the Software into a paid product or service to circumvent
+these restrictions, or require a purchase, subscription, or donation to
+obtain or use it. A modified or rebranded version is subject to the same rules.
+
+Charging for independent services, including website development, consulting,
+training, installation, support, and bespoke development, is permitted if the
+charge is for that work and not a condition of obtaining or continuing to use
+a copy of the Software. Website content, sites, and other independent work
+created using the Software may be sold and are not covered by this license.
+Optional donations are permitted only when access, copies, and functionality
+are the same whether or not a donation is made. Normal incidental business
+benefit from using the Software is permitted.
+
+4. Redistribution and attribution
+
+Redistribution must be free of charge. Include this license and preserve
+applicable copyright and third-party notices. Clearly identify modified
+versions and do not suggest they are maintained or endorsed by Kvalifik ApS.
+You must provide recipients with permission to use, modify, and redistribute
+your contributions to the distributed version under this same license. Do not
+apply additional terms that remove the permissions this license grants.
+Recipients receive their permissions directly from the applicable copyright
+holders. There is no requirement to distribute private modifications or to
+publish source when distributing an executable.
+
+4a. Meaningful changes required for public redistribution
+
+Public redistribution must include meaningful changes relative to the original
+Kvalifik ApS release on which it is based. Meaningful changes materially alter
+functionality, reliability, security, accessibility, or compatibility. Changes
+limited to names, branding, colors, formatting, packaging, or rebuilding do
+not qualify. Describe the meaningful changes clearly for recipients.
+
+This requirement does not restrict internal sharing within an organization,
+delivery to a client for that client's use, contributions and pull requests to
+the original project, or repository viewing and forking through GitHub's
+functionality under its applicable terms. It does not permit an independent
+public mirror or download distribution of an unchanged version. All other
+terms, including the prohibition on selling the Software, continue to apply.
+Third-party components remain subject to their own licenses.
+
+5. Other rights
+
+No trademark, endorsement, or patent license is granted. You may identify the
+Software and its origin accurately, but may not use Kvalifik ApS's identity or
+marks to imply endorsement of your changes. This license does not grant
+rights in Webflow, AI application logos, or other third-party materials.
+Nothing restricts rights you have independently under applicable law.
+
+6. Termination
+
+Your permissions terminate if you breach this license. They are reinstated
+if you cure your first breach within 30 days after receiving written notice.
+Subsequent breaches require written reinstatement from the relevant rights
+holders. Termination does not terminate the licenses of recipients who
+continue to comply with these terms.
+
+7. Disclaimer and limitation of liability
+
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE SOFTWARE IS PROVIDED
+AS IS, WITHOUT WARRANTIES OF ANY KIND, INCLUDING MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. NO COPYRIGHT HOLDER OR
+CONTRIBUTOR IS LIABLE FOR CLAIMS, DAMAGES, OR OTHER LIABILITY ARISING FROM
+THE SOFTWARE OR ITS USE, WHETHER IN CONTRACT, TORT, OR OTHERWISE. THIS
+CLAUSE DOES NOT EXCLUDE LIABILITY OR RIGHTS THAT CANNOT LAWFULLY BE EXCLUDED.
+
+8. Separate agreements and third-party terms
+
+Rights holders may offer separate permissions for their own contributions.
+Enquiries may be sent to contact@kvalifik.dk. Webflow and connected services
+have their own terms and access requirements; this license does not replace
+or waive those requirements. If a provision is unenforceable, the remaining
+provisions continue to the extent permitted by law.

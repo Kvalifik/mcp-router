@@ -1,0 +1,35 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { once } from 'node:events';
+import { fileURLToPath } from 'node:url';
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { Store } from '../src/store.js';
+import { Router } from '../src/router.js';
+import { OAuthManager } from '../src/oauth.js';
+import { createIPC } from '../src/server.js';
+
+test('real MCP stdio client enforces live policy through the daemon', async t => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'wfr-ipc-')), socket = path.join(dir, 'ipc.sock');
+  const store = new Store(dir), oauth = new OAuthManager(store, 'http://127.0.0.1:43127');
+  const router = new Router(store, oauth, { open: async p => ({ listSites: async () => [{ id: p.id, name: p.c.name }], close: async () => {} }) });
+  const id = router.createConnection('Workspace A');
+  store.connection(id).tokens = { access_token: 'test-only', token_type: 'Bearer' };
+  store.connection(id).sites = [{ id, name: 'A' }];
+  router.saveProject({ id: 'a', name: 'Project A', connectionId: id, siteId: id, enabled: true });
+  const ipc = createIPC(router); ipc.listen(socket); await once(ipc, 'listening');
+  const client = new Client({ name: 'test-codex', version: '1.0.0' });
+  t.after(async () => { await client.close(); await new Promise(resolve => ipc.close(resolve)); fs.rmSync(dir, { recursive: true, force: true }); });
+  await client.connect(new StdioClientTransport({ command: process.execPath, args: [fileURLToPath(new URL('../src/stdio.js', import.meta.url))], env: { ...process.env, ROUTER_SOCKET: socket } }));
+  assert.deepEqual((await client.listTools()).tools.map(t => t.name).sort(), ['get_project_operations', 'list_projects', 'prepare_project', 'read_project_site', 'read_webflow', 'write_webflow']);
+  const projects = await client.callTool({ name: 'list_projects', arguments: {} });
+  assert.equal(JSON.parse(projects.content[0].text)[0].id, 'a');
+  const read = await client.callTool({ name: 'read_project_site', arguments: { projectId: 'a' } });
+  assert.equal(JSON.parse(read.content[0].text).id, id);
+  router.setConnection(id, false);
+  assert.equal((await client.callTool({ name: 'read_project_site', arguments: { projectId: 'a' } })).isError, true);
+  assert.equal((await client.callTool({ name: 'publish_site', arguments: { projectId: 'a' } })).isError, true);
+});

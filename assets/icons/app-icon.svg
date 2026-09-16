@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+<title>Webflow Router</title><desc>An AI spark routes through two separated curved branches to two workspace nodes.</desc>
+<defs><linearGradient id="blue" x1="0" y1="0" x2="0.3" y2="1"><stop stop-color="#079AFF"/><stop offset="0.42" stop-color="#0566EF"/><stop offset="1" stop-color="#0638BD"/></linearGradient></defs>
+<rect x="64" y="64" width="896" height="896" rx="200" fill="url(#blue)"/>
+<rect x="65" y="65" width="894" height="894" rx="199" fill="none" stroke="#FFFFFF" stroke-opacity="0.1" stroke-width="2"/>
+<g fill="#FFFFFF" color="#FFFFFF"><path d="M512 176 C519 176 520 190 524 205 C544 269 575 295 645 317 C665 323 665 331 645 337 C575 359 544 395 524 469 C520 484 519 496 512 496 C505 496 504 484 500 469 C480 395 449 359 379 337 C359 331 359 323 379 317 C449 295 480 269 500 205 C504 190 505 176 512 176 Z"/>
+<g fill="none" stroke="currentColor" stroke-width="60" stroke-linecap="round"><path d="M388 418 C312 464 269 540 256 628"/><path d="M636 418 C712 464 755 540 768 628"/></g>
+<rect x="176" y="680" width="160" height="160" rx="46"/><rect x="688" y="680" width="160" height="160" rx="46"/></g></svg>

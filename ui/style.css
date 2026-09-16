@@ -1,0 +1,59 @@
+@import "tailwindcss";
+@custom-variant dark (&:is(.dark *));
+@theme inline {
+ --color-background:var(--background); --color-foreground:var(--foreground);
+ --color-card:var(--background); --color-card-foreground:var(--foreground);
+ --color-popover:var(--background); --color-popover-foreground:var(--foreground);
+ --color-primary:var(--primary); --color-primary-foreground:var(--primary-foreground);
+ --color-secondary:var(--secondary); --color-secondary-foreground:var(--foreground);
+ --color-muted:var(--secondary); --color-muted-foreground:var(--muted-foreground);
+ --color-accent:var(--secondary); --color-accent-foreground:var(--foreground);
+ --color-destructive:var(--destructive); --color-border:var(--border); --color-input:var(--border); --color-ring:var(--ring);
+ --radius-sm:4px; --radius-md:6px; --radius-lg:8px; --radius-xl:12px;
+}
+:root { --background:#fff; --foreground:#18181b; --primary:#18181b; --primary-foreground:#fff; --secondary:#f4f4f5; --muted-foreground:#71717a; --border:#e4e4e7; --ring:#a1a1aa; --destructive:#dc2626; --app-background:#fafafa; --popover:var(--background); --popover-foreground:var(--foreground); --radius:0.5rem; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; font-size:14px; color:var(--foreground); background:var(--app-background); }
+:root.dark { --background:#18181b; --foreground:#fafafa; --primary:#fafafa; --primary-foreground:#18181b; --secondary:#27272a; --muted-foreground:#a1a1aa; --border:#3f3f46; --ring:#71717a; --destructive:#f87171; --app-background:#09090b; }
+* { border-color:var(--border); }
+body { margin:0; overflow:hidden; }
+button { cursor:pointer; }
+button:disabled { cursor:not-allowed; }
+/* Keep the modal shell out of the scroll flow. Only its content region scrolls. */
+.dialog-shell { background:var(--app-background); display:flex; flex-direction:column; max-height:calc(100dvh - 64px - 2rem); top:calc(50% + 32px); overflow:hidden; }
+.dialog-form { display:flex; flex-direction:column; gap:1rem; min-height:0; overflow:visible; }
+/* Header and body are separate layout regions: only tbody scrolls. */
+.permission-frame { background:var(--background); display:flex; min-height:0; overflow:hidden; border:1px solid var(--color-border); border-radius:6px; }
+.permission-container { display:flex; min-height:0; overflow:hidden; }
+.permission-table { display:flex; flex-direction:column; min-height:0; border-spacing:0; }
+.permission-table thead { display:block; flex-shrink:0; padding-right:12px; background:var(--background); border-bottom:1px solid var(--border); }
+.permission-scroll { display:block; min-height:0; max-height:48dvh; overflow-y:scroll; overscroll-behavior:contain; }
+.permission-table tr { display:grid; grid-template-columns:minmax(0, 2.5fr) repeat(4,minmax(0,1fr)); align-items:center; }
+.permission-table thead tr { border-bottom:0; }
+.permission-table th, .permission-table td { display:flex; align-items:center; justify-content:center; min-width:0; height:auto; min-height:2.5rem; }
+.permission-table th:first-child { justify-content:flex-start; }
+.permission-table tbody th { white-space:normal; }
+.permission-table td[colspan] { grid-column:1 / -1; }
+.permission-table tbody tr + tr { border-top:1px solid var(--border); }
+.permission-table tbody tr { border-bottom:0; }
+.dialog-scroll { min-height:0; max-height:60dvh; overflow:auto; overscroll-behavior:contain; }
+.project-list { max-height:52dvh; overflow:auto; overscroll-behavior:auto; }
+.project-row + .project-row { border-top:1px solid var(--color-border); }
+
+
+/* One title bar; native macOS window controls occupy the reserved left inset. */
+.router-main { margin-top:64px; height:calc(100dvh - 64px); overflow-y:auto; padding:0 16px 20px; overscroll-behavior:contain; }
+.app-header { position:fixed; inset:0 0 auto; z-index:60; height:64px; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:0 16px; border-bottom:1px solid var(--border); background:var(--app-background); }
+.app-header-mac { padding-left:96px; -webkit-app-region:drag; user-select:none; }
+.app-header a, .app-header button { -webkit-app-region:no-drag; }
+.app-header-actions { flex-shrink:0; -webkit-app-region:no-drag; }
+
+/* Let outside clicks dismiss menus; pointer capture keeps an in-progress title drag moving. */
+body:has([data-slot="dropdown-menu-content"]) .app-header-mac, .app-header-mac[data-dragging="true"] { -webkit-app-region:no-drag; pointer-events:auto; }
+/* Shared inset thumbs and softly tinted tracks, without native track bevels. */
+:is(.permission-scroll, .project-list, .dialog-scroll, .router-main)::-webkit-scrollbar { width:12px; height:12px; }
+:is(.permission-scroll, .project-list, .dialog-scroll, .router-main)::-webkit-scrollbar-track { background:var(--secondary); border:0; box-shadow:none; }
+:is(.permission-scroll, .project-list, .dialog-scroll, .router-main)::-webkit-scrollbar-thumb { background:var(--muted-foreground); border:3px solid transparent; background-clip:padding-box; border-radius:999px; }
+:is(.permission-scroll, .project-list, .dialog-scroll, .router-main)::-webkit-scrollbar-corner { background:var(--secondary); }
+[data-slot="dialog-overlay"] { top:64px; }
+
+/* Radix modal layers disable body pointer events; toast controls remain interactive. */
+[data-sonner-toaster], [data-sonner-toast], [data-sonner-toast] [data-close-button] { pointer-events:auto; }

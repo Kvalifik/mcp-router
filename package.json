@@ -1,0 +1,47 @@
+{
+  "name": "mcp-router",
+  "version": "0.7.4",
+  "main": "src/desktop.cjs",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "desktop": "electron .",
+    "build:mac": "npm run build:ui && node build.mjs",
+    "mcp": "node src/stdio.js",
+    "test": "node --test test/*.test.js",
+    "build:ui": "vite build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "@radix-ui/react-dialog": "^1.1.23",
+    "@radix-ui/react-popover": "^1.1.23",
+    "ajv": "8.18.0",
+    "class-variance-authority": "^0.7.4",
+    "clsx": "^2.1.1",
+    "cmdk": "^1.1.1",
+    "jsonc-parser": "^3.3.1",
+    "lucide-react": "^1.46.0",
+    "radix-ui": "^1.6.7",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "sonner": "2.0.8",
+    "tailwind-merge": "^3.7.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@electron/packager": "20.3.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "@vitejs/plugin-react": "^6.1.1",
+    "electron": "44.3.0",
+    "tailwindcss": "^4.3.3",
+    "vite": "^8.3.0"
+  },
+  "license": "SEE LICENSE IN LICENSE",
+  "description": "Manage MCP connections for Webflow with local OAuth and per-project permissions.",
+  "author": "Kvalifik ApS",
+  "updateRepository": "Kvalifik/mcp-router"
+}
