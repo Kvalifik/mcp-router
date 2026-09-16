@@ -34,8 +34,8 @@ Choose **mac-arm64** for Apple Silicon (M1 or later), or **mac-x64** for Intel M
 4. Add a connection, authorize Webflow, enable your projects, then connect your AI apps.
 
 Windows support is new and should be smoke-tested before broad distribution. App discovery
-covers common per-user and system installations; Codex integration requires its native
-CLI or npm CLI installation. For custom installation locations, use the copied MCP configuration.
+covers common per-user and system installations; ChatGPT/Codex detection includes Microsoft Store installations with a bundled
+CLI, standalone native CLI installations, and npm CLI installations. For custom installation locations, use the copied MCP configuration.
 Quit through the MCP Router menu before replacing the app folder during updates.
 
 ### Updating

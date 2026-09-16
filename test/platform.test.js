@@ -38,7 +38,7 @@ test('Windows discovery handles desktop executables and npm CLI registrations wi
  const executable=path.join(home,'MCP Router.exe'),script=path.join(home,'stdio.js'),socket=path.join(home,'router.sock');
  const expected={command:executable,args:[script],env:{ELECTRON_RUN_AS_NODE:'1',ROUTER_SOCKET:socket}};
  const calls=[];let connected=false;
- const client=integrations.createIntegrations({home,appData,localAppData,programFiles:path.join(home,'Program Files'),platform:'win32',binaryDirs:[bin],executable,script,socket,run:async(command,args,options)=>{calls.push({command,args,options});if(args.includes('add')){connected=true;return {stdout:''};}if(!connected)throw Object.assign(new Error(),{stderr:'not found'});return {stdout:JSON.stringify({transport:expected})};}});
+ const client=integrations.createIntegrations({home,appData,localAppData,getWindowsPackageRoots:async()=>{throw new Error("Package service unavailable");},programFiles:path.join(home,'Program Files'),platform:'win32',binaryDirs:[bin],executable,script,socket,run:async(command,args,options)=>{calls.push({command,args,options});if(args.includes('add')){connected=true;return {stdout:''};}if(!connected)throw Object.assign(new Error(),{stderr:'not found'});return {stdout:JSON.stringify({transport:expected})};}});
  assert.deepEqual((await client.status()).map(x=>x.installed),Array(6).fill(true));
  for(const id of ['codex','claude-desktop','claude-code','cursor','vscode','gemini'])assert.equal((await client.connect(id)).ok,true,id);
  assert.deepEqual((await client.status()).map(x=>x.state),Array(6).fill('configured'));
@@ -52,4 +52,38 @@ test('Windows vault directory has a protected ACL restricted to the current user
  const store=new Store(dir);store.save();
  const output=execFileSync('powershell.exe',['-NoProfile','-NonInteractive','-Command',"$acl=Get-Acl -LiteralPath $env:ROUTER_TEST_DIRECTORY; $sid=[System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value; if (!$acl.AreAccessRulesProtected) {throw 'ACL inherits'}; foreach ($rule in $acl.Access) {if ($rule.IdentityReference.Translate([System.Security.Principal.SecurityIdentifier]).Value -ne $sid) {throw 'Unexpected principal'}}; 'ok'"],{env:{...process.env,ROUTER_TEST_DIRECTORY:dir},encoding:'utf8'});
  assert.equal(output.trim(),'ok');assert.deepEqual(new Store(dir).data,store.data);
+});
+
+
+test('Windows Store ChatGPT registers through TOML without launching the protected executable',async t=>{
+ const home=fs.mkdtempSync(path.join(os.tmpdir(),'router-store-'));t.after(()=>fs.rmSync(home,{recursive:true,force:true}));
+ const root=path.join(home,'WindowsApps/OpenAI.Codex_1.0_arm64__publisher');
+ const command=path.join(root,'app/resources/codex.exe');fs.mkdirSync(path.dirname(command),{recursive:true});fs.writeFileSync(command,'');
+ let queries=0;const calls=[];
+ const executable=path.join(home,'MCP Router.exe'),script=path.join(home,'stdio.js'),socket=path.join(home,'router.sock');
+ const expected={command:executable,args:[script],env:{ELECTRON_RUN_AS_NODE:'1',ROUTER_SOCKET:socket}};
+ const client=integrations.createIntegrations({home,appData:home,localAppData:home,programFiles:home,codexHome:path.join(home,'.codex'),platform:'win32',binaryDirs:[],executable,script,socket,run:async(cmd,args,options)=>{
+  if(cmd.endsWith('powershell.exe')){queries++;assert.ok(!args.join(' ').includes('-AllUsers'));return {stdout:JSON.stringify([path.join(home,'removed-package'),root])};}
+  calls.push({cmd,args,options});throw new Error('Store executable must not be launched');
+ }});
+ assert.equal((await client.status())[0].state,'not-connected');
+ assert.equal((await client.connect('codex')).ok,true);
+ assert.equal((await client.status())[0].state,'configured');
+ assert.equal(queries,1);assert.equal(calls.length,0);
+ const file=path.join(home,'.codex/config.toml'),toml=await import('@decimalturn/toml-patch');
+ assert.deepEqual(JSON.parse(JSON.stringify(toml.parse(fs.readFileSync(file,'utf8')).mcp_servers.mcp_router_for_webflow)),expected);
+ const custom='# Preserve this comment\nmodel = "example"\n[mcp_servers.other]\ncommand = "other" # keep me\n[mcp_servers."mcp_router_for_webflow"]\ncommand = "old"\nenabled = false\ndisabled_tools = ["write_project"]\n[mcp_servers."mcp_router_for_webflow".env]\nCUSTOM = "keep"\n';
+ fs.writeFileSync(file,custom);
+ assert.equal((await client.status())[0].state,'needs-reconnect');
+ await client.connect('codex');
+ const updated=fs.readFileSync(file,'utf8'),data=toml.parse(updated);
+ assert.ok(updated.includes('# Preserve this comment'));assert.ok(updated.includes('# keep me'));
+ assert.equal(data.model,'example');assert.equal(data.mcp_servers.other.command,'other');
+ assert.equal(data.mcp_servers.mcp_router_for_webflow.enabled,false);
+ assert.deepEqual(data.mcp_servers.mcp_router_for_webflow.disabled_tools,['write_project']);
+ assert.equal(data.mcp_servers.mcp_router_for_webflow.env.CUSTOM,'keep');
+ assert.equal(data.mcp_servers.mcp_router_for_webflow.command,expected.command);
+ assert.ok(fs.readdirSync(path.dirname(file)).some(n=>n.includes('mcp-router-backup-')));
+ fs.writeFileSync(file,'[broken');assert.equal((await client.connect('codex')).ok,false);
+ assert.equal(fs.readFileSync(file,'utf8'),'[broken');
 });

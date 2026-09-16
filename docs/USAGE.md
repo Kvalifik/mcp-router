@@ -68,3 +68,5 @@ Pins mark frequently used projects without enabling them. Use the Pinned filter
 next to search. Reorder connections from Settings using drag handles or arrows.
 
 On Windows, the app header includes the native minimize, maximize, and close controls. Drag the header to move the window; press Alt to reveal the application menu when needed.
+
+Microsoft Store installations of ChatGPT/Codex are detected for the current Windows user. Connecting updates the shared Codex `config.toml` (`CODEX_HOME` when set, otherwise `~/.codex`) without launching protected Store executables. Existing comments, other servers, and tool restrictions are preserved; an existing configuration is backed up before changes.

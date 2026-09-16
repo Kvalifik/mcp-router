@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Detect Microsoft Store ChatGPT/Codex and preserve existing TOML settings when connecting.
+
 - Add Intel Mac and Windows x64 release targets alongside Apple Silicon.
 - Integrate native Windows window controls into a single app header.
 - Use authenticated named pipes and protected state-directory permissions on Windows.
