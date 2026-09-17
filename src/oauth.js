@@ -52,7 +52,10 @@ export class Provider {
   tokens() { return this.c.tokens; }
   saveTokens(tokens) {
     const old = this.c.tokens;
-    this.c.tokens = { ...tokens, ...(tokens.refresh_token ? {} : old?.refresh_token ? { refresh_token: old.refresh_token } : {}) };
+    this.c.tokens = { ...tokens, ...(tokens.refresh_token ? {} : old?.refresh_token ? { refresh_token: old.refresh_token } : {}),
+      // A refresh response may omit unchanged scopes. Interactive authorization
+      // starts with no old tokens, so a new grant cannot inherit old scope claims.
+      ...(tokens.scope === undefined && old?.scope !== undefined ? { scope: old.scope } : {}) };
     this.c.expiresAt = tokens.expires_in ? new Date(Date.now() + tokens.expires_in * 1000).toISOString() : null;
     this.c.tokenVersion = (this.c.tokenVersion || 0) + 1;
     this.c.status = 'authorized'; this.c.lastError = null;
@@ -61,6 +64,7 @@ export class Provider {
   redirectToAuthorization(url) {
     if (!this.interactive) throw new Error('Reconnect this connection in the dashboard');
     if (url.origin !== 'https://mcp.webflow.com') throw new Error('Unexpected authorization origin');
+    this.store.save();
     this.authorizationUrl = url.toString();
   }
   saveCodeVerifier(verifier) {

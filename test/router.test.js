@@ -10,6 +10,66 @@ import { OAuthManager, Provider } from '../src/oauth.js';
 import { Router, parseSiteList } from '../src/router.js';
 import { createDashboard } from '../src/server.js';
 
+test('scheduled inventory sync respects freshness, grant isolation and disabled connections', async t => {
+  const { router, store, a, b } = fixture(t);
+  const now = Date.now();
+  const stable = store.connection(a);
+  stable.lastChecked = new Date(now).toISOString();
+  stable.beta = { tokens: { access_token: 'synthetic-beta' }, sites: [] };
+  store.connection(b).enabled = false;
+  const channels = [];
+  router.open = async provider => ({
+    listSites: async () => { channels.push(provider.channel); return [{ id: 'synthetic-site', name: 'Example' }]; },
+    close: async () => {}
+  });
+  await router.resyncDueProjects(now);
+  assert.deepEqual(channels, ['beta']);
+  assert.equal(stable.lastChecked, new Date(now).toISOString());
+  assert.equal(Object.values(store.data.projects)[0].enabled, false);
+  await router.resyncDueProjects(now);
+  assert.deepEqual(channels, ['beta']);
+  stable.lastChecked = new Date(now - 3_600_000).toISOString();
+  await router.resyncDueProjects(now);
+  assert.deepEqual(channels, ['beta', 'stable']);
+});
+
+test('scheduled sync backs off failures, preserves inventory and recovers', async t => {
+  const { router, store, a, b } = fixture(t);
+  store.connection(b).enabled = false;
+  const before = structuredClone(store.connection(a).sites);
+  let attempts = 0;
+  router.open = async () => { attempts++; throw new Error('Synthetic outage'); };
+  await router.resyncDueProjects();
+  assert.equal(attempts, 1);
+  assert.deepEqual(store.connection(a).sites, before);
+  const retry = router.inventoryRetries.get(`${a}:stable`);
+  await router.resyncDueProjects(retry.nextAttempt - 1);
+  assert.equal(attempts, 1);
+  await router.resyncDueProjects(retry.nextAttempt);
+  assert.equal(attempts, 2);
+  assert.equal(router.inventoryRetries.get(`${a}:stable`).failures, 2);
+  router.open = async () => ({ listSites: async () => before, close: async () => {} });
+  await router.sites(a);
+  assert.equal(router.inventoryRetries.size, 0);
+});
+
+test('scheduled sync skips busy, unauthorised and authorizing connections', async t => {
+  const { router, store, a, b, calls } = fixture(t);
+  delete store.connection(b).tokens;
+  store.connection(a).pending = { state: 'synthetic' };
+  await router.resyncDueProjects();
+  delete store.connection(a).pending;
+  let release;
+  const busy = router.serial(a, () => new Promise(resolve => { release = resolve; }));
+  await Promise.resolve();
+  await router.resyncDueProjects();
+  assert.deepEqual(calls, []);
+  release(); await busy;
+  await router.resyncDueProjects();
+  assert.deepEqual(calls, [a]);
+  assert.equal(store.connection(b).beta, undefined);
+});
+
 function fixture(t, options = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'wfr-'));
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
@@ -31,7 +91,7 @@ test('encrypted vault persists two isolated OAuth grants, without secrets in sum
   const { dir, store, a, b } = fixture(t); store.save();
   const raw = fs.readFileSync(path.join(dir, 'vault.enc')).toString();
   assert.ok(!raw.includes('secret-'));
-  assert.equal(fs.statSync(path.join(dir, 'vault.enc')).mode & 0o777, 0o600);
+  if(process.platform !== 'win32') assert.equal(fs.statSync(path.join(dir, 'vault.enc')).mode & 0o777, 0o600);
   const loaded = new Store(dir);
   assert.equal(loaded.connection(a).tokens.access_token, `secret-${a}`);
   assert.equal(loaded.connection(b).tokens.access_token, `secret-${b}`);

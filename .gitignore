@@ -4,11 +4,16 @@
 !*/
 
 # Reviewed public files
+!/AGENTS.md
 !/.github/workflows/checks.yml
 !/.github/workflows/release.yml
 !/.github/dependabot.yml
 !/scripts/package-release.py
 !/scripts/smoke-package.mjs
+!/scripts/capture-readme.mjs
+!/docs/images/README.md
+!/docs/images/project-overview.png
+!/docs/images/project-permissions.png
 !/docs/RELEASING.md
 !/.github/ISSUE_TEMPLATE/bug_report.md
 !/.github/PULL_REQUEST_TEMPLATE.md
@@ -123,6 +128,8 @@
 !/ui/lib/utils.js
 !/ui/main.jsx
 !/ui/permission-presets.js
+!/ui/permission-availability.js
+!/test/permission-availability.test.js
 !/ui/style.css
 !/ui/theme.jsx
 !/vite.config.js

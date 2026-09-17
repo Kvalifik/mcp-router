@@ -16,7 +16,7 @@ test('real SDK: two DCR clients, PKCE code exchanges, refresh rotation and persi
   const reply = data => new Response(JSON.stringify(data), { headers: { 'Content-Type': 'application/json' } });
   const fetchFn = async (input, init = {}) => {
     const url = new URL(input);
-    if (url.pathname.startsWith('/.well-known/oauth-protected-resource')) return reply({ resource: 'https://mcp.webflow.com/mcp', authorization_servers: ['https://mcp.webflow.com'] });
+    if (url.pathname.startsWith('/.well-known/oauth-protected-resource')) return reply({ resource: 'https://mcp.webflow.com/mcp', authorization_servers: ['https://mcp.webflow.com'], scopes_supported: ['sites:read', 'cms:write'] });
     if (url.pathname.startsWith('/.well-known/oauth-authorization-server')) return reply({ issuer: 'https://mcp.webflow.com', authorization_endpoint: 'https://mcp.webflow.com/oauth/authorize', token_endpoint: 'https://mcp.webflow.com/oauth/token', registration_endpoint: 'https://mcp.webflow.com/oauth/register', response_types_supported: ['code'], grant_types_supported: ['authorization_code', 'refresh_token'], token_endpoint_auth_methods_supported: ['none'], code_challenge_methods_supported: ['S256'] });
     if (url.pathname === '/oauth/register') {
       const data = JSON.parse(init.body), client_id = `client-${++registration}`;
@@ -30,7 +30,7 @@ test('real SDK: two DCR clients, PKCE code exchanges, refresh rotation and persi
         assert.equal(grant.client, client);
         assert.equal(grant.challenge, createHash('sha256').update(data.get('code_verifier')).digest('base64url'));
         assert.equal(data.get('redirect_uri'), registrations.get(client).redirect_uris[0]);
-        return reply({ access_token: `access-${client}`, refresh_token: `refresh-${client}`, token_type: 'Bearer', expires_in: 3600 });
+        return reply({ scope: client === 'client-1' ? 'sites:read' : 'sites:read cms:write', access_token: `access-${client}`, refresh_token: `refresh-${client}`, token_type: 'Bearer', expires_in: 3600 });
       }
       assert.equal(data.get('refresh_token'), `refresh-${client}`); refreshes++;
       return reply({ access_token: `rotated-${client}`, refresh_token: `refresh2-${client}`, token_type: 'Bearer', expires_in: 3600 });
@@ -42,6 +42,7 @@ test('real SDK: two DCR clients, PKCE code exchanges, refresh rotation and persi
   for (const id of [a, b]) {
     const start = await oauth.begin(id), url = new URL(start.url);
     assert.equal(url.searchParams.get('code_challenge_method'), 'S256');
+    assert.equal(url.searchParams.get('scope'), 'sites:read cms:write');
     grants.set(id, { client: url.searchParams.get('client_id'), challenge: url.searchParams.get('code_challenge') });
     await oauth.complete(id, { state: url.searchParams.get('state'), code: id, browserNonce: start.browserNonce });
   }
@@ -52,6 +53,7 @@ test('real SDK: two DCR clients, PKCE code exchanges, refresh rotation and persi
   assert.equal(store.connection(a).tokens.access_token, 'rotated-client-1');
   assert.equal(store.connection(b).tokens.access_token, 'access-client-2');
   const reloaded = new Store(dir);
+  assert.equal(reloaded.connection(a).tokens.scope, 'sites:read');
   assert.equal(reloaded.connection(a).tokens.refresh_token, 'refresh2-client-1');
   assert.equal(reloaded.connection(b).tokens.refresh_token, 'refresh-client-2');
 });

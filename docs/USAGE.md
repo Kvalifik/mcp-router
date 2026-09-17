@@ -1,6 +1,48 @@
 # Usage and architecture
 
+## Authorizing a connection
+
+**Add connection** explains access before opening Webflow. Select the projects
+you want to manage and allow the requested permissions for the full feature set,
+then use router permissions to limit AI access. Narrower authorization is supported;
+the router cannot grant access that Webflow did not authorize. New projects start
+disabled, with default permissions selected. Review them before enabling projects.
+
+Open a connection’s **More options → MCP server** to review Stable and Beta
+authorization separately and compare their authorized project inventories.
+When reconnecting, include all projects that should retain access. The router cannot
+inspect the full Webflow permission grant. Its restrictions apply only to calls
+passing through MCP Router; Webflow still enforces its own access restrictions.
+
+## Automatic project resync
+
+While the router is running, it checks once a minute for project inventories whose
+last successful sync is at least an hour old, including at startup. Enabled,
+authorized Stable and Beta grants sync independently. Manual resync remains available.
+Busy connections and pending browser authorizations are skipped until a later check.
+Failures retry after 5, 10, 20, 40 minutes and progressively longer delays, capped
+at six hours. Retry delays reset on restart or a successful sync.
+
+Resync reads project summaries, not pages, CMS content, or assets. New projects
+remain disabled; existing permissions and local names are preserved. Projects
+absent from the combined successful Stable/Beta inventory become unavailable and
+disabled. Failed requests retain the previous inventory.
+
 ## Project permissions
+
+Permission toggles are locked while the selected Stable or Beta authorization is
+missing, project access is still being checked, or the project is not authorized
+on that server. Hover or keyboard-focus a locked toggle to see why. Presets leave
+locked preferences unchanged, and saved choices return when access is restored.
+Default permissions remain editable because they are a template for future projects.
+
+Router permissions only limit access already granted by Webflow. Editable toggles
+do not confirm upstream permission; Webflow may still reject restricted actions.
+
+**Test connection** uses saved settings and requires an enabled project, an enabled
+connection, and Site → Read. If testing is unavailable, the reason appears above
+the button. It tests a read, not write, delete, or publish access. Enabling a project
+exposes its allowed actions to connected AI clients; review permissions first.
 
 Use the sliders button next to a project to edit its permissions. The searchable matrix covers 27 areas and 223 pinned Webflow actions: site metadata/publishing, CMS, pages and branches, localization, elements/builders, styles, components/props/variants, variables, assets/fonts, custom code, forms, comments, analytics, webhooks, sitemap, enterprise settings, instructions, and Designer sessions/snapshots/uploads.
 
@@ -66,6 +108,14 @@ terms.
 
 Pins mark frequently used projects without enabling them. Use the Pinned filter
 next to search. Reorder connections from Settings using drag handles or arrows.
+
+### Set up another AI app with an agent
+
+Choose **Apps → Copy configuration → Agent setup snippet** and paste it into
+your chosen agent. The snippet includes this installation’s local stdio connection
+details and asks the agent to adapt them to its app while preserving existing
+settings and restrictions. Keep MCP Router running, then follow any reload or trust
+steps the agent provides. Copying the snippet does not connect the app by itself.
 
 On Windows, the app header includes the native minimize, maximize, and close controls. Drag the header to move the window; press Alt to reveal the application menu when needed.
 

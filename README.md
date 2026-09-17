@@ -9,6 +9,11 @@ MCP Router is independent software. It is not affiliated with, endorsed by,
 sponsored by, or approved by Webflow, OpenAI, Anthropic, or the other services
 it connects to. Product names identify compatible services only.
 
+<img src="docs/images/project-overview.png" width="720" alt="MCP Router showing fictional connections, pinned projects, Beta labels, and per-project access presets">
+
+*Manage connections and project access in one place. All project and connection
+names in these screenshots are fictional demo data.*
+
 ## Install on macOS
 
 Choose **mac-arm64** for Apple Silicon (M1 or later), or **mac-x64** for Intel Mac.
@@ -114,6 +119,7 @@ Treat that file as private. Direct unauthenticated dashboard requests are denied
 ## Set up
 
 1. Open the app and choose **Add connection**.
+   Review how authorization and router permissions work, then choose **Continue to Webflow**.
 2. Authorize the intended sites/workspaces with your own Webflow account.
 3. Review permissions and enable the projects you want your AI client to access.
 4. Choose your client in **Apps**, then restart or reload it as instructed.
@@ -122,11 +128,19 @@ A configured checkmark means configuration was saved, not that a running AI
 session has loaded it. The **ChatGPT/Codex** entry configures a detected local
 Codex MCP client; it does not add a connector to the ChatGPT website.
 
+You can authorize fewer projects or permissions. Router permissions only limit
+access already granted by Webflow; the router cannot inspect the full Webflow
+permission grant. Review authorized projects under **More options → MCP server**.
+
 Moving the installed app changes the executable path. Reconnect each client
 after moving or renaming its bundle. Other registrations, project overrides,
 and client-specific restrictions remain relevant.
 
 ## Permissions and limitations
+
+<img src="docs/images/project-permissions.png" width="720" alt="Project settings showing separate read, write, delete, and publish permissions for a fictional project">
+
+*Choose a permission preset or control individual actions for each project.*
 
 Router permissions apply only to calls passing through MCP Router. They do not
 reduce permissions in Webflow itself or in separate integrations. The app

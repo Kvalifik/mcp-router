@@ -21,6 +21,8 @@ guaranteed support period.
   checks Host/Origin and CSRF headers; the renderer uses Electron isolation and sandboxing.
 - OAuth uses PKCE and browser-bound, one-use state; Stable and Beta grants are
   separate.
+- Router permissions restrict calls independently of Webflow authorization. The
+  router cannot inspect the full upstream permission grant; Webflow enforces it.
 - The pinned operation catalog and project ownership checks reject unknown or
   disallowed operations. These controls require ongoing review as Webflow evolves.
 

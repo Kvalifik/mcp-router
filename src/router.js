@@ -61,7 +61,34 @@ export class Router {
   constructor(store, oauth, { open = openUpstream } = {}) {
     this.store = store; this.oauth = oauth; this.open = open;
     this.locks = new Map(); this.preparations = new Map();
+    this.inventoryRetries = new Map();
     initializeInventory(store);
+  }
+  async resyncDueProjects(now = Date.now()) {
+    // Check eligibility again under the connection lock in sites().
+    for (const c of Object.values(this.store.data.connections)) {
+      for (const channel of ['stable', 'beta']) {
+        if (this.locks.has(c.id)) continue;
+        await this.sites(c.id, { channel, automatic: true, now }).catch(() => {});
+      }
+    }
+    for (const key of this.inventoryRetries.keys()) {
+      if (!this.store.data.connections[key.split(':')[0]]) this.inventoryRetries.delete(key);
+    }
+  }
+  startProjectResync() {
+    if (this.inventoryTimer) return;
+    const tick = () => {
+      if (this.inventoryRunning) return;
+      this.inventoryRunning = this.resyncDueProjects().catch(() => {}).finally(() => { this.inventoryRunning = null; });
+    };
+    this.inventoryTimer = setInterval(tick, 60_000);
+    this.inventoryTimer.unref();
+    tick();
+  }
+  stopProjectResync() {
+    clearInterval(this.inventoryTimer);
+    this.inventoryTimer = null;
   }
   reorderConnections(ids) {
     const existing=Object.values(this.store.data.connections).filter(c=>!c.deletedAt).map(c=>c.id);
@@ -133,8 +160,20 @@ export class Router {
     this.store.audit('connection_deleted_permanently', {id});
   }
   restore() { throw new Error('Deleted connections cannot be restored'); }
-  async sites(id, { refresh = false, channel = this.store.data.settings.defaultChannel || 'stable' } = {}) {
+  async sites(id, { refresh = false, channel = this.store.data.settings.defaultChannel || 'stable', automatic = false, now = Date.now() } = {}) {
     return this.serial(id, async () => {
+      const key = `${id}:${channel}`;
+      if (automatic) {
+        const connection = this.store.data.connections[id];
+        const grant = channel === 'stable' ? connection : connection?.beta;
+        const retry = this.inventoryRetries.get(key);
+        if (!connection?.enabled || connection.deletedAt || !grant?.tokens ||
+            connection.pending || connection.beta?.pending) return;
+        if (retry && retry.lastChecked !== grant.lastChecked) this.inventoryRetries.delete(key);
+        else if (retry && now < retry.nextAttempt) return;
+        const checked = Date.parse(grant.lastChecked);
+        if (Number.isFinite(checked) && now - checked < 60 * 60_000) return;
+      }
       const c = this.store.connection(id), auth=session(this.store,id,channel);
       if (!c.enabled || !auth.tokens) throw new Error('Connection disabled or authorization required');
       let client;
@@ -145,11 +184,17 @@ export class Router {
         if (!c.enabled || c.deletedAt) throw new Error('Connection was disabled during the request');
         if(channel==='stable')c.stableSites=sites; else {c.stableSites ||= c.sites || []; auth.sites=sites;}
         c.sites=[...new Map([...(c.stableSites||[]),...(c.beta?.sites||[])].map(s=>[s.id,s])).values()];
-        auth.lastChecked=new Date().toISOString(); auth.inventoryPending=false; auth.status='connected'; auth.lastError=null; c.lastChecked = new Date().toISOString(); auth.status = 'connected'; c.lastError = null;
+        auth.lastChecked=new Date().toISOString(); auth.inventoryPending=false; auth.status='connected'; auth.lastError=null; auth.status = 'connected'; c.lastError = null;
         syncProjects(this.store, id);
+        this.inventoryRetries.delete(key);
         this.store.audit('connection_read_succeeded', { connectionId: id, siteCount: sites.length });
         return sites;
       } catch (error) {
+        if (automatic) {
+          const failures = Math.min((this.inventoryRetries.get(key)?.failures || 0) + 1, 8);
+          this.inventoryRetries.set(key, { failures, lastChecked: auth.lastChecked,
+            nextAttempt: Date.now() + Math.min(5 * 60_000 * 2 ** (failures - 1), 6 * 60 * 60_000) });
+        }
         auth.status = 'check_failed';
         c.lastError = 'Connection check failed. Retry or reconnect; credentials were not copied to another connection.';
         const category = ['InvalidGrantError', 'InvalidClientError', 'UnauthorizedError', 'StreamableHTTPError', 'InvalidScopeError'].includes(error.constructor?.name) ? error.constructor.name : 'upstream_or_transport_error';

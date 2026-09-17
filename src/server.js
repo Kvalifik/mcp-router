@@ -175,6 +175,8 @@ export async function main() {
   await new Promise((resolve, reject) => { dashboard.once('error', reject); dashboard.listen(port, '127.0.0.1', resolve); });
   await new Promise((resolve, reject) => { ipc.once('error', reject); ipc.listen(socket, resolve); });
   if (!windows) fs.chmodSync(socket, 0o600);
+  router.startProjectResync();
+  dashboard.once('close', () => router.stopProjectResync());
   for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => { dashboard.close(); ipc.close(); process.exit(0); });
   const loginFile = path.join(DATA_DIR, 'dashboard-login.txt');
   fs.writeFileSync(loginFile, `${origin}/dashboard/login/${loginTicket}\n`, {mode:0o600});

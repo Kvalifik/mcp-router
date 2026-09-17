@@ -169,6 +169,19 @@ function createIntegrations({home,appData,executable,script,socket,run,getWindow
       }
     }
   }
-  return {migrateLegacy,status:async()=>{await refreshWindowsPackages();return Promise.all(discover().map(status));},connect, download:id=>discover().find(c=>c.id===id)?.download, configuration:(format='standard')=>{if(!['standard','vscode'].includes(format))throw new Error('Unknown format');return JSON.stringify({[format==='vscode'?'servers':'mcpServers']:{[NAME]:{type:'stdio',...entry}}},null,2);}};
+  return {migrateLegacy,status:async()=>{await refreshWindowsPackages();return Promise.all(discover().map(status));},connect, download:id=>discover().find(c=>c.id===id)?.download, configuration:(format='standard')=>{
+    if(!['standard','vscode','agent'].includes(format))throw new Error('Unknown format');
+    const config=JSON.stringify({[format==='vscode'?'servers':'mcpServers']:{[NAME]:{type:'stdio',...entry}}},null,2);
+    if(format!=='agent')return config;
+    return `Help me connect this AI app to my local MCP Router for Webflow using the stdio server configuration below. If you cannot identify which app to configure, ask me first.
+
+Adapt this standard MCP JSON to the app's supported configuration format. Preserve the command, arguments, and environment values exactly. Merge the server into the existing settings, preserving other servers, settings, and any existing trust or tool restrictions. Back up an existing configuration before editing it. If you cannot edit the settings, give me the exact steps instead.
+
+MCP Router must be running on this computer. Tell me whether I need to reload or restart the AI app and complete any trust prompt. Verify the connection if possible; otherwise explain what remains to be checked. Do not change project permissions or OAuth authorizations.
+
+\`\`\`json
+${config}
+\`\`\``;
+  }};
 }
 module.exports={createIntegrations,writeRegistration,matches,readConfig,NAME};

@@ -45,6 +45,9 @@ test('Cursor, VS Code and Gemini preserve comments, other servers and restrictio
 test('configuration exports use the right root and contain only local launch data',t=>{
  const {client,expected}=fixture(t);
  for(const [format,key] of [['standard','mcpServers'],['vscode','servers']])assert.deepEqual(JSON.parse(client.configuration(format)),{[key]:{[NAME]:{type:'stdio',...expected}}});
+ const snippet=client.configuration('agent');
+ const embedded=snippet.match(/```json\n([\s\S]*?)\n```/);
+ assert.ok(embedded);assert.deepEqual(JSON.parse(embedded[1]),JSON.parse(client.configuration()));
  assert.throws(()=>client.configuration('other'));assert.equal(client.download('unknown'),undefined);
 });
 test('missing applications are rediscovered after installation',async t=>{

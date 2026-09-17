@@ -52,3 +52,23 @@ test('New authorization invalidates prior callback without reusing its channel',
  await assert.rejects(oauth.complete(id,{...prior,code:'old'}));
  assert.equal(store.connection(id).beta.pending.used,undefined);
 });
+
+test('OAuth tokens survive refresh without leaking credentials into summaries',async t=>{
+ const {store,oauth,id,dir}=fixture(t);
+ const stable=oauth.provider(id,true,'stable'),beta=oauth.provider(id,true,'beta');
+ stable.redirectToAuthorization(new URL('https://mcp.webflow.com/authorize?scope=sites%3Aread%20cms%3Awrite'));
+ stable.saveTokens({access_token:'fictional-stable',scope:'sites:read'});
+ beta.redirectToAuthorization(new URL('https://mcp.webflow.com/authorize?scope=cms%3Awrite'));
+ beta.saveTokens({access_token:'fictional-beta',scope:'cms:write'});
+ stable.saveTokens({access_token:'fictional-refreshed'});
+ const summary=new Store(dir).summary().connections[0];
+ assert.ok(!JSON.stringify(summary).includes('fictional-stable'));
+ assert.ok(!JSON.stringify(summary).includes('fictional-refreshed'));
+ assert.equal(Object.hasOwn(summary.channels.stable,'access'),false);
+ assert.equal(new Store(dir).connection(id).tokens.scope,'sites:read');
+ // A new authorization must not retain the earlier response scope.
+ await oauth.begin(id,'stable');
+ stable.saveTokens({access_token:'fictional-new'});
+ assert.equal(store.connection(id).tokens.scope,undefined);
+ assert.equal(store.connection(id).beta.tokens.scope,'cms:write');
+});
