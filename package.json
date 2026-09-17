@@ -43,7 +43,7 @@
     "vite": "^8.3.0"
   },
   "license": "SEE LICENSE IN LICENSE",
-  "description": "Manage MCP connections for Webflow with local OAuth and per-project permissions.",
+  "description": "Connect multiple Webflow workspaces to your AI tools through one MCP connection, with local OAuth and per-project permissions.",
   "author": "Kvalifik ApS",
   "updateRepository": "Kvalifik/mcp-router"
 }

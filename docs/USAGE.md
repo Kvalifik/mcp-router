@@ -1,5 +1,9 @@
 # Usage and architecture
 
+MCP Router brings projects from multiple Webflow workspaces into one MCP
+connection for your AI tools. Add the Webflow authorizations you need, then
+enable the projects and permissions you want available at the same time.
+
 ## Authorizing a connection
 
 After a new connection successfully discovers its projects, MCP Router asks for a

@@ -45,7 +45,7 @@ function AboutPanel() {
     <div className="flex items-center gap-4 rounded-lg border bg-background p-5">
       <div><p className="text-xs text-muted-foreground">Created by</p><PublisherLink large className="mt-2" /></div>
     </div>
-    <div className="space-y-2 text-sm"><p>Manage MCP connections for Webflow.</p><p className="text-muted-foreground">Independent software by <PublisherLink>Kvalifik ApS</PublisherLink>. Not affiliated with or endorsed by Webflow or connected AI providers.</p></div>
+    <div className="space-y-2 text-sm"><p>Connect multiple Webflow workspaces to your AI tools through one MCP connection.</p><p className="text-muted-foreground">Independent software by <PublisherLink>Kvalifik ApS</PublisherLink>. Not affiliated with or endorsed by Webflow or connected AI providers.</p></div>
     <Button variant="outline" className="w-full justify-between" onClick={async () => { try { await window.routerDesktop.openLicenses(); } catch { toast.error('Could not open third-party licenses.'); } }} disabled={!window.routerDesktop}><span className="flex items-center gap-2"><FileText className="size-4" />Third-party licenses</span><ArrowUpRight className="size-4" /></Button>
     <Button variant="outline" className="w-full" disabled={!window.routerDesktop} onClick={()=>checkForUpdates(true)}><RefreshCw className="size-4" />Check for updates</Button>
     <p className="text-xs text-muted-foreground">Version {appPackage.version} · © {new Date().getFullYear()} <PublisherLink>Kvalifik ApS</PublisherLink></p>

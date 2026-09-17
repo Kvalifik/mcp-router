@@ -3,7 +3,7 @@
 ## Product identity
 
 - **Name:** MCP Router
-- **Description:** Manage MCP connections for Webflow.
+- **Description:** Connect multiple Webflow workspaces to your AI tools through one MCP connection.
 - **Publisher:** [Kvalifik ApS](https://kvalifik.dk)
 
 MCP Router is independent software. It is not affiliated with, endorsed by,

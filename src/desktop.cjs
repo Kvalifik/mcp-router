@@ -14,7 +14,7 @@ if (!app.requestSingleInstanceLock()) app.quit();
 else {
   app.on('second-instance', () => { win?.show(); win?.focus(); });
   app.whenReady().then(async () => {
-    app.setAboutPanelOptions({ applicationName: 'MCP Router', applicationVersion: app.getVersion(), copyright: 'Copyright © 2026 Kvalifik ApS', credits: 'Manage MCP connections for Webflow. Independent software; not affiliated with or endorsed by Webflow or connected AI providers. contact@kvalifik.dk' });
+    app.setAboutPanelOptions({ applicationName: 'MCP Router', applicationVersion: app.getVersion(), copyright: 'Copyright © 2026 Kvalifik ApS', credits: 'Connect multiple Webflow workspaces to your AI tools through one MCP connection. Independent software; not affiliated with or endorsed by Webflow or connected AI providers. contact@kvalifik.dk' });
     const { main } = await import('./server.js');
     const { managementToken } = await main();
     const allowed = event => event.sender === win?.webContents && event.senderFrame?.url?.startsWith(origin + '/');

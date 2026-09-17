@@ -1,9 +1,10 @@
 # MCP Router
 
-**Manage MCP connections for Webflow.**
+**Connect multiple Webflow workspaces to your AI tools.**
 
-A local desktop app for macOS and Windows by [Kvalifik](https://kvalifik.dk) for connecting multiple OAuth grants to your
-AI tools and controlling access to individual projects.
+A local desktop app for macOS and Windows by [Kvalifik](https://kvalifik.dk).
+Give your AI tools access to projects across multiple Webflow workspaces at the
+same time through one MCP connection, with access controls for each project.
 
 MCP Router is independent software. It is not affiliated with, endorsed by,
 sponsored by, or approved by Webflow, OpenAI, Anthropic, or the other services
@@ -59,7 +60,8 @@ Update checks use public releases from `Kvalifik/mcp-router`.
 
 ## What it does
 
-- Connect multiple Webflow OAuth authorizations without sharing account passwords.
+- Work across multiple Webflow workspaces without switching connections in your AI tools.
+- Authorize Webflow access with OAuth, without sharing account passwords.
 - Discover projects automatically; new projects start disabled.
 - Control read, write, delete, and publish actions per project.
 - Use read-only, no-publishing, full-access, or custom permission presets.
