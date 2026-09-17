@@ -32,3 +32,13 @@ jobs:
       - run: npm test
       - run: npm run build:ui
       - run: git diff --exit-code
+  required-checks:
+    name: Tests and UI build
+    needs: checks
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require every platform to pass
+        env:
+          MATRIX_RESULT: ${{ needs.checks.result }}
+        run: test "$MATRIX_RESULT" = success
