@@ -47,9 +47,14 @@ test('Windows discovery handles desktop executables and npm CLI registrations wi
  assert.deepEqual(config.mcpServers[integrations.NAME],expected);
 });
 
-test('Windows vault directory has a protected ACL restricted to the current user',{skip:process.platform!=='win32'},t=>{
+test('Windows vault directory has a protected ACL restricted to the current user',{skip:process.platform!=='win32'},async t=>{
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'router-acl-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));
- const store=new Store(dir);store.save();
+ let ticks=0;const timer=setInterval(()=>ticks++,10);t.after(()=>clearInterval(timer));
+ const pending=Store.open(dir);
+ assert.equal(fs.existsSync(path.join(dir,'vault.key')),false,'No credentials before ACL setup finishes');
+ const store=await pending;clearInterval(timer);
+ assert.ok(ticks>0,'Windows ACL setup must leave the event loop responsive');
+ store.save();
  const output=execFileSync('powershell.exe',['-NoProfile','-NonInteractive','-Command',"Import-Module (Join-Path $PSHOME 'Modules/Microsoft.PowerShell.Security/Microsoft.PowerShell.Security.psd1') -ErrorAction Stop; $acl=Get-Acl -LiteralPath $env:ROUTER_TEST_DIRECTORY; $sid=[System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value; if (!$acl.AreAccessRulesProtected) {throw 'ACL inherits'}; foreach ($rule in $acl.Access) {if ($rule.IdentityReference.Translate([System.Security.Principal.SecurityIdentifier]).Value -ne $sid) {throw 'Unexpected principal'}}; 'ok'"],{env:{...process.env,ROUTER_TEST_DIRECTORY:dir},encoding:'utf8'});
  assert.equal(output.trim(),'ok');assert.deepEqual(new Store(dir).data,store.data);
 });

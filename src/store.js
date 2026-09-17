@@ -6,10 +6,15 @@ import path from 'node:path';
 import { randomBytes, createCipheriv, createDecipheriv, createHash } from 'node:crypto';
 
 export const fingerprint = value => value ? createHash('sha256').update(value).digest('hex').slice(0, 12) : null;
+const securedDirectory = Symbol('securedDirectory');
 export class Store {
-  constructor(dir) {
+  static async open(dir) {
+    await privateDirectories.privateDirectoryAsync(dir);
+    return new Store(dir, securedDirectory);
+  }
+  constructor(dir, secured) {
     this.dir = dir;
-    privateDirectories.privateDirectory(dir);
+    if (secured !== securedDirectory) privateDirectories.privateDirectory(dir);
     const keyFile = path.join(dir, 'vault.key');
     if (!fs.existsSync(keyFile)) fs.writeFileSync(keyFile, randomBytes(32), { flag: 'wx', mode: 0o600 });
     fs.chmodSync(keyFile, 0o600);

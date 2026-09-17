@@ -1,6 +1,6 @@
 {
   "name": "mcp-router",
-  "version": "0.7.4",
+  "version": "0.7.5",
   "main": "src/desktop.cjs",
   "private": true,
   "type": "module",

@@ -1,7 +1,9 @@
 # Changelog
 
-## Unreleased
+## 0.7.5 — Windows and Intel Mac support
 
+- Prevent blank Windows startup windows by keeping permission checks asynchronous.
+- Improve project access management, permission availability, and Stable/Beta grant handling.
 - Detect Microsoft Store ChatGPT/Codex and preserve existing TOML settings when connecting.
 
 - Add Intel Mac and Windows x64 release targets alongside Apple Silicon.

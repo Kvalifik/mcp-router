@@ -149,7 +149,7 @@ export function createIPC(router, token = null) {
 }
 
 export async function main() {
-  privateDirectories.privateDirectory(DATA_DIR);
+  await privateDirectories.privateDirectoryAsync(DATA_DIR);
   const lockFile = path.join(DATA_DIR, 'daemon.lock');
   if (fs.existsSync(lockFile)) {
     const oldPid = Number(fs.readFileSync(lockFile, 'utf8'));
@@ -160,7 +160,7 @@ export async function main() {
   const port = Number(process.env.ROUTER_PORT || 43127);
   if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('Invalid port');
   const origin = `http://127.0.0.1:${port}`;
-  const store = new Store(DATA_DIR), oauth = new OAuthManager(store, origin), router = new Router(store, oauth);
+  const store = await Store.open(DATA_DIR), oauth = new OAuthManager(store, origin), router = new Router(store, oauth);
   const managementToken = nonce(), loginTicket = nonce();
   const ipcToken = process.platform === 'win32' ? nonce() : null;
   if (ipcToken) fs.writeFileSync(path.join(DATA_DIR, 'ipc-token'), ipcToken, {mode:0o600});
