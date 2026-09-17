@@ -9,12 +9,12 @@ Dependabot opens grouped minor/patch updates weekly and separate major updates. 
 1. Use `npm version patch --no-git-tag-version` (or minor/major) to update package.json and package-lock.json. Add the matching version entry to CHANGELOG.md.
 2. Merge the version and application changes into main after checks pass.
 3. Open Actions → Release → Run workflow, select main, and leave **Create a draft release** off for a build-only validation, or enable it to prepare a release.
-4. The workflow tests and builds on Apple Silicon, Intel Mac, and Windows x64, starts each packaged runtime to test IPC, verifies bundle contents and versions, and prepares three ZIPs, combined SHA-256 checksums, and changelog-based notes. Build artifacts expire after one day.
+4. The workflow tests and builds on Apple Silicon, Intel Mac, and Windows x64, starts each packaged runtime to test IPC, verifies bundle contents and versions, checks Mac signatures before and after ZIP extraction, and prepares three ZIPs, combined SHA-256 checksums, and changelog-based notes. Build artifacts expire after one day.
 5. Download each app and check installation, startup, OAuth, and AI client registration on its target OS. For a draft release, review its notes and assets, then publish it from Releases. Publication makes the version eligible for the app's update checker.
 
 The workflow never overwrites an existing release. Choose a new version for subsequent releases. A failed build-only run creates no release or tag. Draft publication uses a separate job with write access; build jobs have read-only repository access and do not receive stored credentials.
 
-Standard GitHub-hosted runners are used throughout. Release packaging runs only when this workflow is manually started; there are no scheduled builds. All builds remain unsigned; Mac builds are also unnotarized. Windows distributes a portable app folder rather than an installer.
+Standard GitHub-hosted runners are used throughout. Release packaging runs only when this workflow is manually started; there are no scheduled builds. Windows builds remain unsigned. Mac builds are ad-hoc signed after all bundle resources are written, without an Apple Developer ID or notarization. Signing and strict recursive verification failures stop the build; release packaging also verifies the extracted ZIP. This checks bundle integrity, not Gatekeeper approval. Test a browser-downloaded ZIP on a separate Mac before publication, including the Privacy & Security approval flow. Windows distributes a portable app folder rather than an installer.
 
 ## Local builds
 
