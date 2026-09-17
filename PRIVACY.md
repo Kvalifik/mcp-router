@@ -4,9 +4,9 @@ Last updated: 16 September 2026
 
 ## Publisher and contact
 
-MCP Router is developed by Kvalifik ApS. Contact contact@kvalifik.dk for privacy
+MCP Router is developed by [Kvalifik ApS](https://kvalifik.dk). Contact contact@kvalifik.dk for privacy
 questions, requests, or concerns. This notice covers the unmodified local app
-and information you voluntarily send to Kvalifik ApS for support. Modified
+and information you voluntarily send to [Kvalifik ApS](https://kvalifik.dk) for support. Modified
 versions and third-party services may behave differently.
 
 ## Local processing
@@ -19,7 +19,7 @@ file permissions; this is not Keychain-backed storage and does not protect
 against someone with equivalent access to your OS account.
 
 The app does not intentionally send product analytics, crash reports, tokens,
-or project data to Kvalifik ApS. There is no Kvalifik account or hosted routing
+or project data to [Kvalifik ApS](https://kvalifik.dk). There is no [Kvalifik](https://kvalifik.dk) account or hosted routing
 backend in this version. This does not mean that all processing stays on your
 computer: Webflow and your AI client receive the information needed for calls.
 
@@ -42,7 +42,7 @@ repository visits, downloads, and issues under its own policies.
 Connecting an AI app writes the router's executable/socket configuration to
 that client's settings. The app preserves unrelated settings and may create a
 private backup of the original configuration. Such backups can contain
-unrelated sensitive settings; they stay local and are not sent to Kvalifik.
+unrelated sensitive settings; they stay local and are not sent to [Kvalifik](https://kvalifik.dk).
 Copy configuration places local paths on the system clipboard.
 
 The encrypted audit history is limited to the latest 200 events and includes
@@ -63,7 +63,7 @@ already received by Webflow or an AI provider.
 
 ## Support correspondence
 
-If you email Kvalifik ApS, we receive your email address and the information you
+If you email [Kvalifik ApS](https://kvalifik.dk), we receive your email address and the information you
 send. We use it to respond, investigate issues, and administer licensing or
 privacy requests, based on our legitimate interest in handling those requests;
 applicable legal obligations may also require retention. We retain information

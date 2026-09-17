@@ -43,7 +43,12 @@ else {
         webPreferences: { nodeIntegration: false, contextIsolation: true, sandbox: true, javascript: false, partition: 'licenses' } });
       licensesWindow.webContents.session.webRequest.onBeforeRequest((details, callback) => callback({ cancel: !details.url.startsWith('file:') && details.url !== 'about:blank' }));
       licensesWindow.webContents.session.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
-      licensesWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+      licensesWindow.webContents.setWindowOpenHandler(({ url }) => {
+        if (url === 'https://kvalifik.dk' || url === 'https://kvalifik.dk/') {
+          openPublisher().catch(() => dialog.showErrorBox('Could not open website', 'Open https://kvalifik.dk in your browser.'));
+        }
+        return { action: 'deny' };
+      });
       licensesWindow.webContents.on('will-navigate', event => event.preventDefault());
       await licensesWindow.loadFile(file);
     };

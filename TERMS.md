@@ -2,7 +2,7 @@
 
 Last updated: 16 September 2026
 
-MCP Router is provided by Kvalifik ApS as a free local software tool. Rights to
+MCP Router is provided by [Kvalifik ApS](https://kvalifik.dk) as a free local software tool. Rights to
 use, modify, and redistribute it are governed by [LICENSE](LICENSE). These
 usage notes do not grant additional rights or override mandatory legal rights.
 
@@ -39,4 +39,4 @@ correct, safe, or reversible.
 
 ## Contact
 
-Kvalifik ApS — contact@kvalifik.dk.
+[Kvalifik ApS](https://kvalifik.dk) — contact@kvalifik.dk.

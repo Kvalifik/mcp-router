@@ -2,7 +2,7 @@
 
 **Manage MCP connections for Webflow.**
 
-A local desktop app for macOS and Windows by Kvalifik ApS for connecting multiple OAuth grants to your
+A local desktop app for macOS and Windows by [Kvalifik](https://kvalifik.dk) for connecting multiple OAuth grants to your
 AI tools and controlling access to individual projects.
 
 MCP Router is independent software. It is not affiliated with, endorsed by,
@@ -175,7 +175,7 @@ Third-party components retain their own licenses.
 
 ## Contributing and support
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Contact Kvalifik ApS at
+See [CONTRIBUTING.md](CONTRIBUTING.md). Contact [Kvalifik ApS](https://kvalifik.dk) at
 [contact@kvalifik.dk](mailto:contact@kvalifik.dk). Please report security issues
 privately rather than attaching credentials or client data to GitHub issues.
 

@@ -21,12 +21,12 @@ import { permissionUnavailable, availablePreset, connectionTestUnavailable } fro
 import appPackage from '../package.json';
 import kvalifikLogo from '../assets/brand/kvalifik.svg';
 
-function PublisherLink({ className = '', large = false }) {
+function PublisherLink({ className = '', large = false, children }) {
   return <a href="https://kvalifik.dk" target="_blank" rel="noopener noreferrer" className={`inline-flex items-center gap-1 rounded-sm underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${className}`} onClick={async event => {
     if (!window.routerDesktop) return;
     event.preventDefault();
     try { await window.routerDesktop.openPublisher(); } catch { toast.error('Could not open kvalifik.dk.'); }
-  }}><img src={kvalifikLogo} alt="Kvalifik" className={`${large ? 'h-5' : 'h-[0.8em]'} w-auto dark:invert`} /><ArrowUpRight className="size-3.5" aria-hidden="true" /></a>;
+  }}>{children || <><img src={kvalifikLogo} alt="Kvalifik" className={`${large ? 'h-5' : 'h-[0.8em]'} w-auto dark:invert`} /><ArrowUpRight className="size-3.5" aria-hidden="true" /></>}</a>;
 }
 async function checkForUpdates(manual=false) {
   if (!window.routerDesktop?.checkUpdates) return;
@@ -45,10 +45,10 @@ function AboutPanel() {
     <div className="flex items-center gap-4 rounded-lg border bg-background p-5">
       <div><p className="text-xs text-muted-foreground">Created by</p><PublisherLink large className="mt-2" /></div>
     </div>
-    <div className="space-y-2 text-sm"><p>Manage MCP connections for Webflow.</p><p className="text-muted-foreground">Independent software by Kvalifik ApS. Not affiliated with or endorsed by Webflow or connected AI providers.</p></div>
+    <div className="space-y-2 text-sm"><p>Manage MCP connections for Webflow.</p><p className="text-muted-foreground">Independent software by <PublisherLink>Kvalifik ApS</PublisherLink>. Not affiliated with or endorsed by Webflow or connected AI providers.</p></div>
     <Button variant="outline" className="w-full justify-between" onClick={async () => { try { await window.routerDesktop.openLicenses(); } catch { toast.error('Could not open third-party licenses.'); } }} disabled={!window.routerDesktop}><span className="flex items-center gap-2"><FileText className="size-4" />Third-party licenses</span><ArrowUpRight className="size-4" /></Button>
     <Button variant="outline" className="w-full" disabled={!window.routerDesktop} onClick={()=>checkForUpdates(true)}><RefreshCw className="size-4" />Check for updates</Button>
-    <p className="text-xs text-muted-foreground">Version {appPackage.version} · © {new Date().getFullYear()} Kvalifik ApS</p>
+    <p className="text-xs text-muted-foreground">Version {appPackage.version} · © {new Date().getFullYear()} <PublisherLink>Kvalifik ApS</PublisherLink></p>
   </div>;
 }
 const MODES = ['read', 'write', 'delete', 'publish'];

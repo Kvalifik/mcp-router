@@ -49,16 +49,16 @@ Changes are listed newest first.
 - Restore private vault/key permissions and safely reject malformed URLs.
 - Restrict packaged contents to runtime assets and required notices.
 
-## 0.7.1 — Kvalifik branding and license viewer
+## 0.7.1 — [Kvalifik](https://kvalifik.dk) branding and license viewer
 
-- Add the Kvalifik wordmark and website link to the header and About panel.
+- Add the [Kvalifik](https://kvalifik.dk) wordmark and website link to the header and About panel.
 - Add About to Settings and the native app menu.
 - Add a local, read-only third-party license viewer covering app dependencies, Electron, and Chromium.
 - Support local SVG assets with the correct content type.
 
 ## 0.7.0 — GitHub release preparation
 
-- Rename the app to MCP Router, with Kvalifik ApS as publisher.
+- Rename the app to MCP Router, with [Kvalifik ApS](https://kvalifik.dk) as publisher.
 - Add licensing, privacy, usage, security, contribution, and branding documents.
 - Replace unverified third-party integration logos with neutral icons.
 - Retain legacy state paths and registration keys for compatibility.
