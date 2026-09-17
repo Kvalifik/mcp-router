@@ -25,6 +25,11 @@ guaranteed support period.
   router cannot inspect the full upstream permission grant; Webflow enforces it.
 - The pinned operation catalog and project ownership checks reject unknown or
   disallowed operations. These controls require ongoing review as Webflow evolves.
+- Webflow server instructions and tool descriptions are fetched live for enabled
+  projects with instruction-read access, using each project's selected grant.
+  They are guidance, not permission grants: executable schemas and ownership
+  checks remain pinned and reviewed. Project guidance resources use the same
+  checks as preparation; arbitrary upstream resource URIs are not proxied.
 
 This is a single-user convenience and policy tool, not a security boundary
 against the OS account owner, privileged software, or an agent able to edit local

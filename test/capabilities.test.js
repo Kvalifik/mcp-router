@@ -13,7 +13,7 @@ function fixture(t) {
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'wfr-caps-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));
  const store=new Store(dir), calls=[];
  let intercept=async()=>{};
- const router=new Router(store,{provider:id=>({id})},{open:async()=>({guide:{content:[]},close:async()=>{},call:async(tool,args)=>{
+ const router=new Router(store,{provider:(id,interactive,channel)=>({id,channel})},{open:async()=>({guide:{content:[]},close:async()=>{},call:async(tool,args)=>{
    calls.push({tool,args});await intercept(tool,args);
    const action=Object.keys(args.actions?.[0]||{}).find(k=>k!=='label');
    if(action==='search_instructions')return envelope(action,{instructions:[],pagination:{total:0}});
@@ -102,3 +102,38 @@ test('delete permission does not grant write and preparation expires',async t=>{
 });
 
 test('instruction preparation cannot bypass an absent instruction-read grant',async t=>{const {router,calls}=fixture(t);await assert.rejects(router.call('prepare_project',{projectId:'p'}),/Instruction read permission/);assert.equal(calls.length,0);});
+
+test('live guidance stays scoped to the selected grant and current permissions',async t=>{
+ const {router,store}=fixture(t);let fail=false, authorized=true, revoke=false;
+ const opened=[];
+ router.open=async provider=>{
+   opened.push(provider.channel);
+   if(fail)throw new Error('Synthetic upstream failure');
+   return {
+     instructions:`${provider.channel} instructions`,guide:{content:[]},close:async()=>{},
+     listSites:async()=>authorized?[{id:site}]:[],
+     listTools:async()=>{
+       if(revoke)grant(router,{'agent_instructions:read':false});
+       return [{name:'data_sites_tool',description:'Live site guidance'},{name:'unknown_tool',description:'Not reviewed'}];
+     }
+   };
+ };
+ await assert.rejects(router.call('get_project_guidance',{projectId:'p'}),/Instruction read permission/);
+ assert.deepEqual(await router.call('get_agent_context'),{contexts:[]});
+ assert.equal(opened.length,0);
+ grant(router,{});
+ const stable=await router.call('get_project_guidance',{projectId:'p'});
+ assert.equal(stable.instructions,'stable instructions');
+ assert.equal(stable.tools.length,1);
+ assert(!stable.tools[0].operationIds.includes('data_sites_tool.list_sites'));
+ store.connection(store.data.projects.p.connectionId).beta={tokens:{access_token:'synthetic-beta'}};
+ router.edit('projects','p',{channel:'beta'});
+ assert.equal((await router.call('get_project_guidance',{projectId:'p'})).instructions,'beta instructions');
+ authorized=false;
+ await assert.rejects(router.call('get_project_guidance',{projectId:'p'}));
+ authorized=true;fail=true;opened.length=0;
+ assert.deepEqual(await router.call('get_agent_context'),{contexts:[]});
+ assert.deepEqual(opened,['beta']);
+ fail=false;revoke=true;
+ await assert.rejects(router.call('get_project_guidance',{projectId:'p'}),/policy changed/);
+});

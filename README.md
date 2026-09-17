@@ -126,12 +126,14 @@ Treat that file as private. Direct unauthenticated dashboard requests are denied
 4. Choose your client in **Apps**, then restart or reload it as instructed.
 
 A configured checkmark means configuration was saved, not that a running AI
-session has loaded it. The **ChatGPT/Codex** entry configures a detected local
+session has loaded it. After connecting, the checkmark stays visible until the
+next hover or keyboard focus. Hover or focus the configured app again to show
+its reconnect icon. The **ChatGPT/Codex** entry configures a detected local
 Codex MCP client; it does not add a connector to the ChatGPT website.
 
 You can authorize fewer projects or permissions. Router permissions only limit
 access already granted by Webflow; the router cannot inspect the full Webflow
-permission grant. Review authorized projects under **More options → MCP server**.
+permission grant. Review authorized projects under **More options → MCP version**.
 
 Moving the installed app changes the executable path. Reconnect each client
 after moving or renaming its bundle. Other registrations, project overrides,

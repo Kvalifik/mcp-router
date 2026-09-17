@@ -39,6 +39,18 @@ export async function openUpstream(provider) {
     return {
       call: (name, args) => client.callTool({ name, arguments: { ...args, ...identity } }),
       guide,
+      instructions: client.getInstructions(),
+      async listTools() {
+        const tools = [], cursors = new Set(); let cursor;
+        for (let page = 0; page < 100; page++) {
+          const result = await client.listTools(cursor ? { cursor } : {});
+          tools.push(...result.tools);
+          if (!result.nextCursor) return tools;
+          if (cursors.has(result.nextCursor)) throw new Error('Invalid tool pagination');
+          cursor = result.nextCursor; cursors.add(cursor);
+        }
+        throw new Error('Tool discovery incomplete');
+      },
       async listSites() {
         const sites = []; let offset = 0;
         for (let page = 0; page < 100; page++) {
@@ -109,7 +121,7 @@ export class Router {
     if (autoName) name = `Connection ${Object.keys(this.store.data.connections).length + 1}`;
     if (typeof name !== 'string' || !name.trim() || name.length > 60) throw new Error('Use a connection name of 1–60 characters');
     const id = randomUUID();
-    this.store.data.connections[id] = { id, name: name.trim(), sourceName:null, nameOverride:autoName ? null : name.trim(), enabled: true, status: 'needs_authorization', sites: [] };
+    this.store.data.connections[id] = { id, name: name.trim(), namingPending: autoName, sourceName:null, nameOverride:autoName ? null : name.trim(), enabled: true, status: 'needs_authorization', sites: [] };
     this.store.audit('connection_created', { connectionId: id }); return id;
   }
   setConnection(id, enabled) {
@@ -136,10 +148,11 @@ export class Router {
     if (!['connections', 'projects'].includes(kind) || !Object.hasOwn(this.store.data[kind], id)) throw new Error('Unknown item');
     const item = this.store.data[kind][id];
     if (item.deletedAt) throw new Error('Item is deleted');
-    const allowed = kind === 'projects' ? ['name', 'enabled', 'read', 'permissions', 'useDefaultName', 'favourite', 'channel'] : ['name', 'useDefaultName'];
+    const allowed = kind === 'projects' ? ['name', 'enabled', 'read', 'permissions', 'useDefaultName', 'favourite', 'channel'] : ['name', 'useDefaultName', 'dismissNaming'];
     if (!updates || Object.keys(updates).some(k => !allowed.includes(k))) throw new Error('Unsupported permission or field');
     if ('channel' in updates && !(kind==='projects'?['inherit','stable','beta']:['stable','beta']).includes(updates.channel)) throw new Error('Invalid MCP channel');
     if ('name' in updates && (typeof updates.name !== 'string' || !updates.name.trim() || updates.name.length > 80)) throw new Error('Invalid name');
+    if ('dismissNaming' in updates && updates.dismissNaming !== true) throw new Error('Invalid naming dismissal');
     if ('useDefaultName' in updates && typeof updates.useDefaultName !== 'boolean') throw new Error('Invalid name mode');
     if (updates.useDefaultName && 'name' in updates) throw new Error('Choose default name or override');
     for (const key of ['enabled', 'read', 'favourite']) if (key in updates && typeof updates[key] !== 'boolean') throw new Error('Invalid permission');
@@ -149,6 +162,8 @@ export class Router {
     if ('name' in updates) { item.nameOverride = updates.name.trim(); if (kind === 'projects') item.sourceName ||= item.name; }
     if (updates.useDefaultName && kind === 'connections' && !item.sourceName) throw new Error('Webflow has not provided a workspace name');
     if (updates.useDefaultName) { item.nameOverride = null; item.name = item.sourceName || item.name; }
+    if (kind === 'connections' && ('name' in updates || updates.useDefaultName || updates.dismissNaming)) item.namingPending = false;
+    delete updates.dismissNaming;
     delete updates.useDefaultName;
     Object.assign(item, updates, 'name' in updates ? { name: updates.name.trim() } : {});
     this.store.audit('item_edited', { kind, id });
@@ -218,8 +233,27 @@ export class Router {
     return report;
   }
   channel(p) { return p.channel && p.channel!=='inherit' ? p.channel : this.store.data.settings.defaultChannel || 'stable'; }
+  async agentContext() {
+    const projects = await this.call('list_projects');
+    const contexts = [];
+    for (const project of projects) {
+      if (!project.capabilities.includes('agent_instructions:read')) continue;
+      try {
+        const policy = JSON.stringify([this.project(project.id,null),this.channel(this.project(project.id,null))]);
+        contexts.push({policy,context:await this.extendedCall('get_project_guidance', { projectId: project.id })});
+      }
+      catch { /* A failed grant must never fall back to another connection or cached guidance. */ }
+    }
+    // A project may be revoked while metadata for a later project is being fetched.
+    return { contexts:contexts.filter(({policy,context})=>{
+      try {
+        const p=this.project(context.projectId,null);
+        return policy===JSON.stringify([p,this.channel(p)]) && !!session(this.store,p.connectionId,this.channel(p)).tokens;
+      } catch { return false; }
+    }).map(({context})=>context) };
+  }
   async extendedCall(name,args) {
-    const fields={get_project_operations:['projectId','operationId'],prepare_project:['projectId'],read_webflow:['projectId','operationId','params','pageId'],write_webflow:['projectId','operationId','params','pageId','preparationId']}[name];
+    const fields={get_project_guidance:['projectId'],get_project_operations:['projectId','operationId'],prepare_project:['projectId'],read_webflow:['projectId','operationId','params','pageId'],write_webflow:['projectId','operationId','params','pageId','preparationId']}[name];
     if(Object.keys(args).some(k=>!fields.includes(k)) || typeof args.projectId!=='string')throw new Error('Invalid arguments');
     const p=structuredClone(this.project(args.projectId,null));
     const signature=()=>JSON.stringify([this.project(p.id,null),this.channel(p)]);
@@ -230,8 +264,8 @@ export class Router {
       if(args.operationId){const op=operations.find(o=>o.id===args.operationId);if(!op)throw new Error('Operation not permitted');return {...op,notes:'Site IDs are selected by the router. Supply pageId separately for page tools. Read project instructions with prepare_project before writes.'};}
       return operations.map(({id,title,mode,permission,extraPermissions,page})=>({id,area:title,mode,permission,extraPermissions,requiresPageId:page}));
     }
-    if(name==='prepare_project' && !permissions(p)['agent_instructions:read'])throw new Error('Instruction read permission is required to prepare a project');
-    const op=name==='prepare_project'?null:operation(args.operationId);
+    if(['prepare_project','get_project_guidance'].includes(name) && !permissions(p)['agent_instructions:read'])throw new Error('Instruction read permission is required to prepare a project');
+    const op=['prepare_project','get_project_guidance'].includes(name)?null:operation(args.operationId);
     if(op && (!allowed(p,op) || (name==='read_webflow' && op.mode!=='read') || (name==='write_webflow' && op.mode==='read')))throw new Error('Operation permission denied');
     const prepared=op?prepareArguments(op,args.params||{},p.siteId,args.pageId):null;
     return this.serial(p.connectionId,async()=>{
@@ -241,6 +275,15 @@ export class Router {
         if(!session(this.store,p.connectionId,channel).tokens)throw new Error('Authorization required for selected MCP channel');
         client=await this.open(this.oauth.provider(p.connectionId,false,channel));
         if(channel==='beta' && !(await client.listSites()).some(s=>s.id===p.siteId))throw new Error('Project is not authorized on Beta');
+        let guidance;
+        if(name==='get_project_guidance' || name==='prepare_project') {
+          const permitted = CATALOG.filter(candidate=>allowed(p,candidate));
+          const tools = (await client.listTools?.() || []).filter(tool=>permitted.some(candidate=>candidate.tool===tool.name))
+            .map(({name,title,description})=>({name,title,description,operationIds:permitted.filter(candidate=>candidate.tool===name).map(candidate=>candidate.id)}));
+          recheck();
+          guidance={projectId:p.id,channel,instructions:client.instructions || '',tools};
+          if(name==='get_project_guidance') return {...guidance,guide:client.guide};
+        }
         if(name==='prepare_project') {
           const instructions=[];let offset=0;
           for(let page=0;page<100;page++) {
@@ -258,7 +301,7 @@ export class Router {
           recheck();const preparationId=randomUUID();
           for(const [id,v] of this.preparations)if(v.expires<Date.now())this.preparations.delete(id);
           this.preparations.set(preparationId,{projectId:p.id,policy:initial,expires:Date.now()+600000});
-          return {preparationId,expiresInSeconds:600,guide:client.guide,instructions,notice:'Read and follow all enabled rules and relevant skills before calling write_webflow. This preparation is bound to the current project policy.'};
+          return {preparationId,expiresInSeconds:600,upstream:guidance,guide:client.guide,instructions,notice:'Read and follow all enabled rules and relevant skills before calling write_webflow. Webflow tool names and descriptions are upstream guidance; execute only permitted operation IDs through read_webflow/write_webflow using the router schema. This preparation is bound to the current project policy.'};
         }
         if(op.mode!=='read') {
           const proof=this.preparations.get(args.preparationId);
@@ -282,11 +325,12 @@ export class Router {
   }
   async call(name, args = {}) {
     if (!args || typeof args !== 'object' || Array.isArray(args)) throw new Error('Invalid arguments');
+    if (name === 'get_agent_context' && !Object.keys(args).length) return this.agentContext();
     if (name === 'list_projects' && !Object.keys(args).length) {
       return Object.values(this.store.data.projects).filter(p => !p.deletedAt && !this.store.data.connections[p.connectionId]?.deletedAt && p.available !== false && p.enabled && Object.values(permissions(p)).some(Boolean) && this.store.connection(p.connectionId).enabled)
         .map(p => ({ id:p.id, name:p.name, capabilities: Object.entries(permissions(p)).filter(([,v])=>v).map(([k])=>k) }));
     }
-    if (['get_project_operations','prepare_project','read_webflow','write_webflow'].includes(name)) return this.extendedCall(name,args);
+    if (['get_project_guidance','get_project_operations','prepare_project','read_webflow','write_webflow'].includes(name)) return this.extendedCall(name,args);
     if (name !== 'read_project_site' || Object.keys(args).length !== 1 || typeof args.projectId !== 'string') {
       this.store.audit('tool_denied'); throw new Error('Tool or arguments denied; this POC supports project site reads only');
     }

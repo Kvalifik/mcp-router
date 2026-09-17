@@ -19,6 +19,6 @@ export function connectionTestUnavailable(project, connection, selectedChannel) 
   const canRead = project.permissions ? project.permissions['site:read'] : project.read;
   if (!canRead) return 'Save Site → Read permission before testing.';
   const savedChannel = project.channel && project.channel !== 'inherit' ? project.channel : connection.channel || 'stable';
-  if (selectedChannel !== savedChannel) return 'Save the MCP server selection before testing.';
+  if (selectedChannel !== savedChannel) return 'Save the MCP version selection before testing.';
   return permissionUnavailable({connection,channel:savedChannel,siteId:project.siteId,key:'site:read'});
 }

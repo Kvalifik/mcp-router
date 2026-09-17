@@ -2,13 +2,19 @@
 
 ## Authorizing a connection
 
+After a new connection successfully discovers its projects, MCP Router asks for a
+local connection name. For a single-project connection, it suggests the project
+name. Save a name or keep the current label. This prompt is shared by Stable and
+Beta and does not repeat when adding the other server or reconnecting. Existing
+connections are not prompted.
+
 **Add connection** explains access before opening Webflow. Select the projects
 you want to manage and allow the requested permissions for the full feature set,
 then use router permissions to limit AI access. Narrower authorization is supported;
 the router cannot grant access that Webflow did not authorize. New projects start
 disabled, with default permissions selected. Review them before enabling projects.
 
-Open a connection’s **More options → MCP server** to review Stable and Beta
+Open a connection’s **More options → MCP version** to review Stable and Beta
 authorization separately and compare their authorized project inventories.
 When reconnecting, include all projects that should retain access. The router cannot
 inspect the full Webflow permission grant. Its restrictions apply only to calls
@@ -64,16 +70,51 @@ Project search covers both local and original site names. Rename changes local l
 
 ## Codex tools
 
+The MCP connection forwards Webflow's current server instructions at startup and
+adds Webflow's original tool names, titles and descriptions to operation discovery
+each time an AI client requests its tool list. Metadata is fetched from each enabled
+project's selected Stable or Beta grant and requires **Instructions → Read**.
+Only tools with at least one permitted, reviewed operation are described, alongside
+their allowed operation IDs. A tool's upstream description may mention additional
+actions; that description does not grant access to them.
+
+`get_project_guidance` fetches the current server instructions, guide and tool
+descriptions. `prepare_project` also returns this metadata along with enabled site
+rules and skills. Clients supporting MCP resources can discover and read
+`webflow-router://projects/{projectId}/guidance` to load the same preparation.
+The router does not expose arbitrary upstream resources: project rules are read
+through the existing site-scoped instruction checks. Guidance is not persisted or
+reused from a failed grant, and metadata failures never switch Stable/Beta grants.
+
+Webflow guidance updates take effect on the next discovery or guidance request;
+startup instructions refresh on reconnect. An AI app may cache tool lists and may
+need a reconnect to display changed descriptions. Content already loaded into a
+conversation cannot be withdrawn by revoking access, but subsequent requests are
+checked again. Actual tool selection still depends on the AI app and model.
+Agents are instructed to load project rules before reads as well as writes; only
+writes enforce a preparation ID.
+If an agent still misses it, say: “Use MCP Router to find this Webflow project and
+load its project instructions before proceeding.”
+
 - `list_projects`: enabled projects and their effective permission keys.
 - `read_project_site`: compatible site-metadata read.
 - `get_project_operations`: permitted action IDs; pass `operationId` to retrieve its exact JSON parameter schema.
+- `get_project_guidance`: live Webflow server instructions, guide and original descriptions of tools with permitted operations.
 - `prepare_project`: Webflow guide plus enabled project rules/skills and a ten-minute preparation ID. Agents must read and follow the returned instructions before writing.
 - `read_webflow`: execute one permitted read operation.
 - `write_webflow`: execute one permitted write/delete/publish operation with its preparation ID.
 
 Both execution tools accept `projectId`, `operationId`, `params`, and (where required) `pageId`. The router injects the selected site's ID. Collection/page/asset/folder/form/webhook IDs are checked against site-scoped discovery before dispatch. Unknown actions and malformed payloads fail closed. Calls serialize per OAuth connection. Policies are checked before dispatch and before releasing responses. A write already sent to Webflow cannot be rolled back by revoking a permission; do not automatically retry ambiguous write failures.
 
-The action catalog is a pinned snapshot of Webflow's `tools/list` schema. Future provider actions are not automatically granted. Utility tools that ask Webflow AI or submit capability requests are not proxied; site discovery remains local-owner-only. Asset/font uploads return Webflow's presigned upload details; transferring file bytes is a separate operation. Enterprise actions and Designer-only operations cannot be live-tested on sites without the corresponding plan/session.
+The execution catalog remains a pinned snapshot of Webflow's `tools/list` schema;
+live guidance does not replace its reviewed parameter schemas, ownership checks or
+permission classifications. Future provider actions and schema changes are not
+automatically granted. Utility tools that ask Webflow AI or submit capability
+requests are not proxied; site discovery remains local-owner-only. Optional skills
+installed in an AI app are separate from MCP and are not installed by the router.
+Asset/font uploads return Webflow's presigned upload details; transferring file
+bytes is a separate operation. Enterprise actions and Designer-only operations
+cannot be live-tested on sites without the corresponding plan/session.
 
 ## Local trust boundary
 
@@ -98,9 +139,10 @@ Source mode uses `.local/`; never run it alongside the installed app on the same
 
 ## Stable and Beta
 
-Settings → Default MCP server sets the global default. A connection's MCP server
-menu authorizes Stable and Beta independently. Projects can follow the default
-or explicitly select Stable or Beta. Beta grants must include the selected
+Settings → Default MCP version sets the global default. A connection's MCP version
+menu authorizes Stable and Beta independently. In project settings, **MCP version**
+offers **Default (Currently Stable)** or **Default (Currently Beta)** to follow
+the default, or **Stable** and **Beta** to explicitly override it. Beta grants must include the selected
 project; grant mismatches are reported. Beta use remains subject to provider
 terms.
 
@@ -120,3 +162,10 @@ steps the agent provides. Copying the snippet does not connect the app by itself
 On Windows, the app header includes the native minimize, maximize, and close controls. Drag the header to move the window; press Alt to reveal the application menu when needed.
 
 Microsoft Store installations of ChatGPT/Codex are detected for the current Windows user. Connecting updates the shared Codex `config.toml` (`CODEX_HOME` when set, otherwise `~/.codex`) without launching protected Store executables. Existing comments, other servers, and tool restrictions are preserved; an existing configuration is backed up before changes.
+
+### Checking for updates
+
+Use **Settings → Check for updates** to check the latest public GitHub release.
+If a check fails, the message distinguishes connection failures, timeouts, GitHub
+rate limits, and invalid responses when that information is available. Updates
+are downloaded manually from the release page when a newer version is found.

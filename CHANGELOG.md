@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.7.7 — Live Webflow guidance and connection improvements
+
+- Forward Webflow's live server instructions and tool descriptions to AI clients, scoped to enabled projects and their selected Stable or Beta grants.
+- Expose current Webflow guidance, project rules and skills through MCP tools and project resources while retaining reviewed operation schemas and permission checks.
+- Prompt for a connection name after its first successful project discovery.
+- Clarify MCP version selection and show the current default in project settings.
+- Keep successful AI-app connection feedback visible until the next hover or keyboard focus.
+- Explain update-check failures with safe connection, timeout and rate-limit messages.
+- Refresh the project overview and permissions screenshots.
+
 ## 0.7.6 — Mac installation fix
 
 - Ad-hoc sign completed Apple Silicon and Intel Mac bundles to fix invalid signatures that could produce the macOS “app is damaged” warning.

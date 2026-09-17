@@ -14,7 +14,7 @@ test('connection testing explains disabled projects and uses saved permissions a
   assert.match(connectionTestUnavailable({...p,enabled:false},c,'stable'),/Enable this project/);
   assert.match(connectionTestUnavailable(p,{...c,enabled:false},'stable'),/Enable this connection/);
   assert.match(connectionTestUnavailable({...p,permissions:{},read:true},c,'stable'),/Save Site/);
-  assert.match(connectionTestUnavailable(p,c,'beta'),/Save the MCP server/);
+  assert.match(connectionTestUnavailable(p,c,'beta'),/Save the MCP version/);
   assert.match(connectionTestUnavailable({...p,siteId:'missing'},c,'stable'),/isn’t authorized/);
 });
 

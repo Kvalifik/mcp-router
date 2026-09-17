@@ -13,3 +13,19 @@ test('missing configuration never makes a network request; network and missing-r
  const c=createUpdateChecker({currentVersion:'1.0.0',fetchImpl:()=>{throw Error('must not run')}});assert.equal((await c.check()).state,'unconfigured');assert.equal(c.releaseUrl(),null);
  for(const [fetchImpl,state] of [[async()=>({status:404}),'no-release'],[async()=>{throw Error('offline')},'error'],[async()=>({ok:true,text:async()=>'{invalid'}),'error'],[async()=>({ok:true,text:async()=>JSON.stringify({tag_name:'2.0.0',prerelease:true})}),'no-release']])assert.equal((await createUpdateChecker({repository:'example/router',currentVersion:'1.0.0',fetchImpl}).check()).state,state);
 });
+
+test('update failures expose safe diagnostic categories without remote error contents',async()=>{
+ const fixtures=[
+  [async()=>{throw new DOMException('private detail','TimeoutError')},'timeout'],
+  [async()=>{throw new TypeError('private detail')},'network'],
+  [async()=>({ok:false,status:429}),'rate-limit'],
+  [async()=>({ok:false,status:403,headers:new Headers({'x-ratelimit-remaining':'0'})}),'rate-limit'],
+  [async()=>({ok:false,status:403,headers:new Headers()}),'server'],
+  [async()=>({ok:false,status:503}),'server'],
+  [async()=>({ok:true,text:async()=>'{invalid'}),'invalid-response'],
+ ];
+ for(const [fetchImpl,reason] of fixtures){
+  const checker=createUpdateChecker({repository:'example/router',currentVersion:'1.0.0',fetchImpl});
+  assert.deepEqual(await checker.check(),{state:'error',reason});
+ }
+});

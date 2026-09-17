@@ -282,3 +282,33 @@ test('OAuth browser redirects use a safe result page while dashboard cross-site 
  assert.equal((await request('/oauth/result/not-a-ticket',cross)).status,410);
  fail=true;const rejected=await request(`/oauth/callback/${a}`,cross);const failure=await request(rejected.headers.location,cross);assert.match(failure.body,/Authorization could not be completed/);
 });
+
+test('new connection naming waits for discovery and is shared across Stable and Beta', async t => {
+  for (const channel of ['stable', 'beta']) {
+    const { router, store } = fixture(t);
+    const id = router.createConnection();
+    const c = store.connection(id);
+    const summary = () => store.summary().connections.find(item => item.id === id);
+    assert.equal(summary().needsName, false);
+    const grant = channel === 'stable' ? c : (c.beta = {});
+    grant.tokens = { access_token: 'synthetic' };
+    grant.inventoryPending = true;
+    grant.status = 'connected';
+    assert.equal(summary().needsName, false);
+    router.open = async () => ({ listSites: async () => [{ id: 'example', name: 'Example project' }], close: async () => {} });
+    await router.sites(id, { channel });
+    assert.equal(summary().needsName, true);
+    assert.equal(summary().sites[0].name, 'Example project');
+    assert.equal(new Store(store.dir).summary().connections.find(item => item.id === id).needsName, true);
+    router.edit('connections', id, channel === 'stable' ? { name: 'My connection' } : { dismissNaming: true });
+    const other = channel === 'stable' ? (c.beta = {}) : c;
+    other.tokens = { access_token: 'synthetic-other' };
+    await router.sites(id, { channel: channel === 'stable' ? 'beta' : 'stable' });
+    assert.equal(summary().needsName, false);
+    await router.sites(id, { channel });
+    assert.equal(summary().needsName, false);
+    delete c.namingPending;
+    assert.equal(summary().needsName, false, 'legacy connections are not prompted');
+    assert.throws(() => router.edit('connections', id, { dismissNaming: false }));
+  }
+});
