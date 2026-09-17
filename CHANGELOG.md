@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.6 — Mac installation fix
+
+- Ad-hoc sign completed Apple Silicon and Intel Mac bundles to fix invalid signatures that could produce the macOS “app is damaged” warning.
+- Verify Mac signatures during builds and again after extracting release ZIPs.
+- Clarify installation approval for Mac builds without an Apple Developer ID or notarization.
+
 ## 0.7.5 — Windows and Intel Mac support
 
 - Prevent blank Windows startup windows by keeping permission checks asynchronous.

@@ -21,11 +21,12 @@ Choose **mac-arm64** for Apple Silicon (M1 or later), or **mac-x64** for Intel M
 1. Open the [GitHub Releases page](https://github.com/Kvalifik/mcp-router/releases) and download the latest
    `MCP-Router-…-mac-arm64.zip` or `MCP-Router-…-mac-x64.zip`. Choose the app ZIP, not GitHub’s “Source code” ZIP.
 2. Extract the ZIP and drag **MCP Router.app** into **Applications**.
-3. Open MCP Router. This release is **not signed or notarized by Apple**.
+3. Open MCP Router. This release is **ad-hoc signed, without an Apple Developer ID or notarization**.
    If macOS blocks it, first attempt to open it, then go to
    **System Settings → Privacy & Security → Open Anyway** and confirm opening
    the app. Only do this for a download you trust; don’t disable Gatekeeper.
-   Managed company Macs may require IT approval.
+   Managed company Macs may require IT approval. If macOS says the app is damaged,
+   download a fresh copy and report the release version if it persists.
 4. Choose **Add connection**, authorize Webflow, then enable the projects and
    permissions you want to use. New projects start disabled.
 5. Open **Apps**, connect your AI app, and follow its restart/reload instructions.
@@ -73,8 +74,8 @@ Webflow’s applicable terms and availability.
 
 ## Status
 
-Build targets are macOS on Apple Silicon and Intel, and Windows x64. Builds are unsigned;
-Mac builds are also unnotarized. See [SECURITY.md](SECURITY.md) for the security model and
+Build targets are macOS on Apple Silicon and Intel, and Windows x64. Windows builds are unsigned;
+Mac builds are ad-hoc signed without an Apple Developer ID and are unnotarized. See [SECURITY.md](SECURITY.md) for the security model and
 known limitations.
 
 ## Build and run

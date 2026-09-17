@@ -9,6 +9,7 @@ import os
 import zipfile
 import sys
 import platform as host_platform
+import tempfile
 
 root = Path(__file__).resolve().parents[1]
 version = json.loads((root / 'package.json').read_text(encoding='utf-8'))['version']
@@ -46,7 +47,13 @@ out.mkdir(parents=True, exist_ok=True)
 target = f"{'mac' if platform == 'darwin' else 'windows'}-{arch}"
 archive = out / f'MCP-Router-{version}-{target}.zip'
 if platform == 'darwin':
+    subprocess.run(['codesign', '--verify', '--deep', '--strict', str(app)], check=True)
     subprocess.run(['ditto', '-c', '-k', '--norsrc', '--keepParent', str(app), str(archive)], check=True)
+    # Check the actual delivery format as well as the build directory.
+    with tempfile.TemporaryDirectory(prefix='router-release-verify-') as extracted:
+        subprocess.run(['ditto', '-x', '-k', str(archive), extracted], check=True)
+        subprocess.run(['codesign', '--verify', '--deep', '--strict',
+                        str(Path(extracted) / 'MCP Router.app')], check=True)
 else:
     with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED) as archive_file:
         for file in sorted(app.rglob('*')):
@@ -62,7 +69,7 @@ notes = f'''{section.group(1).strip()}
 
 Choose the ZIP for your computer: **mac-arm64** for Apple Silicon, **mac-x64** for Intel Mac, or **windows-x64** for Windows x64.
 
-On Mac, extract and move **MCP Router.app** to Applications. Mac builds are unsigned and unnotarized. If blocked, first attempt to open the app, then use System Settings → Privacy & Security → Open Anyway for this trusted download.
+On Mac, extract and move **MCP Router.app** to Applications. Mac builds are ad-hoc signed, without an Apple Developer ID or notarization. If blocked, first attempt to open the app, then use System Settings → Privacy & Security → Open Anyway for this trusted download. Managed Macs may require IT approval. If macOS says the app is damaged, download a fresh copy and report the release version if it persists; do not disable Gatekeeper.
 
 On Windows, extract the entire ZIP into a permanent folder and run **MCP Router.exe**. Keep the resources and supporting files together. The Windows build is unsigned and may show a publisher warning.
 
