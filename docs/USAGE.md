@@ -38,6 +38,12 @@ remain disabled; existing permissions and local names are preserved. Projects
 absent from the combined successful Stable/Beta inventory become unavailable and
 disabled. Failed requests retain the previous inventory.
 
+## Project order
+
+Pinned projects appear first within each connection, in alphabetical order. Turning
+a pinned project on or off does not change its position. Unpinned projects appear
+below them, with enabled projects first, then alphabetically within each group.
+
 ## Project permissions
 
 Permission toggles are locked while the selected Stable or Beta authorization is

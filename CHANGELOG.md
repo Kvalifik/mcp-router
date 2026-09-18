@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.8 — Stable pinned project order
+
+- Keep pinned projects in alphabetical order when turned on or off.
+
 ## 0.7.7 — Live Webflow guidance and connection improvements
 
 - Forward Webflow's live server instructions and tool descriptions to AI clients, scoped to enabled projects and their selected Stable or Beta grants.
