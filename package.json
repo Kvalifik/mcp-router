@@ -21,7 +21,7 @@
     "@modelcontextprotocol/sdk": "1.30.0",
     "@radix-ui/react-dialog": "^1.1.23",
     "@radix-ui/react-popover": "^1.1.23",
-    "ajv": "8.18.0",
+    "ajv": "8.20.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
