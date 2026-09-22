@@ -18,7 +18,7 @@ then use router permissions to limit AI access. Narrower authorization is suppor
 the router cannot grant access that Webflow did not authorize. New projects start
 disabled, with default permissions selected. Review them before enabling projects.
 
-Open a connection’s **More options → MCP version** to review Stable and Beta
+Open a connection’s **More options → Connection access** to review Stable and Beta
 authorization separately and compare their authorized project inventories.
 When reconnecting, include all projects that should retain access. The router cannot
 inspect the full Webflow permission grant. Its restrictions apply only to calls
@@ -149,8 +149,9 @@ Source mode uses `.local/`; never run it alongside the installed app on the same
 
 ## Stable and Beta
 
-Settings → Default MCP version sets the global default. A connection's MCP version
-menu authorizes Stable and Beta independently. In project settings, **MCP version**
+Settings → Default MCP version sets the global default. A connection's Connection access
+menu shows Stable and Beta authorization separately, with explicit actions to
+authorize or reconnect each version. In project settings, **MCP version**
 offers **Default (Currently Stable)** or **Default (Currently Beta)** to follow
 the default, or **Stable** and **Beta** to explicitly override it. Beta grants must include the selected
 project; grant mismatches are reported. Beta use remains subject to provider
@@ -179,3 +180,38 @@ Use **Settings → Check for updates** to check the latest public GitHub release
 If a check fails, the message distinguishes connection failures, timeouts, GitHub
 rate limits, and invalid responses when that information is available. Updates
 are downloaded manually from the release page when a newer version is found.
+The update-available notification stays visible until you dismiss it or select
+**Download update**.
+
+### macOS menu bar
+
+Choose **Settings → Menu bar → Icon only**, **Connections**, **Projects**, or **Connections and
+projects** to choose the menu bar display. By default, the app icon and project
+count are shown. Your choice, including **Off**, is saved across restarts; existing
+preferences are preserved. Icon only shows no count. A single count shows
+the selected total; both shows connections/projects (for example, `2/7`).
+Connections counts enabled connections with at least one ready authorization;
+Projects counts enabled, available projects with permissions and
+a ready authorization for their selected Stable or Beta version. These are
+configured access counts, not live AI sessions. Counts update when router state
+is saved, without a polling timer. Hover over the icon for labeled
+counts and an indication when access needs attention.
+
+Click the item to open the same interface in a compact, responsive window. Search,
+pinning, access switches, and settings use the same controls as the main window.
+Settings, Add connection, Apps, and Open main window appear as equally sized
+icons in the compact header. The expand icon opens the full window.
+Desktop dropdowns use native menus with icons throughout the app: Settings,
+Apps, connection actions, project MCP version, and permission presets. Submenus
+can extend outside the window. Browser dashboards use the same options in web
+dropdowns. Native selections still use the existing authorization, permission,
+and deletion-confirmation flows. Clicking outside or pressing Escape dismisses
+the popover. Right-click the menu bar item to open the app or quit. Closing the
+main window keeps the router running; quitting stops it.
+
+In the Apps menu, a checkmark identifies an app that is already set up. Each
+installed app opens a submenu with a non-clickable setup status and a separate
+Set up or Reconnect action. An exclamation mark indicates a configuration that
+needs reconnecting; unconfigured apps have no status icon. The Not installed
+submenu lists supported apps absent from this computer. Setup status describes the saved configuration,
+not whether the app is running.

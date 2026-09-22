@@ -24,3 +24,7 @@ The script renders the SVGs through sharp and creates the ICNS using macOS `icon
 ## Styling
 
 Background gradient: #079AFF → #0566EF → #0638BD. Mark: #FFFFFF. Use the monochrome variants for small interface controls; do not add a second tile behind the coloured app icon. The SVG sources are the editing masters.
+
+Native Settings menu icons in `menu/` use the same Lucide shapes as the web UI.
+Regenerate them with `npx electron scripts/build-menu-icons.cjs`. The PNGs are
+32px assets used at 16pt (2x) and marked as macOS template images at runtime.

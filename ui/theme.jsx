@@ -6,6 +6,7 @@ export function ThemeProvider({children}){
  const [theme,setTheme]=useState(initialTheme);
  const [systemDark,setSystemDark]=useState(()=>matchMedia('(prefers-color-scheme: dark)').matches);
  useEffect(()=>{window.routerDesktop?.setTheme(theme).catch(()=>{});},[theme]);
+ useEffect(()=>{const sync=event=>{if(event.key===key)setTheme(initialTheme());};window.addEventListener('storage',sync);return()=>window.removeEventListener('storage',sync);},[]);
  const resolved=theme==='system'?(systemDark?'dark':'light'):theme;
  useEffect(()=>{const media=matchMedia('(prefers-color-scheme: dark)');const update=()=>setSystemDark(media.matches);media.addEventListener('change',update);update();return()=>media.removeEventListener('change',update);},[]);
  React.useLayoutEffect(()=>{document.documentElement.classList.toggle('dark',resolved==='dark');document.documentElement.style.colorScheme=resolved;},[resolved]);
