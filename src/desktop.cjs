@@ -1,10 +1,10 @@
-const { app, BrowserWindow, ipcMain, shell, dialog, Menu, nativeTheme, screen, clipboard } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, dialog, Menu, nativeTheme, screen, clipboard, Tray, nativeImage } = require('electron');
 const path = require('node:path');
 const { execFile } = require('node:child_process');
 const { promisify } = require('node:util');
 const run = promisify(execFile);
 const origin = 'http://127.0.0.1:43127';
-let win;
+let win, popover, tray, openingPopover = false;
 app.setName('MCP Router');
 const { migrateUserData } = require('./paths.cjs');
 app.setPath('userData', migrateUserData(app.getPath('appData')));
@@ -16,8 +16,78 @@ else {
   app.whenReady().then(async () => {
     app.setAboutPanelOptions({ applicationName: 'MCP Router', applicationVersion: app.getVersion(), copyright: 'Copyright © 2026 Kvalifik ApS', credits: 'Connect multiple Webflow workspaces to your AI tools through one MCP connection. Independent software; not affiliated with or endorsed by Webflow or connected AI providers. contact@kvalifik.dk' });
     const { main } = await import('./server.js');
-    const { managementToken } = await main();
-    const allowed = event => event.sender === win?.webContents && event.senderFrame?.url?.startsWith(origin + '/');
+    const { managementToken, router } = await main();
+    const allowed = event => [win, popover].some(window => window && !window.isDestroyed() && event.sender === window.webContents && event.senderFrame === window.webContents.mainFrame) && event.senderFrame?.url === origin + '/';
+    const { MODES, menuBarMode, menuBarStatus, menuBarTitle, popoverBounds, createTrayTextUpdater } = require('./menu-bar.cjs');
+    const updateTrayText = createTrayTextUpdater();
+    const showMain = () => { popover?.hide(); if(win.isMinimized())win.restore(); win.show(); win.focus(); };
+    const mode = () => menuBarMode(router.store.data.settings?.menuBar);
+    ipcMain.handle('menu-bar-mode', event => { if(!allowed(event))throw new Error('Denied'); return mode(); });
+    ipcMain.handle('set-menu-bar-mode', (event, value) => {
+      if(!allowed(event) || process.platform !== 'darwin' || !MODES.includes(value))throw new Error('Denied');
+      router.store.data.settings ||= {}; router.store.data.settings.menuBar = value; router.store.save(); return value;
+    });
+    ipcMain.handle('open-main-window', event => { if(!allowed(event))throw new Error('Denied'); showMain(); });
+    const nativeMenuIcons = Object.fromEntries(['SunMoon','PanelTop','Monitor','Server','ArrowDownUp','ShieldCheck','Activity','RefreshCw','Info','Pencil','Trash2','MessageSquare','Code2','Terminal','Plus','Copy','Check','TriangleAlert'].map(name=>{
+      const icon=nativeImage.createEmpty();
+      icon.addRepresentation({scaleFactor:2,buffer:require('node:fs').readFileSync(path.join(__dirname,`../assets/icons/menu/${name}.png`))});
+      icon.setTemplateImage(true);
+      return [name,icon];
+    }));
+    const nativeMenus = new Set();
+    ipcMain.handle('show-native-menu', (event, request) => {
+      if(!allowed(event) || !request || !Number.isFinite(request.x) || !Number.isFinite(request.y))throw new Error('Denied');
+      const owner=BrowserWindow.fromWebContents(event.sender);
+      if(nativeMenus.has(owner))throw new Error('Menu already open');
+      const {menuTemplate}=require('./native-menu.cjs');
+      let selection=null;
+      const menu=Menu.buildFromTemplate(menuTemplate(request.items,id=>{selection=id;},nativeMenuIcons));
+      const [width,height]=owner.getContentSize();
+      nativeMenus.add(owner);
+      return new Promise((resolve,reject)=>{
+        try { menu.popup({window:owner,x:Math.max(0,Math.min(width,Math.round(request.x))),y:Math.max(0,Math.min(height,Math.round(request.y))),callback:()=>{
+          nativeMenus.delete(owner);
+          if(!owner.isDestroyed()) {
+            if(selection){owner.show();owner.focus();}
+            else if(owner===popover&&!owner.isFocused())owner.hide();
+          }
+          resolve(selection);
+        }}); } catch(error){nativeMenus.delete(owner);reject(error);}
+      });
+    });
+    async function togglePopover() {
+      if(popover?.isVisible()){popover.hide();return;}
+      openingPopover = true;
+      try {
+      if(!popover) {
+        popover = new BrowserWindow({width:400,height:560,show:false,frame:false,...(process.platform==='darwin'?{type:'panel'}:{}),resizable:false,fullscreenable:false,minimizable:false,maximizable:false,skipTaskbar:true,alwaysOnTop:true,
+          webPreferences:{preload:path.join(__dirname,'preload.cjs'),nodeIntegration:false,contextIsolation:true,sandbox:true}});
+        popover.webContents.setWindowOpenHandler(()=>({action:'deny'}));
+        popover.webContents.on('will-navigate',(event,url)=>{if(url!==origin+'/')event.preventDefault();});
+        popover.on('blur',()=>{if(!nativeMenus.has(popover))popover?.hide();});
+        popover.webContents.on('before-input-event',(event,input)=>{if(input.key==='Escape'&&input.type==='keyDown'){popover.hide();event.preventDefault();}});
+        popover.on('closed',()=>{popover=null;});
+        try { await popover.loadURL(origin); } catch { popover?.destroy(); return; }
+      }
+      if(!tray || mode()==='off')return;
+      const anchor=tray.getBounds();
+      popover.setBounds(popoverBounds(anchor,screen.getDisplayMatching(anchor).workArea));
+      popover.show();popover.focus();
+      popover.webContents.send('focus-popover');
+      } finally { openingPopover = false; }
+    }
+    function updateTray() {
+      if(process.platform!=='darwin')return;
+      if(mode()==='off'){tray?.destroy();tray=null;popover?.hide();return;}
+      if(!tray) {
+        const icon=nativeImage.createFromPath(path.join(__dirname,'../assets/icons/menubar/MCPRouterTemplate.png'));
+        icon.setTemplateImage(true);tray=new Tray(icon);
+        tray.on('click',()=>{togglePopover().catch(()=>{});});
+        tray.on('right-click',()=>tray.popUpContextMenu(Menu.buildFromTemplate([{label:'Open MCP Router',click:showMain},{type:'separator'},{role:'quit'}])));
+      }
+      const status=menuBarStatus(router.store.summary());
+      updateTrayText(tray, mode(), status);
+    }
     ipcMain.handle('open-oauth', async (event, url) => {
       if (!allowed(event) || typeof url !== 'string') throw new Error('Denied');
       const u = new URL(url);
@@ -62,7 +132,7 @@ else {
     });
     let toolbarDrag = null;
     ipcMain.on('toolbar-drag', (event, phase) => {
-      if (!allowed(event) || !win || win.isMaximized() || win.isFullScreen()) return;
+      if (!allowed(event) || event.sender !== win?.webContents || !win || win.isMaximized() || win.isFullScreen()) return;
       if (phase === 'start') toolbarDrag = { cursor:screen.getCursorScreenPoint(), position:win.getPosition() };
       else if (phase === 'end') toolbarDrag = null;
       else if (phase === 'move' && toolbarDrag) {
@@ -107,10 +177,18 @@ else {
     ]));
     await win.webContents.session.cookies.set({url:origin, name:'router_session', value:managementToken, httpOnly:true, sameSite:'strict', path:'/'});
     await win.loadURL(origin);
+    updateTray();
+    router.store.on('change', updateTray);
+    app.once('before-quit',()=>{router.store.off('change', updateTray);tray?.destroy();});
   }).catch(error => {
     dialog.showErrorBox('MCP Router could not start', error.code === 'EADDRINUSE' ? 'Port 43127 is in use. Quit the browser POC or another router instance, then reopen this app.' : 'Another router may be running, or its data directory is unavailable. Quit the other router and try again.');
     app.quit();
   });
   app.on('before-quit', () => { app.isQuitting = true; });
-  app.on('activate', () => { win?.show(); });
+  app.on('activate', (_event, hasVisibleWindows) => {
+    // Activating the menu bar panel must not also reveal the main window.
+    if(hasVisibleWindows || openingPopover || popover?.isVisible())return;
+    if(win?.isMinimized())win.restore();
+    win?.show();
+  });
 }

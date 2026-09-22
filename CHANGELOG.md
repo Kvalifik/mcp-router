@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.8.0 — Menu bar access and clearer controls
+
+- Add a macOS menu bar panel with optional project and connection counts, updated when saved state changes. The default shows the app icon and project count.
+- Use native desktop menus with icons and submenus that can extend beyond the window.
+- Add a compact project layout and full-space permission editing in the menu bar panel.
+- Clarify Stable and Beta connection access, with explicit authorization and reconnect actions.
+- Show AI-app setup status with checkmarks and warnings, plus separate setup and reconnect actions.
+- Refine project links, toolbar controls, Beta labels, and connection-test loading feedback.
+- Keep available-update notifications visible until dismissed.
+
 ## 0.7.8 — Stable pinned project order
 
 - Keep pinned projects in alphabetical order when turned on or off.

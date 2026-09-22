@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { EventEmitter } from 'node:events';
 import privateDirectories from './private-directory.cjs';
 import { compareGrants } from './grant-comparison.js';
 import { GROUPS, permissions } from './permissions.js';
@@ -7,12 +8,14 @@ import { randomBytes, createCipheriv, createDecipheriv, createHash } from 'node:
 
 export const fingerprint = value => value ? createHash('sha256').update(value).digest('hex').slice(0, 12) : null;
 const securedDirectory = Symbol('securedDirectory');
-export class Store {
+export class Store extends EventEmitter {
   static async open(dir) {
     await privateDirectories.privateDirectoryAsync(dir);
     return new Store(dir, securedDirectory);
   }
   constructor(dir, secured) {
+    super();
+    this.changePending = false;
     this.dir = dir;
     if (secured !== securedDirectory) privateDirectories.privateDirectory(dir);
     const keyFile = path.join(dir, 'vault.key');
@@ -36,6 +39,11 @@ export class Store {
     const temp = `${this.file}.tmp`;
     fs.writeFileSync(temp, Buffer.concat([iv, cipher.getAuthTag(), encrypted]), { mode: 0o600 });
     fs.renameSync(temp, this.file);
+    // Notify after persistence; combine saves made in the same synchronous turn.
+    if (!this.changePending) {
+      this.changePending = true;
+      queueMicrotask(() => { this.changePending = false; this.emit('change'); });
+    }
   }
   connection(id) {
     const c = Object.hasOwn(this.data.connections, id) ? this.data.connections[id] : null;
