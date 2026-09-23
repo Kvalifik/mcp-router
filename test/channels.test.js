@@ -72,3 +72,39 @@ test('OAuth tokens survive refresh without leaking credentials into summaries',a
  assert.equal(store.connection(id).tokens.scope,undefined);
  assert.equal(store.connection(id).beta.tokens.scope,'cms:write');
 });
+
+test('owner authorization works while off without enabling AI access or mixing grants',async t=>{
+ for(const channel of ['stable','beta']) {
+  const {store,oauth,router,id,opened}=fixture(t);
+  await router.sites(id);
+  const project=Object.values(store.data.projects)[0];
+  router.edit('projects',project.id,{enabled:true});
+  router.setConnection(id,false);
+  const other=channel==='stable'?'beta':'stable';
+  const otherSession=other==='stable'?store.connection(id):(store.connection(id).beta ||= {});
+  otherSession.tokens={access_token:'other-grant'};
+  await oauth.begin(id,channel);
+  const grant=channel==='stable'?store.connection(id):store.connection(id).beta;
+  await oauth.complete(id,{...grant.pending,code:'code'});
+  await router.sites(id,{channel,afterAuthorization:true});
+  assert.equal(store.connection(id).enabled,false);
+  assert.equal(project.enabled,true);
+  assert.equal(grant.inventoryPending,false);
+  assert.equal(grant.tokens.access_token,`${channel}-token`);
+  assert.equal(otherSession.tokens.access_token,'other-grant');
+  const count=opened.length;
+  await assert.rejects(router.call('read_project_site',{projectId:project.id}),/denied/);
+  await assert.rejects(router.sites(id),/disabled/);
+  await router.resyncDueProjects();
+  assert.equal(opened.length,count);
+ }
+});
+
+test('switching off during OAuth does not cancel owner authorization',async t=>{
+ const {store,oauth,router,id}=fixture(t);
+ await oauth.begin(id,'beta');
+ const pending={...store.connection(id).beta.pending};
+ router.setConnection(id,false);
+ assert.equal(await oauth.complete(id,{...pending,code:'code'}),'beta');
+ assert.equal(store.connection(id).enabled,false);
+});

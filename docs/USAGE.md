@@ -20,6 +20,8 @@ disabled, with default permissions selected. Review them before enabling project
 
 Open a connection’s **More options → Connection access** to review Stable and Beta
 authorization separately and compare their authorized project inventories.
+You can authorize or reconnect while the connection is off. Authorization refreshes
+its project inventory without enabling the connection or granting AI access.
 When reconnecting, include all projects that should retain access. The router cannot
 inspect the full Webflow permission grant. Its restrictions apply only to calls
 passing through MCP Router; Webflow still enforces its own access restrictions.

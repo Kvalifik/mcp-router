@@ -127,7 +127,6 @@ export class Router {
   setConnection(id, enabled) {
     if (typeof enabled !== 'boolean') throw new Error('enabled must be boolean');
     const c = this.store.connection(id); c.enabled = enabled;
-    if (!enabled) { delete c.pending; if(c.beta)delete c.beta.pending; }
     this.store.audit('connection_toggled', { connectionId: id, enabled });
   }
   project(id, capability = 'site:read') {
@@ -175,7 +174,7 @@ export class Router {
     this.store.audit('connection_deleted_permanently', {id});
   }
   restore() { throw new Error('Deleted connections cannot be restored'); }
-  async sites(id, { refresh = false, channel = this.store.data.settings.defaultChannel || 'stable', automatic = false, now = Date.now() } = {}) {
+  async sites(id, { refresh = false, channel = this.store.data.settings.defaultChannel || 'stable', automatic = false, afterAuthorization = false, now = Date.now() } = {}) {
     return this.serial(id, async () => {
       const key = `${id}:${channel}`;
       if (automatic) {
@@ -190,13 +189,13 @@ export class Router {
         if (Number.isFinite(checked) && now - checked < 60 * 60_000) return;
       }
       const c = this.store.connection(id), auth=session(this.store,id,channel);
-      if (!c.enabled || !auth.tokens) throw new Error('Connection disabled or authorization required');
+      if ((!c.enabled && !afterAuthorization) || !auth.tokens) throw new Error('Connection disabled or authorization required');
       let client;
       try {
         if (refresh) await this.oauth.refresh(id,channel);
         client = await this.open(this.oauth.provider(id,false,channel));
         const sites = await client.listSites();
-        if (!c.enabled || c.deletedAt) throw new Error('Connection was disabled during the request');
+        if ((!c.enabled && !afterAuthorization) || c.deletedAt) throw new Error('Connection was disabled during the request');
         if(channel==='stable')c.stableSites=sites; else {c.stableSites ||= c.sites || []; auth.sites=sites;}
         c.sites=[...new Map([...(c.stableSites||[]),...(c.beta?.sites||[])].map(s=>[s.id,s])).values()];
         auth.lastChecked=new Date().toISOString(); auth.inventoryPending=false; auth.status='connected'; auth.lastError=null; auth.status = 'connected'; c.lastError = null;

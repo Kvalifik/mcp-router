@@ -90,7 +90,6 @@ export class OAuthManager {
   provider(id, interactive = false, channel = 'stable') { return new Provider(this.store, id, this.origin, interactive, channel); }
   async begin(id, channel = this.store.data.settings?.defaultChannel || 'stable') {
     const root=this.store.connection(id), c=session(this.store,id,channel);
-    if (!root.enabled) throw new Error('Connection disabled');
     delete root.pending; if(root.beta)delete root.beta.pending; root.oauthChannel=channel;
     delete c.tokens; c.inventoryPending=true;
     c.pending = { state: nonce(), browserNonce: nonce(), createdAt: Date.now() };
@@ -98,7 +97,7 @@ export class OAuthManager {
     const provider = this.provider(id, true, channel);
     try {
       const result = await this.authFn(provider, { serverUrl: endpoint(channel), fetchFn: this.fetchFn });
-      if (result !== 'REDIRECT' || !provider.authorizationUrl || !root.enabled || !c.pending) throw new Error('OAuth did not produce an authorization URL');
+      if (result !== 'REDIRECT' || !provider.authorizationUrl || root.deletedAt || !c.pending) throw new Error('OAuth did not produce an authorization URL');
       return { url: provider.authorizationUrl, browserNonce: c.pending.browserNonce };
     } catch {
       delete c.pending; c.status = 'needs_authorization';
@@ -109,7 +108,7 @@ export class OAuthManager {
   }
   async complete(id, { state, code, browserNonce, error }) {
     const root=this.store.connection(id), channel=root.oauthChannel || 'stable', c=session(this.store,id,channel), pending=c.pending;
-    if (!root.enabled || !pending || !state || pending.state !== state || !browserNonce || pending.browserNonce !== browserNonce || Date.now() - pending.createdAt > 10 * 60_000 || pending.used) {
+    if (root.deletedAt || !pending || !state || pending.state !== state || !browserNonce || pending.browserNonce !== browserNonce || Date.now() - pending.createdAt > 10 * 60_000 || pending.used) {
       throw new Error('Invalid or expired OAuth callback');
     }
     pending.used = true; this.store.save();
