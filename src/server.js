@@ -65,7 +65,7 @@ export function createDashboard(router, oauth, origin, { managementToken = nonce
             state: url.searchParams.get('state'), code: url.searchParams.get('code'), error: url.searchParams.get('error'),
             browserNonce: cookies(req)[`oauth_${id}`]
           }));
-          await router.sites(id,{channel}).catch(() => {});
+          await router.sites(id,{channel,afterAuthorization:true}).catch(() => {});
           res.setHeader('Set-Cookie', `oauth_${id}=; Path=/oauth/callback/${id}; HttpOnly; SameSite=Lax; Max-Age=0`);
           finishOAuth(res, true);
         } catch {

@@ -20,7 +20,8 @@ guaranteed support period.
 - The management interface requires an owner session, binds to loopback, and
   checks Host/Origin and CSRF headers; the renderer uses Electron isolation and sandboxing.
 - OAuth uses PKCE and browser-bound, one-use state; Stable and Beta grants are
-  separate.
+  separate. Owner-initiated authorization and its project inventory check can run
+  while a connection is off; AI calls and background sync remain blocked.
 - Router permissions restrict calls independently of Webflow authorization. The
   router cannot inspect the full upstream permission grant; Webflow enforces it.
 - The pinned operation catalog and project ownership checks reject unknown or

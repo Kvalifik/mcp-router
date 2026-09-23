@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.1 — Reconnect disabled connections
+
+- Allow Stable and Beta authorization and reconnection while a connection is turned off.
+- Refresh the authorized project inventory without enabling AI access or background sync.
+- Keep owner authorization active when a connection is switched off during the browser flow.
+
 ## 0.8.0 — Menu bar access and clearer controls
 
 - Add a macOS menu bar panel with optional project and connection counts, updated when saved state changes. The default shows the app icon and project count.
