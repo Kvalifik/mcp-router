@@ -6,6 +6,16 @@ A local desktop app for macOS and Windows by [Kvalifik](https://kvalifik.dk).
 Give your AI tools access to projects across multiple Webflow workspaces at the
 same time through one MCP connection, with access controls for each project.
 
+## What it makes easier
+
+- **Connect multiple workspaces at once.** Use projects across your Webflow workspaces through one MCP connection.
+- **Set permissions per project.** Give projects different access levels, even within the same workspace.
+- **Change permissions in seconds.** Adjust access without reauthorizing, within your existing Webflow grant.
+- **Open the site or Designer directly.** Jump from a project in the app to its website or Webflow Designer.
+- **Switch between Stable and Beta quickly.** Choose which MCP version a project uses once you’ve authorized both.
+- **Connect your AI apps with one click.** Set up the connection for Codex, Claude Desktop, Claude Code, Cursor, VS Code, or Gemini CLI, then follow the app’s restart or reload instructions.
+- **Run it locally, for free.** No Kvalifik account, subscription, paid tiers, or feature limits.
+
 MCP Router is independent software. It is not affiliated with, endorsed by,
 sponsored by, or approved by Webflow, OpenAI, Anthropic, or the other services
 it connects to. Product names identify compatible services only.
@@ -57,22 +67,6 @@ and reload/restart connected AI apps. Connections and settings stay in the
 separate application-data folder. Do not delete that folder when updating.
 
 Update checks use public releases from `Kvalifik/mcp-router`.
-
-## What it does
-
-- Work across multiple Webflow workspaces without switching connections in your AI tools.
-- Authorize Webflow access with OAuth, without sharing account passwords.
-- Discover projects automatically; new projects start disabled.
-- Control read, write, delete, and publish actions per project.
-- Use read-only, no-publishing, full-access, or custom permission presets.
-- Pin frequently used projects and organize connections.
-- Configure local MCP clients, including Codex, Claude Desktop, Claude Code,
-  Cursor, VS Code, and Gemini CLI.
-- Follow system appearance or choose light or dark mode.
-
-The app also includes separately authorized Beta MCP
-support. Beta access requires separate authorization and remains subject to
-Webflow’s applicable terms and availability.
 
 ## Status
 
