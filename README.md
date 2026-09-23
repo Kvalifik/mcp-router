@@ -158,6 +158,13 @@ have separate grants; missing Beta access does not fall back to Stable.
 Read the [usage guide](docs/USAGE.md), [privacy notice](PRIVACY.md),
 [security policy](SECURITY.md), and [usage terms](TERMS.md).
 
+## Warranty and liability
+
+MCP Router is provided “as is,” without warranties. Kvalifik is not liable for
+losses arising from its use, including lost revenue, business interruption, or
+lost data. Review permissions carefully and keep backups before using it on
+live projects. See the [usage terms](TERMS.md) and [license](LICENSE).
+
 ## License
 
 Source-available under the [MCP Router Source-Available License 1.1](LICENSE).
