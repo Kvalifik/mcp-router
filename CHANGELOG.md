@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.2 — Animated project ordering
+
+- Animate projects sliding into place when enabling, disabling, pinning, or renaming changes their order.
+- Respect reduced-motion preferences and preserve the existing project sorting rules.
+
 ## 0.8.1 — Reconnect disabled connections
 
 - Allow Stable and Beta authorization and reconnection while a connection is turned off.
