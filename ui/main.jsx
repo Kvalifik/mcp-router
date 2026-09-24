@@ -21,6 +21,50 @@ import { permissionUnavailable, availablePreset, connectionTestUnavailable } fro
 import appPackage from '../package.json';
 import kvalifikLogo from '../assets/brand/kvalifik.svg';
 
+// Measure before React moves keyed rows, then animate from their previous positions.
+class AnimatedProjectList extends React.Component {
+  list = React.createRef();
+  animations = [];
+
+  stopAnimations = () => {
+    this.animations.forEach(animation => animation.cancel());
+    this.animations = [];
+  };
+
+  getSnapshotBeforeUpdate(previous) {
+    const before = previous.ids;
+    const after = this.props.ids;
+    if (before.length !== after.length || before.some(id => !after.includes(id)) ||
+        before.every((id, index) => id === after[index])) return null;
+    return new Map(Array.from(this.list.current.children, row =>
+      [row.dataset.projectId, row.getBoundingClientRect().top]));
+  }
+
+  componentDidUpdate(previous, state, positions) {
+    if (!positions) {
+      if (previous.ids.length !== this.props.ids.length ||
+          previous.ids.some(id => !this.props.ids.includes(id))) this.stopAnimations();
+      return;
+    }
+    this.stopAnimations();
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const moves = Array.from(this.list.current.children, row => ({
+      row, delta: positions.get(row.dataset.projectId) - row.getBoundingClientRect().top,
+    }));
+    this.animations = moves.filter(({ delta }) => Number.isFinite(delta) && Math.abs(delta) > 1)
+      .map(({ row, delta }) => row.animate([
+        { transform: `translateY(${delta}px)` },
+        { transform: 'translateY(0)' },
+      ], { duration: 320, easing: 'cubic-bezier(0.2, 0, 0, 1)' }));
+  }
+
+  componentWillUnmount() { this.stopAnimations(); }
+
+  render() {
+    return <div ref={this.list} aria-label={this.props.label} className="project-list border-t">{this.props.children}</div>;
+  }
+}
+
 function PublisherLink({ className = '', large = false, children }) {
   return <a href="https://kvalifik.dk" target="_blank" rel="noopener noreferrer" className={`inline-flex items-center gap-1 rounded-sm underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${className}`} onClick={async event => {
     if (!window.routerDesktop) return;
@@ -358,13 +402,13 @@ function App() {
             <Switch className="ml-2" aria-label={`Enable ${c.name}`} checked={c.enabled} disabled={busy} onCheckedChange={enabled=>action(()=>perform(`/api/connections/${c.id}/toggle`,{enabled}))} />
           </div>
         </div>
-        <AccordionContent className="pb-0"><div aria-label={`${c.name} projects`} className="project-list border-t">
+        <AccordionContent className="pb-0"><AnimatedProjectList label={`${c.name} projects`} ids={c.visible.map(p=>p.id)}>
           {!c.visible.length&&<p className="p-5 text-sm text-muted-foreground">{c.tokenFingerprint?'Sync this connection to discover projects.':'Connect with OAuth to discover projects.'}</p>}
-          {c.visible.map(p=><div key={p.id} className="project-row flex items-center gap-2 pl-8 pr-3 py-2.5"><Button variant="ghost" size="icon-xs" className={`-ml-5 shrink-0 ${p.favourite?'text-foreground':'text-muted-foreground'}`} aria-pressed={!!p.favourite} aria-label={`${p.favourite?'Unpin':'Pin'} ${p.name}`} disabled={busy} onClick={()=>action(()=>perform(`/api/projects/${p.id}/edit`,{favourite:!p.favourite}))}><Pin className={`size-3.5 ${p.favourite?'fill-current':''}`} /></Button><div className="project-name mr-auto min-w-0"><div className="project-title flex min-w-0 items-center gap-1"><h3 className="truncate text-sm font-medium" title={p.name}>{p.name}</h3><ProjectLinks project={p} /></div><div className="project-badges flex items-center gap-2">{(p.channel&&p.channel!=='inherit'?p.channel:c.channel)==='beta'&&<BetaBadge project={p} connection={c} onClick={()=>setModal({type:'permissions',item:p})} />}<AccessBadge project={p} connection={c} permissionKeys={permissionKeys} onClick={()=>setModal({type:'permissions',item:p})} /></div></div><div className="project-controls flex shrink-0 items-center gap-0.5">
+          {c.visible.map(p=><div key={p.id} data-project-id={p.id} className="project-row flex items-center gap-2 pl-8 pr-3 py-2.5"><Button variant="ghost" size="icon-xs" className={`-ml-5 shrink-0 ${p.favourite?'text-foreground':'text-muted-foreground'}`} aria-pressed={!!p.favourite} aria-label={`${p.favourite?'Unpin':'Pin'} ${p.name}`} disabled={busy} onClick={()=>action(()=>perform(`/api/projects/${p.id}/edit`,{favourite:!p.favourite}))}><Pin className={`size-3.5 ${p.favourite?'fill-current':''}`} /></Button><div className="project-name mr-auto min-w-0"><div className="project-title flex min-w-0 items-center gap-1"><h3 className="truncate text-sm font-medium" title={p.name}>{p.name}</h3><ProjectLinks project={p} /></div><div className="project-badges flex items-center gap-2">{(p.channel&&p.channel!=='inherit'?p.channel:c.channel)==='beta'&&<BetaBadge project={p} connection={c} onClick={()=>setModal({type:'permissions',item:p})} />}<AccessBadge project={p} connection={c} permissionKeys={permissionKeys} onClick={()=>setModal({type:'permissions',item:p})} /></div></div><div className="project-controls flex shrink-0 items-center gap-0.5">
             <IconButton label={`Settings for ${p.name}`} icon={Settings2} disabled={busy} onClick={()=>setModal({type:'permissions',item:p})} />
             <Switch className="ml-2" aria-label={`Enable ${p.name}`} checked={p.enabled} disabled={busy||!c.enabled||p.available===false} onCheckedChange={enabled=>action(()=>perform(`/api/projects/${p.id}/edit`,{enabled}))} />
           </div></div>)}
-        </div></AccordionContent>
+        </AnimatedProjectList></AccordionContent>
       </AccordionItem>;})}
     </Accordion>
     <Dialog open={!!modal} onOpenChange={open=>{if(!open&&!busy)void closeModal();}}><DialogContent onInteractOutside={event=>{if(event.target.closest('[data-sonner-toaster]'))event.preventDefault();}} onOpenAutoFocus={event=>{if(['permissions','rename'].includes(modal?.type)){event.preventDefault();event.target.focus();}}} className={`dialog-shell ${['permissions','defaults'].includes(modal?.type)?'permission-dialog sm:max-w-2xl':'sm:max-w-lg'}`}>{modal?.type!=='permissions'&&<DialogHeader className="shrink-0 pr-6 text-left"><DialogTitle>{modal?.initialNaming?'Name your connection':modal&&titles[modal.type]}</DialogTitle><DialogDescription className={['permissions','about'].includes(modal?.type)?'sr-only':undefined}>{modal?.initialNaming?'Webflow is connected. What would you like to call this connection?':modal?.type==='connect'?'Choose access in Webflow, then limit AI access here.':modal?.type==='permissions'?'Edit the project name and permissions.':modal?.type==='about'?'Application information and third-party licenses.':modal?.type==='defaults'?'Starting permissions for automatically discovered projects.':modal?.type==='delete'?`Remove ${modal.item.name} from this router?`:modal?.type==='channel'?'Review Stable and β Beta access and reconnect either version.':modal?.type==='order'?'Drag connections or use the arrows to change their order.':modal?.type==='diagnostics'?'Connection checks and recent activity.':'Change the local display name.'}</DialogDescription></DialogHeader>}

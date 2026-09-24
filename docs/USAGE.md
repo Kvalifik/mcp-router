@@ -45,6 +45,8 @@ disabled. Failed requests retain the previous inventory.
 Pinned projects appear first within each connection, in alphabetical order. Turning
 a pinned project on or off does not change its position. Unpinned projects appear
 below them, with enabled projects first, then alphabetically within each group.
+Projects slide into their new positions when this order changes, making toggles
+and pinning easier to follow. The animation respects reduced-motion preferences.
 
 ## Project permissions
 
