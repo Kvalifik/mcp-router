@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { buttonVariants } from "./button.jsx"
 import { cn } from "@/lib/utils"
 import { ChevronDownIcon } from "lucide-react"
 import { Accordion as AccordionPrimitive } from "radix-ui"
@@ -30,18 +31,21 @@ function AccordionTrigger({
   children,
   ...props
 }: React.ComponentProps<typeof AccordionPrimitive.Trigger> & { headerClassName?: string }) {
+  const [focused, setFocused] = React.useState(false);
   return (
     <AccordionPrimitive.Header className={cn("flex", headerClassName)}>
       <AccordionPrimitive.Trigger
         data-slot="accordion-trigger"
+        onFocus={event => setFocused(event.currentTarget.matches(":focus-visible"))}
+        onBlur={() => setFocused(false)}
         className={cn(
-          "flex flex-1 items-start justify-between gap-4 rounded-md py-4 text-left text-sm font-medium transition-all outline-none hover:underline focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 [&[data-state=open]>svg]:rotate-180",
+          "flex flex-1 items-start justify-between gap-4 rounded-md py-4 text-left text-sm font-medium transition-all outline-none hover:underline focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 [&[data-state=open]_[data-slot=accordion-chevron]_svg]:rotate-180",
           className
         )}
         {...props}
       >
         {children}
-        <ChevronDownIcon className="pointer-events-none size-4 shrink-0 translate-y-0.5 text-muted-foreground transition-transform duration-200" />
+        <span data-slot="accordion-chevron" className="pointer-events-none relative inline-flex size-4 shrink-0 items-center justify-center" aria-hidden="true"><span data-slot="accordion-chevron-feedback" data-hovered={focused} className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "absolute pointer-events-auto")}><ChevronDownIcon className="size-4 text-foreground transition-transform duration-200" /></span></span>
       </AccordionPrimitive.Trigger>
     </AccordionPrimitive.Header>
   )

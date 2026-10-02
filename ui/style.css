@@ -36,6 +36,17 @@ button:disabled { cursor:not-allowed; }
 .permission-table tbody tr { border-bottom:0; }
 .dialog-scroll { min-height:0; max-height:60dvh; overflow:auto; overscroll-behavior:contain; }
 .project-list { max-height:52dvh; overflow:auto; overscroll-behavior:auto; }
+.project-access-badge, .project-beta-badge { width:20px; height:20px; padding:3px; justify-content:center; flex-shrink:0; border:1px solid var(--border); border-radius:999px; color:var(--muted-foreground); }
+.project-access-badge { background:var(--secondary); }
+.project-beta-badge { background:transparent; }
+.project-beta-badge:has(.lucide-triangle-alert) { color:var(--color-amber-700); }
+.dark .project-beta-badge:has(.lucide-triangle-alert) { color:var(--color-amber-400); }
+.project-access-badge > svg, .project-beta-badge > svg { width:12px; height:12px; }
+.project-beta-badge > span { font-size:12px; }
+.project-access-badge:hover, .project-beta-badge:hover,
+.project-access-badge:focus-visible, .project-beta-badge:focus-visible { background:var(--secondary); color:var(--foreground); }
+.project-badges { gap:8px; margin-right:10px; flex-shrink:0; }
+.connection-header [data-slot="accordion-trigger"] { padding-right:8px; }
 .project-row + .project-row { border-top:1px solid var(--color-border); }
 
 
@@ -80,12 +91,12 @@ body:has([data-slot="dropdown-menu-content"]) .app-header-integrated, .app-heade
   .project-row > button { margin-left:0; grid-column:1; grid-row:1; }
   .project-name { grid-column:2; grid-row:1; }
   .project-controls { grid-column:3; grid-row:1; justify-self:end; }
-  .project-controls > button:first-child { width:24px; height:24px; }
-  .project-access-badge, .project-beta-badge { background:transparent; border:0; border-radius:4px; padding:2px 0; color:var(--muted-foreground); font-weight:400; }
-  .project-beta-badge { padding:2px 0; }
-  .project-beta-badge:has(.lucide-triangle-alert) { color:var(--color-amber-700); }
-  .project-access-badge:hover { background:transparent; text-decoration:underline; }
-  .project-badges { justify-content:flex-start; gap:4px; }
+  .connection-header { padding-right:10px; }
+  .connection-header [data-slot="accordion-chevron-feedback"] { width:24px; height:24px; }
+  .connection-controls > [aria-haspopup="menu"] { width:24px; height:24px; }
+  .project-controls > button:first-of-type { width:24px; height:24px; }
+  .project-row { padding-top:9px; padding-bottom:9px; }
+  .project-title h3 { min-width:0; }
   .dialog-shell [data-slot="dialog-footer"] { flex-direction:row; flex-wrap:wrap; justify-content:flex-end; }
   .project-list { max-height:none; }
   .dialog-shell {
