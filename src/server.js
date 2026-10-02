@@ -104,6 +104,10 @@ export function createDashboard(router, oauth, origin, { managementToken = nonce
         if(Object.keys(data).length!==1||!Object.hasOwn(data,'ids'))throw new Error('Invalid order');
         router.reorderConnections(data.ids);return json(res,{ok:true});
       }
+      if (url.pathname === '/api/settings/disabled-project-discovery') {
+        if(Object.keys(data).length!==1 || !Object.hasOwn(data,'enabled'))throw new Error('Invalid settings');
+        router.setDisabledProjectDiscovery(data.enabled);return json(res,{ok:true});
+      }
       if (url.pathname === '/api/settings/default-channel') {
         if(Object.keys(data).length!==1)throw new Error('Invalid settings');
         router.setDefaultChannel(data.channel);return json(res,{ok:true});
@@ -128,7 +132,7 @@ export function createDashboard(router, oauth, origin, { managementToken = nonce
         if (action === 'toggle') { router.setConnection(id, data.enabled); return json(res, { ok: true }); }
         return json(res, { sites: await router.sites(id, { refresh: action === 'refresh', channel:data.channel || router.store.data.settings.defaultChannel || 'stable' }) });
       }
-      if (url.pathname === '/api/read-project') return json(res, await router.call('read_project_site', data));
+      if (url.pathname === '/api/read-project') return json(res, await router.testProject(data));
       return json(res, { error: 'Unknown route' }, 404);
     } catch {
       // OAuth libraries sometimes include upstream payloads in errors. Never echo them.

@@ -14,7 +14,10 @@ export function createDemoState(seed) {
     return value;
   };
   function mutate(path, body = {}) {
-    if (path === '/settings/default-channel') state.settings.defaultChannel = channel(body.channel);
+    if (path === '/settings/disabled-project-discovery') {
+      if (typeof body.enabled !== 'boolean') throw new Error('Invalid settings');
+      state.settings.discoverDisabledProjects = body.enabled;
+    } else if (path === '/settings/default-channel') state.settings.defaultChannel = channel(body.channel);
     else if (path === '/settings/default-permissions') {
       const next = validatePermissions(body.permissions);
       for (const project of state.projects) {

@@ -147,7 +147,10 @@ cannot prevent the same OS user or an agent with local filesystem access from
 changing its code or stored settings.
 
 New projects are disabled but initially have all known permissions selected;
-review the defaults before enabling them. **No publishing** blocks explicit
+review the defaults before enabling them. AI name searches can discover disabled
+project names by default, without accessing their content. Turn this off in
+**Settings → Let AI discover disabled project names**. Disabled connections
+remain hidden. **No publishing** blocks explicit
 publish/unpublish operations. Some writes can affect live settings without a
 publish call. A sent write cannot be rolled back by disabling the project.
 

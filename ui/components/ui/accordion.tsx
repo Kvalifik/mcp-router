@@ -45,7 +45,7 @@ function AccordionTrigger({
         {...props}
       >
         {children}
-        <span data-slot="accordion-chevron" className="pointer-events-none relative inline-flex size-4 shrink-0 items-center justify-center" aria-hidden="true"><span data-slot="accordion-chevron-feedback" data-hovered={focused} className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "absolute pointer-events-auto")}><ChevronDownIcon className="size-4 text-foreground transition-transform duration-200" /></span></span>
+        <span data-slot="accordion-chevron" className="pointer-events-none relative inline-flex size-4 shrink-0 items-center justify-center" aria-hidden="true"><span data-slot="accordion-chevron-feedback" data-hovered={focused} className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "absolute pointer-events-auto")}><ChevronDownIcon className="size-4 text-foreground transition-transform duration-200 motion-reduce:transition-none" /></span></span>
       </AccordionPrimitive.Trigger>
     </AccordionPrimitive.Header>
   )
@@ -59,7 +59,7 @@ function AccordionContent({
   return (
     <AccordionPrimitive.Content
       data-slot="accordion-content"
-      className="overflow-hidden text-sm data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down"
+      className="overflow-hidden text-sm data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down motion-reduce:animate-none"
       {...props}
     >
       <div className={cn("pt-0 pb-4", className)}>{children}</div>

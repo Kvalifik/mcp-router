@@ -73,6 +73,13 @@ test('real MCP stdio client enforces live policy through the daemon', async t =>
   assert.equal((await client.listResourceTemplates()).resourceTemplates.length,1);
   const projects = await client.callTool({ name: 'list_projects', arguments: {} });
   assert.equal(JSON.parse(projects.content[0].text)[0].id, 'a');
+  router.saveProject({id:'draft', name:'Example draft', connectionId:id, siteId:id});
+  const search = async () => JSON.parse((await client.callTool({name:'list_projects', arguments:{query:'example'}})).content[0].text);
+  assert.deepEqual(await search(), [{name:'Example draft', status:'disabled', nextStep:'Ask the user to enable this project in MCP Router before accessing it.'}]);
+  router.setDisabledProjectDiscovery(false);
+  assert.deepEqual(await search(), []);
+  router.setDisabledProjectDiscovery(true);
+  assert.equal((await client.callTool({name:'read_project_site', arguments:{projectId:'draft'}})).isError, true);
   const read = await client.callTool({ name: 'read_project_site', arguments: { projectId: 'a' } });
   assert.equal(JSON.parse(read.content[0].text).id, id);
   router.setConnection(id, false);

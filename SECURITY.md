@@ -22,6 +22,10 @@ guaranteed support period.
 - OAuth uses PKCE and browser-bound, one-use state; Stable and Beta grants are
   separate. Owner-initiated authorization and its project inventory check can run
   while a connection is off; AI calls and background sync remain blocked.
+- AI project-name searches expose matching disabled project names by default,
+  but no IDs, permissions, or content. The owner can disable this in Settings.
+  Disabled connections and unavailable or deleted projects remain hidden.
+  Discovery uses local inventory and does not grant execution access.
 - Router permissions restrict calls independently of Webflow authorization. The
   router cannot inspect the full upstream permission grant; Webflow enforces it.
 - The pinned operation catalog and project ownership checks reject unknown or
@@ -51,3 +55,8 @@ The local named pipe requires a random per-launch token stored inside that direc
 client configuration contains the directory path, not the token. POSIX file modes are
 not relied upon for Windows access control. This does not protect against the same
 OS user, administrators, or software running as that user.
+
+The owner-authenticated dashboard can test saved Site → Read access for a disabled
+project without enabling it. This diagnostic is not an MCP tool and retains the
+saved channel, OAuth authorization, connection status, and project permission
+checks. Disabled projects remain inaccessible through MCP.

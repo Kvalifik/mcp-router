@@ -189,3 +189,7 @@ public/
 !/assets/icons/menu/Unplug.png
 !/scripts/demo-state.mjs
 !/test/demo-state.test.js
+
+!/ui/components/ui/animated-content.jsx
+
+!/licenses/motion-primitives.txt

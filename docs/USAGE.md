@@ -59,8 +59,8 @@ Default permissions remain editable because they are a template for future proje
 Router permissions only limit access already granted by Webflow. Editable toggles
 do not confirm upstream permission; Webflow may still reject restricted actions.
 
-**Test connection** uses saved settings and requires an enabled project, an enabled
-connection, and Site → Read. If testing is unavailable, the reason appears above
+**Test connection** uses saved settings and requires an enabled connection and Site → Read.
+Disabled projects can be tested without enabling them for AI clients. If testing is unavailable, the reason appears above
 the button. It tests a read, not write, delete, or publish access. Enabling a project
 exposes its allowed actions to connected AI clients; review permissions first.
 
@@ -118,13 +118,15 @@ writes enforce a preparation ID.
 If an agent still misses it, say: “Use MCP Router to find this Webflow project and
 load its project instructions before proceeding.”
 
-- `list_projects`: enabled projects and their effective permission keys.
+- `list_projects`: enabled projects and their effective permission keys. Supply `query` to search names (case-insensitive substring, 1–80 characters). Searches also return up to 20 matching disabled project names with a disabled status and instructions to enable them; narrow the query if the limit is reached. Disabled matches include no IDs, permissions, or project content. The default list remains enabled-only.
 - `read_project_site`: compatible site-metadata read.
 - `get_project_operations`: permitted action IDs; pass `operationId` to retrieve its exact JSON parameter schema.
 - `get_project_guidance`: live Webflow server instructions, guide and original descriptions of tools with permitted operations.
 - `prepare_project`: Webflow guide plus enabled project rules/skills and a ten-minute preparation ID. Agents must read and follow the returned instructions before writing.
 - `read_webflow`: execute one permitted read operation.
 - `write_webflow`: execute one permitted write/delete/publish operation with its preparation ID.
+
+**Settings → Let AI discover disabled project names** is on by default, including for existing installations. Turn it off to hide disabled projects from AI name searches. Projects under disabled connections, deleted projects, and projects marked unavailable are always hidden. Discovery uses the saved inventory, grants no access, and does not enable projects.
 
 Both execution tools accept `projectId`, `operationId`, `params`, and (where required) `pageId`. The router injects the selected site's ID. Collection/page/asset/folder/form/webhook IDs are checked against site-scoped discovery before dispatch. Unknown actions and malformed payloads fail closed. Calls serialize per OAuth connection. Policies are checked before dispatch and before releasing responses. A write already sent to Webflow cannot be rolled back by revoking a permission; do not automatically retry ambiguous write failures.
 
