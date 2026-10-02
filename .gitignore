@@ -181,3 +181,11 @@ public/
 !/test/store-events.test.js
 
 !/assets/icons/menu/TriangleAlert.png
+
+!/assets/icons/menu/CloudOff.png
+!/assets/icons/menu/Eye.png
+!/assets/icons/menu/Ban.png
+!/assets/icons/menu/CheckCheck.png
+!/assets/icons/menu/Unplug.png
+!/scripts/demo-state.mjs
+!/test/demo-state.test.js

@@ -28,7 +28,7 @@ else {
       router.store.data.settings ||= {}; router.store.data.settings.menuBar = value; router.store.save(); return value;
     });
     ipcMain.handle('open-main-window', event => { if(!allowed(event))throw new Error('Denied'); showMain(); });
-    const nativeMenuIcons = Object.fromEntries(['SunMoon','PanelTop','Monitor','Server','ArrowDownUp','ShieldCheck','Activity','RefreshCw','Info','Pencil','Trash2','MessageSquare','Code2','Terminal','Plus','Copy','Check','TriangleAlert'].map(name=>{
+    const nativeMenuIcons = Object.fromEntries(['SunMoon','PanelTop','Monitor','Server','ArrowDownUp','ShieldCheck','Activity','RefreshCw','Info','Pencil','Trash2','MessageSquare','Code2','Terminal','Plus','Copy','Check','TriangleAlert','CloudOff','Eye','Ban','CheckCheck','Unplug'].map(name=>{
       const icon=nativeImage.createEmpty();
       icon.addRepresentation({scaleFactor:2,buffer:require('node:fs').readFileSync(path.join(__dirname,`../assets/icons/menu/${name}.png`))});
       icon.setTemplateImage(true);

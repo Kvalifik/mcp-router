@@ -29,7 +29,7 @@ function createTrayTextUpdater() {
   let previousTray, previousTitle, previousTooltip;
   return (tray, mode, status) => {
     const title = menuBarTitle(mode, status);
-    const tooltip = `${status.connections} enabled connections · ${status.projects} enabled projects${status.attention?' · Access needs attention':''}`;
+    const tooltip = `${status.connections} enabled ${status.connections===1?'connection':'connections'} · ${status.projects} enabled ${status.projects===1?'project':'projects'}${status.attention?' · Access needs attention':''}`;
     if (tray !== previousTray || title !== previousTitle) tray.setTitle(title, {fontType:'monospacedDigit'});
     if (tray !== previousTray || tooltip !== previousTooltip) tray.setToolTip(tooltip);
     previousTray = tray; previousTitle = title; previousTooltip = tooltip;

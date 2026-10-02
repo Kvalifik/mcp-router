@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.8.3 — Clearer permissions and compact controls
+
+- Add icons to permission presets and a Read & write preset that excludes Delete and Publish.
+- Show compact permission and Beta indicators with tooltips and shortcuts to project settings.
+- Align compact controls, retain publisher branding, and share button feedback with the connection chevron.
+- Move Sync projects into the connection menu and rename Connection access to Reconnect Webflow.
+- Improve singular project and connection labels and remove redundant disabled-project helper text.
+- Add an interactive, isolated demo with native menus and in-memory changes that reset on exit.
+
 ## 0.8.2 — Animated project ordering
 
 - Animate projects sliding into place when enabling, disabling, pinning, or renaming changes their order.

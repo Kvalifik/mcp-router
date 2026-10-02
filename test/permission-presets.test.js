@@ -15,3 +15,13 @@ test('No publishing blocks every publishing operation and retains other capabili
   assert.equal(accessLabel(PERMISSIONS, presetGrants(PERMISSIONS, 'read')), 'Read-only');
   assert.equal(accessLabel(PERMISSIONS, presetGrants(PERMISSIONS, 'none')), 'No permissions');
 });
+
+test('Read & write blocks delete and publish operations, including extra requirements', () => {
+  const permissions = presetGrants(PERMISSIONS, 'read-write');
+  for (const op of CATALOG) {
+    const editable = [op.permission, ...op.extraPermissions].every(key => key.endsWith(':read') || key.endsWith(':write'));
+    assert.equal(allowed({ permissions }, op), editable, op.id);
+  }
+  assert.equal(accessLabel(PERMISSIONS, permissions), 'Read & write');
+  assert.equal(accessLabel(PERMISSIONS, {...permissions, 'site:read':false}), 'Custom access');
+});

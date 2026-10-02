@@ -18,7 +18,7 @@ then use router permissions to limit AI access. Narrower authorization is suppor
 the router cannot grant access that Webflow did not authorize. New projects start
 disabled, with default permissions selected. Review them before enabling projects.
 
-Open a connection’s **More options → Connection access** to review Stable and Beta
+Open a connection’s **More options → Reconnect Webflow** to review Stable and Beta
 authorization separately and compare their authorized project inventories.
 You can authorize or reconnect while the connection is off. Authorization refreshes
 its project inventory without enabling the connection or granting AI access.
@@ -66,6 +66,14 @@ exposes its allowed actions to connected AI clients; review permissions first.
 
 Use the sliders button next to a project to edit its permissions. The searchable matrix covers 27 areas and 223 pinned Webflow actions: site metadata/publishing, CMS, pages and branches, localization, elements/builders, styles, components/props/variants, variables, assets/fonts, custom code, forms, comments, analytics, webhooks, sitemap, enterprise settings, instructions, and Designer sessions/snapshots/uploads.
 
+Project overview badges show icons for Beta and permission access. Hover or keyboard-focus
+an icon to see its label; click it to open project settings. Icons stay beside the
+row controls in the compact window.
+
+The **Presets** menu includes icons for All permissions, No publishing, Read & write,
+Read only, and No permissions. **Read & write** enables reading and editing while
+turning off Delete and Publish permissions. Presets take effect when you save.
+
 - **Read:** inspect data.
 - **Write:** create/edit or change the Designer session.
 - **Delete:** explicit removal operations.
@@ -73,7 +81,7 @@ Use the sliders button next to a project to edit its permissions. The searchable
 - A dash means Webflow currently exposes no action in that category.
 - Existing projects retain their previous permissions and enabled state. Newly discovered projects appear automatically, disabled, with all current permissions selected by default.
 - **Defaults** sets the initial permissions. Changes apply to newly discovered projects and disabled projects still using defaults. Once enabled or explicitly customized, a project keeps its own permissions.
-- Connections expand to show their projects; global search opens matching groups. Enabled projects are listed first. Sync manages project availability automatically; projects cannot be deleted locally. Previously trashed projects return disabled when available.
+- Connections expand to show their projects; global search opens matching groups. Enabled projects are listed first. **More options → Sync projects** refreshes project availability for enabled, connected connections; projects cannot be deleted locally. Previously trashed projects return disabled when available.
 - Projects follow their Webflow names until locally renamed. **Use default name** removes an override. Connections use a provider workspace name when available; otherwise their local label is retained and no Webflow default is claimed. Labels can always be overwritten.
 - All changes also require **Instructions → Read** so the agent can load project rules before writing.
 - Canvas editing/building also requires **Custom code → Write**, since element content and settings can contain executable code. The operation catalog reports these extra permission requirements.
@@ -153,7 +161,7 @@ Source mode uses `.local/`; never run it alongside the installed app on the same
 
 ## Stable and Beta
 
-Settings → Default MCP version sets the global default. A connection's Connection access
+Settings → Default MCP version sets the global default. A connection's Reconnect Webflow
 menu shows Stable and Beta authorization separately, with explicit actions to
 authorize or reconnect each version. In project settings, **MCP version**
 offers **Default (Currently Stable)** or **Default (Currently Beta)** to follow
