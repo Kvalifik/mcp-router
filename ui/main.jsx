@@ -1,8 +1,10 @@
 import { SettingsMenu, ActionMenu } from './settings-menu.jsx';
 import React, { useEffect, useState, useRef } from 'react';
+import { AnimatePresence, motion, useIsPresent, useReducedMotion } from 'motion/react';
 import { createRoot } from 'react-dom/client';
 import { TestTubeDiagonal, Maximize2, Plus, RotateCcw, Ellipsis, Pencil, Trash2, RefreshCw, Check, Monitor, Terminal, ChevronDown, Settings2, Paintbrush, ArrowUpRight, LoaderCircle, Copy, Sparkles, Pin, GripVertical, ArrowUp, ArrowDown, Server, TriangleAlert, ArrowDownUp, ShieldCheck, Activity, AppWindow, MessageSquare, Code2, Info, FileText, CheckCheck, CloudOff, Eye, Ban, ShieldEllipsis } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { AnimatedSwap, AnimatedText, AnimatedReveal, AnimatedWords } from '@/components/ui/animated-content';
 import { ClearableInput as Input } from '@/components/ui/clearable-input';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
@@ -21,48 +23,73 @@ import { permissionUnavailable, availablePreset, connectionTestUnavailable } fro
 import appPackage from '../package.json';
 import kvalifikLogo from '../assets/brand/kvalifik.svg';
 
-// Measure before React moves keyed rows, then animate from their previous positions.
-class AnimatedProjectList extends React.Component {
-  list = React.createRef();
-  animations = [];
+// Animate the native scrollbar gutter itself, so every descendant reflows together.
+function useAnimatedScrollbars() {
+  useEffect(() => {
+    const surfaces = new Set();
+    const selector = '.router-main, .project-list, .dialog-scroll, .dialog-shell';
+    const update = () => {
+      for (const surface of surfaces) {
+        surface.toggleAttribute('data-scrollable', surface.scrollHeight > surface.clientHeight + 1);
+      }
+    };
+    const observer = new ResizeObserver(update);
+    const discover = () => {
+      observer.disconnect();
+      surfaces.clear();
+      for (const surface of document.querySelectorAll(selector)) {
+        surfaces.add(surface);
+        observer.observe(surface);
+        // Content can grow without changing the scroll container's outer size.
+        for (const child of surface.children) observer.observe(child);
+      }
+      update();
+    };
+    const mutations = new MutationObserver(discover);
+    mutations.observe(document.body, { childList: true, subtree: true, characterData: true });
+    discover();
+    return () => { mutations.disconnect(); observer.disconnect(); };
+  }, []);
+}
 
-  stopAnimations = () => {
-    this.animations.forEach(animation => animation.cancel());
-    this.animations = [];
-  };
+function AnimatedProjectRow({ row, order, enteringList }) {
+  const present = useIsPresent();
+  const reduced = useReducedMotion();
+  return <motion.div className="project-row-motion" layout={reduced ? false : 'position'} layoutDependency={order}
+    aria-hidden={!present || undefined} inert={!present || undefined}
+    initial={reduced ? false : { opacity: 0, height: enteringList ? 'auto' : 0 }}
+    animate={{ opacity: 1, height: 'auto' }}
+    exit={{ opacity: 0, height: 0 }}
+    style={{ overflow: 'hidden' }}
+    transition={reduced ? { duration: 0 } : {
+      duration: 0.22, ease: [0.2, 0, 0, 1],
+      opacity: { duration: 0.16 },
+      layout: { duration: 0.28, ease: [0.2, 0, 0, 1] },
+    }}>{row}</motion.div>;
+}
 
-  getSnapshotBeforeUpdate(previous) {
-    const before = previous.ids;
-    const after = this.props.ids;
-    if (before.length !== after.length || before.some(id => !after.includes(id)) ||
-        before.every((id, index) => id === after[index])) return null;
-    return new Map(Array.from(this.list.current.children, row =>
-      [row.dataset.projectId, row.getBoundingClientRect().top]));
-  }
+function AnimatedProjectList({ label, ids, children }) {
+  const mounted = useRef(false);
+  useEffect(() => { mounted.current = true; }, []);
+  return <motion.div layoutScroll aria-label={label} className="project-list border-t">
+    <AnimatePresence initial={true}>
+      {React.Children.toArray(children).map(row =>
+        <AnimatedProjectRow key={row.key} row={row} enteringList={!mounted.current} order={ids.join(':')} />)}
+    </AnimatePresence>
+  </motion.div>;
+}
 
-  componentDidUpdate(previous, state, positions) {
-    if (!positions) {
-      if (previous.ids.length !== this.props.ids.length ||
-          previous.ids.some(id => !this.props.ids.includes(id))) this.stopAnimations();
-      return;
-    }
-    this.stopAnimations();
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const moves = Array.from(this.list.current.children, row => ({
-      row, delta: positions.get(row.dataset.projectId) - row.getBoundingClientRect().top,
-    }));
-    this.animations = moves.filter(({ delta }) => Number.isFinite(delta) && Math.abs(delta) > 1)
-      .map(({ row, delta }) => row.animate([
-        { transform: `translateY(${delta}px)` },
-        { transform: 'translateY(0)' },
-      ], { duration: 320, easing: 'cubic-bezier(0.2, 0, 0, 1)' }));
-  }
-
-  componentWillUnmount() { this.stopAnimations(); }
-
-  render() {
-    return <div ref={this.list} aria-label={this.props.label} className="project-list border-t">{this.props.children}</div>;
-  }
+function AnimatedConnection({ children, ...props }) {
+  const present = useIsPresent();
+  const reduced = useReducedMotion();
+  return <AccordionItem {...props} asChild><motion.div
+    aria-hidden={!present || undefined} inert={!present || undefined}
+    initial={reduced ? false : { opacity: 0, height: 0 }}
+    animate={{ opacity: 1, height: 'auto' }}
+    exit={{ opacity: 0, height: 0, marginTop: 0, borderTopWidth: 0, borderBottomWidth: 0 }}
+    transition={{ duration: reduced ? 0 : 0.22, ease: [0.2, 0, 0, 1] }}>
+    {children}
+  </motion.div></AccordionItem>;
 }
 
 function PublisherLink({ className = '', large = false, children }) {
@@ -107,8 +134,8 @@ function AccessBadge({ project, connection, permissionKeys, onClick }) {
   const label = project.available === false ? 'Unavailable' : !connection.enabled ? 'Connection off' : !project.enabled ? 'Disabled' : access;
   const Icon = {'Full access':CheckCheck,'No publishing':CloudOff,'Read & write':Pencil,'Read-only':Eye,'No permissions':Ban,'Custom access':ShieldEllipsis,'Unavailable':TriangleAlert,'Connection off':Ban,'Disabled':Ban}[label];
   return <Tooltip><TooltipTrigger asChild>
-    <Badge asChild variant="secondary" className="project-access-badge hover:bg-accent hover:text-accent-foreground"><button type="button" onClick={onClick} aria-label={`${label} — settings for ${project.name}`}><Icon className="size-3.5" aria-hidden="true" /></button></Badge>
-  </TooltipTrigger><TooltipContent side="top" collisionPadding={{ top: 72, right: 12, bottom: 12, left: 12 }}>{label}</TooltipContent></Tooltip>;
+    <Badge asChild variant="secondary" className="project-access-badge hover:bg-accent hover:text-accent-foreground"><button type="button" onClick={onClick} aria-label={`${label} — settings for ${project.name}`}><AnimatedSwap icon value={Icon} className="size-3"><Icon className="size-3" /></AnimatedSwap></button></Badge>
+  </TooltipTrigger><TooltipContent side="top" collisionPadding={{ top: 72, right: 12, bottom: 12, left: 12 }}><AnimatedText>{label}</AnimatedText></TooltipContent></Tooltip>;
 }
 function BetaBadge({ project, connection, onClick }) {
   const missing = !projectAuthorized(connection, 'beta', project.siteId);
@@ -116,7 +143,7 @@ function BetaBadge({ project, connection, onClick }) {
     <TooltipTrigger asChild>
       <Badge asChild variant="outline" className={`project-beta-badge ${missing ? 'border-amber-500/50 text-amber-700 dark:text-amber-400' : ''}`}>
         <button type="button" aria-label={missing ? `β Beta access missing for ${project.name}. Open settings to authorize.` : `β Beta settings for ${project.name}`} onClick={onClick}>
-          {missing ? <TriangleAlert className="size-3.5" aria-hidden="true" /> : <span className="text-sm leading-none" aria-hidden="true">β</span>}
+          <AnimatedSwap icon value={missing} className="size-3">{missing ? <TriangleAlert className="size-3" /> : <span className="text-xs leading-none">β</span>}</AnimatedSwap>
         </button>
       </Badge>
     </TooltipTrigger>
@@ -156,6 +183,8 @@ function PermissionForm({ model, data, busy, perform, close, connect, refresh })
   const [requestedChannel,setRequestedChannel]=useState(null);
   const [authorizing,setAuthorizing]=useState(false);
   const [testing,setTesting]=useState(false);
+  const [testResult,setTestResult]=useState(null);
+  useEffect(()=>{if(!testResult)return;const timer=setTimeout(()=>setTestResult(null),1800);return()=>clearTimeout(timer);},[testResult]);
   const connection=data.connections.find(c=>c.id===item.connectionId);
   const defaultChannelLabel=`Default (Currently ${connection?.channel==='beta'?'β Beta':'Stable'})`;
   const selectedChannel=channel==='inherit'?(connection?.channel||'stable'):channel;
@@ -210,12 +239,12 @@ function PermissionForm({ model, data, busy, perform, close, connect, refresh })
   }
   return <form className="dialog-form" onSubmit={submit}>
     {!defaults && <DialogHeader className="flex-row shrink-0 items-center gap-1 space-y-0 pr-6 text-left">
-      {editingName ? <><DialogTitle className="sr-only">{name || item.name}</DialogTitle><Input className="min-w-0 flex-1" aria-label="Project name" value={name} onClear={()=>{setName('');setUseDefault(false);}} onChange={e=>{setName(e.target.value);setUseDefault(false);}} maxLength={80} autoFocus onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();if(name.trim())setEditingName(false);}if(e.key==='Escape'){e.preventDefault();e.stopPropagation();setName(item.name);setUseDefault(false);setEditingName(false);}}} /><Button type="button" variant="ghost" size="icon" title={`Use Webflow name (${item.sourceName || item.name})`} aria-label={`Use Webflow name (${item.sourceName || item.name})`} onClick={()=>{setName(item.sourceName || item.name);setUseDefault(true);}}><RotateCcw className="size-4" /></Button><Button type="button" variant="ghost" size="icon" title="Done editing name" aria-label="Done editing name" disabled={!name.trim()} onClick={()=>setEditingName(false)}><Check className="size-4" /></Button></> : <><DialogTitle className="min-w-0 truncate" title={name}>{name}</DialogTitle><Button type="button" variant="ghost" size="icon" title="Rename project" aria-label="Rename project" onClick={()=>setEditingName(true)}><Pencil className="size-4" /></Button></>}
+      {editingName ? <><DialogTitle className="sr-only">{name || item.name}</DialogTitle><Input className="min-w-0 flex-1" aria-label="Project name" value={name} onClear={()=>{setName('');setUseDefault(false);}} onChange={e=>{setName(e.target.value);setUseDefault(false);}} maxLength={80} autoFocus onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();if(name.trim())setEditingName(false);}if(e.key==='Escape'){e.preventDefault();e.stopPropagation();setName(item.name);setUseDefault(false);setEditingName(false);}}} /><Button type="button" variant="ghost" size="icon" title={`Use Webflow name (${item.sourceName || item.name})`} aria-label={`Use Webflow name (${item.sourceName || item.name})`} onClick={()=>{setName(item.sourceName || item.name);setUseDefault(true);}}><RotateCcw className="size-4" /></Button><Button type="button" variant="ghost" size="icon" title="Done editing name" aria-label="Done editing name" disabled={!name.trim()} onClick={()=>setEditingName(false)}><Check className="size-4" /></Button></> : <><DialogTitle className="min-w-0 truncate" title={name}><AnimatedText>{name}</AnimatedText></DialogTitle><Button type="button" variant="ghost" size="icon" title="Rename project" aria-label="Rename project" onClick={()=>setEditingName(true)}><Pencil className="size-4" /></Button></>}
       <DialogDescription className="sr-only">Edit the project name and permissions.</DialogDescription>
     </DialogHeader>}
-    {!defaults&&<div className="flex flex-wrap items-center gap-3"><Label htmlFor="project-mcp-version">MCP version</Label><ActionMenu trigger={<Button id="project-mcp-version" type="button" variant="outline" size="sm" disabled={busy}>{channel==='inherit'?defaultChannelLabel:channel==='beta'?'β Beta':'Stable'}<ChevronDown className="size-3.5" /></Button>} items={[['inherit',defaultChannelLabel],['stable','Stable'],['beta','β Beta']].map(([value,label])=>({id:value,label:label+(!hasAccess(value==='inherit'?(connection?.channel||'stable'):value)?' — Authorize':''),checked:channel===value,onSelect:()=>selectChannel(value)}))} /></div>}
-    {!defaults&&requestedChannel!==null&&<div role="status" className="rounded-md border bg-background p-3 space-y-2"><p className="text-sm font-medium">{authorizing?'Waiting for authorization…':`Authorize ${requestedEndpoint==='beta'?'β Beta':'Stable'} for ${item.name}`}</p><p className="text-xs text-muted-foreground">{authorizing?'Complete the Webflow prompt in your browser, then return here. Your edits are kept.':'Select this project in Webflow’s authorization screen. Include any other projects that should keep access through this connection. Your current version stays unchanged until you save.'}</p><div className="flex gap-2"><Button type="button" size="sm" disabled={busy||!connection} onClick={authorizeRequested}>{authorizing?'Open authorization again':`Authorize ${requestedEndpoint==='beta'?'β Beta':'Stable'}`}</Button><Button type="button" size="sm" variant="ghost" disabled={busy} onClick={()=>{setRequestedChannel(null);setAuthorizing(false);}}>Cancel</Button></div></div>}
-    {!defaults&&requestedChannel===null&&!hasAccess(selectedChannel)&&<Button type="button" variant="outline" size="sm" onClick={()=>selectChannel(channel)}>Authorize {selectedChannel==='beta'?'β Beta':'Stable'} for this project</Button>}
+    {!defaults&&<div className="flex flex-wrap items-center gap-3"><Label htmlFor="project-mcp-version">MCP version</Label><ActionMenu trigger={<Button id="project-mcp-version" type="button" variant="outline" size="sm" disabled={busy}><AnimatedText>{channel==='inherit'?defaultChannelLabel:channel==='beta'?'β Beta':'Stable'}</AnimatedText><ChevronDown className="size-3.5" /></Button>} items={[['inherit',defaultChannelLabel],['stable','Stable'],['beta','β Beta']].map(([value,label])=>({id:value,label:label+(!hasAccess(value==='inherit'?(connection?.channel||'stable'):value)?' — Authorize':''),checked:channel===value,onSelect:()=>selectChannel(value)}))} /></div>}
+    <AnimatedReveal show={!defaults&&requestedChannel!==null}><div role="status" className="rounded-md border bg-background p-3 space-y-2"><p className="text-sm font-medium"><AnimatedText>{authorizing?'Waiting for authorization…':`Authorize ${requestedEndpoint==='beta'?'β Beta':'Stable'} for ${item.name}`}</AnimatedText></p><p className="text-xs text-muted-foreground"><AnimatedText>{authorizing?'Complete the Webflow prompt in your browser, then return here. Your edits are kept.':'Select this project in Webflow’s authorization screen. Include any other projects that should keep access through this connection. Your current version stays unchanged until you save.'}</AnimatedText></p><div className="flex gap-2"><Button type="button" size="sm" disabled={busy||!connection} onClick={authorizeRequested}><AnimatedText>{authorizing?'Open authorization again':`Authorize ${requestedEndpoint==='beta'?'β Beta':'Stable'}`}</AnimatedText></Button><Button type="button" size="sm" variant="ghost" disabled={busy} onClick={()=>{setRequestedChannel(null);setAuthorizing(false);}}>Cancel</Button></div></div></AnimatedReveal>
+    {!defaults&&requestedChannel===null&&!hasAccess(selectedChannel)&&<Button type="button" variant="outline" size="sm" onClick={()=>selectChannel(channel)}><AnimatedText>{`Authorize ${selectedChannel==='beta'?'β Beta':'Stable'} for this project`}</AnimatedText></Button>}
 
     <div className="flex min-h-0 flex-col gap-3">
         <div className="flex shrink-0 items-center gap-2"><Input search className="min-w-0 flex-1" aria-label="Search permissions" placeholder="Search permissions…" value={query} onClear={()=>setQuery('')} onChange={e=>setQuery(e.target.value)} /><ActionMenu trigger={<Button type="button" variant="outline" disabled={busy}>Presets<ChevronDown className="size-4" /></Button>} items={[['all','All permissions','CheckCheck'],['no-publishing','No publishing','CloudOff'],['read-write','Read & write','Pencil'],['read','Read only','Eye'],['none','No permissions','Ban']].map(([key,label,icon])=>({id:key,label,icon,onSelect:()=>preset(key)}))} /></div>
@@ -224,11 +253,11 @@ function PermissionForm({ model, data, busy, perform, close, connect, refresh })
           {!groups.length&&<TableRow><TableCell colSpan={5} className="p-5 text-center text-muted-foreground">No matching permission areas.</TableCell></TableRow>}
         </TableBody></Table></div>
         <p className="shrink-0 text-xs text-muted-foreground">Router permissions only limit access already granted by Webflow. Webflow may still reject restricted actions.</p>
-        {hasUnavailable&&<p className="shrink-0 text-xs text-muted-foreground">Unavailable permissions are locked off. Hover or focus a locked toggle for details. Saved preferences are kept for when access is restored.</p>}
+        <AnimatedReveal className="[--reveal-gap:0.75rem]" show={hasUnavailable}><p className="text-xs text-muted-foreground"><AnimatedWords>Unavailable permissions are locked off. Hover or focus a locked toggle for details. Saved preferences are kept for when access is restored.</AnimatedWords></p></AnimatedReveal>
         <p className="shrink-0 text-xs text-muted-foreground">{defaults?'Applies to new projects and disabled projects still using defaults. New projects always start disabled.':'Changes require Instructions → Read. Canvas editing also requires Custom code → Write. Delete and publish are separate permissions.'}</p>
     </div>
-    {!defaults&&item.enabled&&testUnavailable&&<p id="connection-test-unavailable" className="shrink-0 text-xs text-muted-foreground">{testUnavailable}</p>}
-    <DialogFooter className="shrink-0 border-t pt-4">{!defaults && <Button type="button" variant="outline" size="icon" aria-label={testing?'Testing connection…':'Test connection'} aria-busy={testing} title={testing?'Testing connection…':testUnavailable || 'Test connection using saved permissions'} disabled={busy || testing || !!testUnavailable} aria-describedby={item.enabled&&testUnavailable?'connection-test-unavailable':undefined} onClick={async()=>{if(testing)return;setTesting(true);try{await perform('/api/read-project',{projectId:item.id});toast.success(`${item.name}: read succeeded.`);}catch(e){toast.error(e.message);}finally{setTesting(false);}}}>{testing?<LoaderCircle className="size-4 animate-spin" aria-hidden="true" />:<TestTubeDiagonal className="size-4" aria-hidden="true" />}</Button>}<Button type="button" variant="outline" disabled={busy} onClick={close}>Cancel</Button><Button disabled={busy || requestedChannel!==null || !defaults && !name.trim()}>{busy?'Saving…':'Save changes'}</Button></DialogFooter>
+    <AnimatedReveal show={!defaults&&!!testUnavailable}><p id="connection-test-unavailable" className="text-xs text-muted-foreground"><AnimatedWords>{testUnavailable}</AnimatedWords></p></AnimatedReveal>
+    <DialogFooter className="shrink-0 border-t pt-4">{!defaults && <Button type="button" variant="outline" size="icon" aria-label={testing?'Testing connection…':testResult==='success'?'Connection test succeeded':testResult==='error'?'Connection test failed — retry':'Test connection'} aria-busy={testing} title={testing?'Testing connection…':testUnavailable || 'Test connection using saved permissions'} disabled={busy || testing || !!testUnavailable} aria-describedby={testUnavailable?'connection-test-unavailable':undefined} onClick={async()=>{if(testing)return;setTestResult(null);setTesting(true);try{await perform('/api/read-project',{projectId:item.id});setTestResult('success');toast.success(`${item.name}: read succeeded.`);}catch(e){setTestResult('error');toast.error(e.message);}finally{setTesting(false);}}}><AnimatedSwap icon value={testing?'testing':testResult} className="size-4">{testing?<LoaderCircle className="size-4 animate-spin motion-reduce:animate-none" />:testResult==='success'?<Check className="size-4" />:testResult==='error'?<TriangleAlert className="size-4" />:<TestTubeDiagonal className="size-4" />}</AnimatedSwap></Button>}<Button type="button" variant="outline" disabled={busy} onClick={close}>Cancel</Button><Button disabled={busy || requestedChannel!==null || !defaults && !name.trim()}><AnimatedText>{busy?'Saving…':'Save changes'}</AnimatedText></Button></DialogFooter>
   </form>;
 }
 function ClientConnections() {
@@ -310,10 +339,11 @@ function NameForm({ model, busy, perform, close }) {
     <div className="space-y-2"><Label htmlFor="item-name" className="text-sm font-medium">Display name</Label><Input id="item-name" value={name} onClear={()=>{setName('');setUseDefault(false);}} onChange={e => {setName(e.target.value);setUseDefault(false);}} maxLength={80} required /></div>
     {item.sourceName ? <div className="flex items-center justify-between gap-3"><p className="text-xs text-muted-foreground">Webflow name: {item.sourceName}</p><Button type="button" variant="ghost" size="sm" onClick={()=>{setName(item.sourceName);setUseDefault(true);}}>Use default name</Button></div> : <p className="text-xs text-muted-foreground">Webflow hasn’t provided a workspace name. This is a local label.</p>}
 
-    <DialogFooter><Button type="button" variant="outline" disabled={busy} onClick={close}>{model.initialNaming?'Keep current name':'Cancel'}</Button><Button disabled={busy||!name.trim()}>Save changes</Button></DialogFooter>
+    <DialogFooter><Button type="button" variant="outline" disabled={busy} onClick={close}><AnimatedText>{model.initialNaming?'Keep current name':'Cancel'}</AnimatedText></Button><Button disabled={busy||!name.trim()}>Save changes</Button></DialogFooter>
   </form>;
 }
 function App() {
+  useAnimatedScrollbars();
   const {theme,setTheme}=useTheme();
   const [toolbarDragging,setToolbarDragging]=useState(false);
   const comparedGrants=useRef(new Map());
@@ -335,6 +365,10 @@ function App() {
   useEffect(()=>{const refresh=()=>window.routerDesktop?.menuBarMode?.().then(setMenuBar).catch(()=>{});refresh();window.addEventListener('focus',refresh);return()=>window.removeEventListener('focus',refresh);},[]);
   const [pinnedOnly,setPinnedOnly]=useState(false);
   const [modal,setModal] = useState(null), [query,setQuery] = useState(''), [expanded,setExpanded] = useState({});
+  // Keep the last model while Radix plays the dialog's exit animation.
+  const [lastModal, setLastModal] = useState(null);
+  if (modal && modal !== lastModal) setLastModal(modal);
+  const displayedModal = modal || lastModal;
   const mainRef = useRef(null);
   const [focusPopover,setFocusPopover] = useState(false);
   useEffect(()=>window.routerDesktop?.onPopoverOpen?.(()=>setFocusPopover(true)),[]);
@@ -379,6 +413,7 @@ function App() {
     {separator:true},
     {label:'Default MCP version',icon:'Server',children:['stable','beta'].map(channel=>({id:`channel-${channel}`,label:channel==='beta'?'β Beta':'Stable',checked:(data.settings.defaultChannel||'stable')===channel,onSelect:()=>action(()=>perform('/api/settings/default-channel',{channel}),'Default MCP version updated.')}))},
     {separator:true},
+    {id:'disabled-project-discovery',label:'Let AI discover disabled project names',icon:'Eye',checked:data.settings.discoverDisabledProjects!==false,onSelect:()=>action(()=>perform('/api/settings/disabled-project-discovery',{enabled:data.settings.discoverDisabledProjects===false}),'Project discovery setting saved.')},
     ...[['order','Reorder connections'],['defaults','Default permissions'],['diagnostics','Diagnostics']].map(([type,label])=>({id:type,label,icon:{order:'ArrowDownUp',defaults:'ShieldCheck',diagnostics:'Activity'}[type],onSelect:()=>setModal({type})})),
     {separator:true},
     ...(window.routerDesktop?[{id:'updates',icon:'RefreshCw',label:'Check for updates',onSelect:()=>checkForUpdates(true)}]:[]),
@@ -386,13 +421,13 @@ function App() {
   ];
   const filterActive=!!search||pinnedOnly;
   return <main ref={mainRef} tabIndex={-1} className="router-main">
-    <header data-dragging={toolbarDragging} onPointerDown={beginToolbarDrag} onPointerMove={()=>{if(toolbarPointer.current!==null)window.routerDesktop.toolbarDrag('move');}} onPointerUp={endToolbarDrag} onPointerCancel={endToolbarDrag} onLostPointerCapture={endToolbarDrag} className={`app-header ${window.routerDesktop?.integratedTitleBar ? `app-header-integrated ${window.routerDesktop.titleBarPlatform === 'win32' ? 'app-header-windows' : 'app-header-mac'}` : ''}`}><div className="min-w-0"><div className="flex flex-wrap items-baseline gap-x-2"><h1 className="text-base font-semibold">MCP Router</h1><span className="app-publisher inline-flex items-baseline gap-1 text-sm"><span className="text-muted-foreground">by</span><PublisherLink className="font-semibold" /></span></div><p className="text-xs text-muted-foreground">{data.connections.length} {data.connections.length===1?'connection':'connections'} · {data.projects.length} {data.projects.length===1?'project':'projects'}</p></div><div className="app-header-actions"><ClientConnections /><SettingsMenu disabled={busy} items={settingsItems} />{window.routerDesktop?.openMainWindow&&<Button className="compact-window-only" variant="outline" size="icon" aria-label="Open main window" title="Open main window" onClick={()=>window.routerDesktop.openMainWindow()}><Maximize2 className="size-4" /></Button>}</div></header>
-    <div className="router-toolbar flex flex-wrap items-center justify-between gap-2 py-4"><div className="flex min-w-0 flex-1 items-center gap-2"><div className="min-w-40 flex-1 max-w-xs"><Input search placeholder="Search projects…" aria-label="Search projects" value={query} onClear={()=>setQuery('')} onChange={e=>setQuery(e.target.value)} /></div><Button size="icon" aria-label="Show pinned projects" title="Show pinned projects" variant={pinnedOnly?'secondary':'outline'} aria-pressed={pinnedOnly} onClick={()=>setPinnedOnly(value=>!value)}><Pin className={`size-4 ${pinnedOnly?'fill-current':''}`} /></Button></div><Button variant="outline" size="icon" disabled={busy} aria-label="Add connection" title="Add connection" onClick={()=>setModal({type:'connect'})}><Plus className="size-4" /></Button></div>
+    <header data-dragging={toolbarDragging} onPointerDown={beginToolbarDrag} onPointerMove={()=>{if(toolbarPointer.current!==null)window.routerDesktop.toolbarDrag('move');}} onPointerUp={endToolbarDrag} onPointerCancel={endToolbarDrag} onLostPointerCapture={endToolbarDrag} className={`app-header ${window.routerDesktop?.integratedTitleBar ? `app-header-integrated ${window.routerDesktop.titleBarPlatform === 'win32' ? 'app-header-windows' : 'app-header-mac'}` : ''}`}><div className="min-w-0"><div className="flex flex-wrap items-baseline gap-x-2"><h1 className="text-base font-semibold">MCP Router</h1><span className="app-publisher inline-flex items-baseline gap-1 text-sm"><span className="text-muted-foreground">by</span><PublisherLink className="font-semibold" /></span></div><p className="text-xs text-muted-foreground"><AnimatedText>{`${data.connections.length} ${data.connections.length===1?'connection':'connections'} · ${data.projects.length} ${data.projects.length===1?'project':'projects'}`}</AnimatedText></p></div><div className="app-header-actions"><ClientConnections /><SettingsMenu disabled={busy} items={settingsItems} />{window.routerDesktop?.openMainWindow&&<Button className="compact-window-only" variant="outline" size="icon" aria-label="Open main window" title="Open main window" onClick={()=>window.routerDesktop.openMainWindow()}><Maximize2 className="size-4" /></Button>}</div></header>
+    <div className="router-toolbar flex flex-wrap items-center justify-between gap-2 py-4"><div className="flex min-w-0 flex-1 items-center gap-2"><div className="min-w-40 flex-1 max-w-xs"><Input search placeholder="Search projects…" aria-label="Search projects" value={query} onClear={()=>setQuery('')} onChange={e=>setQuery(e.target.value)} /></div><Button size="icon" aria-label="Show pinned projects" title="Show pinned projects" variant={pinnedOnly?'secondary':'outline'} aria-pressed={pinnedOnly} onClick={()=>setPinnedOnly(value=>!value)}><AnimatedSwap icon value={pinnedOnly} className="size-4"><Pin className={`size-4 ${pinnedOnly?'fill-current':''}`} /></AnimatedSwap></Button></div><Button variant="outline" size="icon" disabled={busy} aria-label="Add connection" title="Add connection" onClick={()=>setModal({type:'connect'})}><Plus className="size-4" /></Button></div>
     <Accordion type="multiple" className="space-y-3" aria-label="Connections and projects" value={grouped.filter(c=>expanded[`${filterActive ? `filter:${search}:${pinnedOnly}:` : ''}${c.id}`]??filterActive).map(c=>c.id)} onValueChange={ids=>setExpanded(prev=>({...prev,...Object.fromEntries(grouped.map(c=>[`${filterActive ? `filter:${search}:${pinnedOnly}:` : ''}${c.id}`,ids.includes(c.id)]))}))}>
-      {!grouped.length && <p className="rounded-lg border bg-background p-5 text-sm text-muted-foreground">{pinnedOnly?'No pinned projects match. Pin a project to add it here.':search?'No matching projects or connections.':'Add a connection to discover its projects.'}</p>}
-      {grouped.map(c=>{const expandKey=`${filterActive ? `filter:${search}:${pinnedOnly}:` : ''}${c.id}`;const open=expanded[expandKey]??filterActive;return <AccordionItem key={c.id} value={c.id} className="overflow-hidden rounded-lg border bg-background last:border-b">
+      {!grouped.length && <p className="rounded-lg border bg-background p-5 text-sm text-muted-foreground"><AnimatedText>{pinnedOnly?'No pinned projects match. Pin a project to add it here.':search?'No matching projects or connections.':'Add a connection to discover its projects.'}</AnimatedText></p>}
+      <AnimatePresence initial={false}>{grouped.map(c=>{const expandKey=`${filterActive ? `filter:${search}:${pinnedOnly}:` : ''}${c.id}`;const open=expanded[expandKey]??filterActive;return <AnimatedConnection key={c.id} value={c.id} className="overflow-hidden rounded-lg border bg-background last:border-b">
         <div className="connection-header flex flex-wrap items-center gap-2 p-3">
-          <AccordionTrigger headerClassName="min-w-0 flex-1" className="items-center p-1 text-left hover:no-underline" aria-label={`${open?'Collapse':'Expand'} ${c.name}`} ><span className="min-w-0"><span className="block truncate text-sm font-semibold">{c.name}</span><span className="mt-1 block text-xs text-muted-foreground">{c.projects.length} {c.projects.length===1?'project':'projects'} · {c.projects.filter(p=>p.enabled&&p.available!==false).length} enabled{!c.enabled?' · Connection off':c.lastError?' · Check failed':''}</span></span></AccordionTrigger>
+          <AccordionTrigger headerClassName="min-w-0 flex-1" className="items-center p-1 text-left hover:no-underline" aria-label={`${open?'Collapse':'Expand'} ${c.name}`} ><span className="min-w-0"><span className="block truncate text-sm font-semibold"><AnimatedText className="max-w-full truncate">{c.name}</AnimatedText></span><span className="mt-1 block text-xs text-muted-foreground"><AnimatedText>{`${c.projects.length} ${c.projects.length===1?'project':'projects'} · ${c.projects.filter(p=>p.enabled&&p.available!==false).length} enabled${!c.enabled?' · Connection off':c.lastError?' · Check failed':''}`}</AnimatedText></span></span></AccordionTrigger>
           <div className="connection-controls flex shrink-0 items-center gap-0.5">
 
             {c.enabled&&!c.tokenFingerprint&&<Button size="sm" disabled={busy} onClick={()=>action(()=>connect(c.id),'Complete OAuth in your browser.')}>Connect OAuth</Button>}
@@ -407,38 +442,38 @@ function App() {
           </div>
         </div>
         <AccordionContent className="pb-0"><AnimatedProjectList label={`${c.name} projects`} ids={c.visible.map(p=>p.id)}>
-          {!c.visible.length&&<p className="p-5 text-sm text-muted-foreground">{c.tokenFingerprint?'Sync this connection to discover projects.':'Connect with OAuth to discover projects.'}</p>}
-          {c.visible.map(p=><div key={p.id} data-project-id={p.id} className="project-row flex items-center gap-2 pl-8 pr-3 py-2.5"><Button variant="ghost" size="icon-xs" className={`-ml-5 shrink-0 ${p.favourite?'text-foreground':'text-muted-foreground'}`} aria-pressed={!!p.favourite} aria-label={`${p.favourite?'Unpin':'Pin'} ${p.name}`} disabled={busy} onClick={()=>action(()=>perform(`/api/projects/${p.id}/edit`,{favourite:!p.favourite}))}><Pin className={`size-3.5 ${p.favourite?'fill-current':''}`} /></Button><div className="project-name mr-auto min-w-0"><div className="project-title flex min-w-0 items-center gap-1"><h3 className="truncate text-sm font-medium" title={p.name}>{p.name}</h3><ProjectLinks project={p} /></div></div><div className="project-controls flex shrink-0 items-center gap-0.5"><div className="project-badges flex items-center gap-2">{(p.channel&&p.channel!=='inherit'?p.channel:c.channel)==='beta'&&<BetaBadge project={p} connection={c} onClick={()=>setModal({type:'permissions',item:p})} />}<AccessBadge project={p} connection={c} permissionKeys={permissionKeys} onClick={()=>setModal({type:'permissions',item:p})} /></div>
+          {!c.visible.length&&<p className="p-5 text-sm text-muted-foreground"><AnimatedText>{c.tokenFingerprint?'Sync this connection to discover projects.':'Connect with OAuth to discover projects.'}</AnimatedText></p>}
+          {c.visible.map(p=><div key={p.id} data-project-id={p.id} className="project-row flex items-center gap-2 pl-8 pr-3 py-2.5"><Button variant="ghost" size="icon-xs" className={`-ml-5 shrink-0 ${p.favourite?'text-foreground':'text-muted-foreground'}`} aria-pressed={!!p.favourite} aria-label={`${p.favourite?'Unpin':'Pin'} ${p.name}`} disabled={busy} onClick={()=>action(()=>perform(`/api/projects/${p.id}/edit`,{favourite:!p.favourite}))}><AnimatedSwap icon value={p.favourite} className="size-3.5"><Pin className={`size-3.5 ${p.favourite?'fill-current':''}`} /></AnimatedSwap></Button><div className="project-name mr-auto min-w-0"><div className="project-title flex min-w-0 items-center gap-1"><h3 className="truncate text-sm font-medium" title={p.name}><AnimatedText className="max-w-full truncate">{p.name}</AnimatedText></h3><ProjectLinks project={p} /></div></div><div className="project-controls flex shrink-0 items-center gap-0.5"><div className="project-badges flex items-center gap-2">{(p.channel&&p.channel!=='inherit'?p.channel:c.channel)==='beta'&&<BetaBadge project={p} connection={c} onClick={()=>setModal({type:'permissions',item:p})} />}<AccessBadge project={p} connection={c} permissionKeys={permissionKeys} onClick={()=>setModal({type:'permissions',item:p})} /></div>
             <IconButton label={`Settings for ${p.name}`} icon={Settings2} disabled={busy} onClick={()=>setModal({type:'permissions',item:p})} />
             <Switch className="ml-2" aria-label={`Enable ${p.name}`} checked={p.enabled} disabled={busy||!c.enabled||p.available===false} onCheckedChange={enabled=>action(()=>perform(`/api/projects/${p.id}/edit`,{enabled}))} />
           </div></div>)}
         </AnimatedProjectList></AccordionContent>
-      </AccordionItem>;})}
+      </AnimatedConnection>;})}</AnimatePresence>
     </Accordion>
-    <Dialog open={!!modal} onOpenChange={open=>{if(!open&&!busy)void closeModal();}}><DialogContent onInteractOutside={event=>{if(event.target.closest('[data-sonner-toaster]'))event.preventDefault();}} onOpenAutoFocus={event=>{if(['permissions','rename'].includes(modal?.type)){event.preventDefault();event.target.focus();}}} className={`dialog-shell ${['permissions','defaults'].includes(modal?.type)?'permission-dialog sm:max-w-2xl':'sm:max-w-lg'}`}>{modal?.type!=='permissions'&&<DialogHeader className="shrink-0 pr-6 text-left"><DialogTitle>{modal?.initialNaming?'Name your connection':modal&&titles[modal.type]}</DialogTitle><DialogDescription className={['permissions','about'].includes(modal?.type)?'sr-only':undefined}>{modal?.initialNaming?'Webflow is connected. What would you like to call this connection?':modal?.type==='connect'?'Choose access in Webflow, then limit AI access here.':modal?.type==='permissions'?'Edit the project name and permissions.':modal?.type==='about'?'Application information and third-party licenses.':modal?.type==='defaults'?'Starting permissions for automatically discovered projects.':modal?.type==='delete'?`Remove ${modal.item.name} from this router?`:modal?.type==='channel'?'Review Stable and β Beta access and reconnect either version.':modal?.type==='order'?'Drag connections or use the arrows to change their order.':modal?.type==='diagnostics'?'Connection checks and recent activity.':'Change the local display name.'}</DialogDescription></DialogHeader>}
-      {modal?.type==='connect'&&<>
+    <Dialog open={!!modal} onOpenChange={open=>{if(!open&&!busy)void closeModal();}}><DialogContent onInteractOutside={event=>{if(event.target.closest('[data-sonner-toaster]'))event.preventDefault();}} onOpenAutoFocus={event=>{if(['permissions','rename'].includes(displayedModal?.type)){event.preventDefault();event.target.focus();}}} className={`dialog-shell ${['permissions','defaults'].includes(displayedModal?.type)?'permission-dialog sm:max-w-2xl':'sm:max-w-lg'}`}>{displayedModal?.type!=='permissions'&&<DialogHeader className="shrink-0 pr-6 text-left"><DialogTitle>{displayedModal?.initialNaming?'Name your connection':displayedModal&&titles[displayedModal.type]}</DialogTitle><DialogDescription className={['permissions','about'].includes(displayedModal?.type)?'sr-only':undefined}>{displayedModal?.initialNaming?'Webflow is connected. What would you like to call this connection?':displayedModal?.type==='connect'?'Choose access in Webflow, then limit AI access here.':displayedModal?.type==='permissions'?'Edit the project name and permissions.':displayedModal?.type==='about'?'Application information and third-party licenses.':displayedModal?.type==='defaults'?'Starting permissions for automatically discovered projects.':displayedModal?.type==='delete'?`Remove ${displayedModal.item.name} from this router?`:displayedModal?.type==='channel'?'Review Stable and β Beta access and reconnect either version.':displayedModal?.type==='order'?'Drag connections or use the arrows to change their order.':displayedModal?.type==='diagnostics'?'Connection checks and recent activity.':'Change the local display name.'}</DialogDescription></DialogHeader>}
+      {displayedModal?.type==='connect'&&<>
         <p className="text-sm">Select the projects you want to manage and allow the requested permissions so MCP Router can support its full feature set. You’ll control what your AI tools can actually do using per-project permissions here.</p>
         <p className="text-sm font-medium">New projects start disabled. Review their permissions before enabling them.</p>
         <p className="text-xs text-muted-foreground">You can choose fewer projects or permissions. Features requiring access you haven’t granted won’t be available. Router restrictions apply only to actions passing through MCP Router.</p>
         <DialogFooter><Button variant="outline" disabled={busy} onClick={()=>setModal(null)}>Cancel</Button><Button disabled={busy} onClick={()=>action(async()=>{
-          const id=modal.connectionId || (await perform('/api/connections')).id;
+          const id=displayedModal.connectionId || (await perform('/api/connections')).id;
           setModal({type:'connect',connectionId:id});
           setExpanded(prev=>({...prev,[id]:true}));
           await connect(id);setModal(null);
-        },'Complete authorization in your browser. New projects will appear disabled.')}>{busy?'Opening…':'Continue to Webflow'}</Button></DialogFooter>
+        },'Complete authorization in your browser. New projects will appear disabled.')}><AnimatedText>{busy?'Opening…':'Continue to Webflow'}</AnimatedText></Button></DialogFooter>
       </>}
-      {modal&&['permissions','defaults'].includes(modal.type)&&<PermissionForm key={`${modal.type}-${modal.item?.id||''}`} model={modal} data={data} busy={busy} perform={perform} connect={connect} refresh={load} close={()=>setModal(null)} />}
-      {modal?.type==='channel'&&<div className="dialog-scroll space-y-4">
+      {displayedModal&&['permissions','defaults'].includes(displayedModal.type)&&<PermissionForm key={`${displayedModal.type}-${displayedModal.item?.id||''}`} model={displayedModal} data={data} busy={busy} perform={perform} connect={connect} refresh={load} close={()=>setModal(null)} />}
+      {displayedModal?.type==='channel'&&<div className="dialog-scroll space-y-4">
         <p className="text-xs text-muted-foreground">Authorize the projects and permissions you want this connection to use, then limit AI access in each project’s settings. Narrower authorization is supported. When reconnecting, include any projects that should keep access.</p>
-        {['stable','beta'].map(channel=>{const c=data.connections.find(c=>c.id===modal.item.id),state=c?.channels?.[channel];return <div key={channel} className="rounded-md border bg-background p-3 space-y-3"><div className="flex items-center justify-between gap-3"><div><Label>{channel==='beta'?'β Beta':'Stable'}</Label><p className="text-xs text-muted-foreground">{state?.authorized?(state.inventoryPending?'Checking project access…':`${state.siteIds?.length||0} ${state.siteIds?.length===1?'project':'projects'} authorized`):'Authorization required'}</p></div><Button variant="outline" size="sm" disabled={busy||!c} onClick={()=>action(async()=>{await connect(c.id,channel);},'Complete authorization in your browser.')}>{state?.authorized?'Reconnect':'Authorize'} {channel==='beta'?'β Beta':'Stable'}</Button></div></div>;})}
-        <GrantComparison connection={data.connections.find(c=>c.id===modal.item.id)} busy={busy} onReconnect={()=>action(async()=>{await connect(modal.item.id,'beta');},'Complete β Beta authorization in your browser.')} />
+        {['stable','beta'].map(channel=>{const c=data.connections.find(c=>c.id===displayedModal.item.id),state=c?.channels?.[channel];return <div key={channel} className="rounded-md border bg-background p-3 space-y-3"><div className="flex items-center justify-between gap-3"><div><Label>{channel==='beta'?'β Beta':'Stable'}</Label><p className="text-xs text-muted-foreground"><AnimatedText>{state?.authorized?(state.inventoryPending?'Checking project access…':`${state.siteIds?.length||0} ${state.siteIds?.length===1?'project':'projects'} authorized`):'Authorization required'}</AnimatedText></p></div><Button variant="outline" size="sm" disabled={busy||!c} onClick={()=>action(async()=>{await connect(c.id,channel);},'Complete authorization in your browser.')}><AnimatedText>{`${state?.authorized?'Reconnect':'Authorize'} ${channel==='beta'?'β Beta':'Stable'}`}</AnimatedText></Button></div></div>;})}
+        <GrantComparison connection={data.connections.find(c=>c.id===displayedModal.item.id)} busy={busy} onReconnect={()=>action(async()=>{await connect(displayedModal.item.id,'beta');},'Complete β Beta authorization in your browser.')} />
         <p className="text-xs text-muted-foreground">The default is set in Settings. β Beta uses the existing permission catalog; new or changed tools are not automatically enabled. Router limits do not change access in Webflow or other integrations.</p>
       </div>}
-    {modal?.type==='order'&&<ConnectionOrderForm connections={data.connections} busy={busy} perform={perform} close={()=>setModal(null)} />}
-      {modal?.type==='rename'&&<NameForm key={modal.item.id} model={modal} busy={busy} perform={perform} close={closeModal} />}
-      {modal?.type==='delete'&&<><p className="text-sm">Permanently remove this connection, its local OAuth credentials and project settings?</p><p className="text-xs text-muted-foreground">This cannot be undone. Webflow sites are not deleted. You can authorize a new connection later.</p><DialogFooter><Button variant="outline" disabled={busy} onClick={()=>setModal(null)}>Cancel</Button><Button variant="destructive" disabled={busy} onClick={()=>action(async()=>{await perform(`/api/${modal.kind}/${modal.item.id}/delete`);setModal(null);},'Connection permanently deleted.')}>Delete connection</Button></DialogFooter></>}
-      {modal?.type==='about'&&<AboutPanel />}
-      {modal?.type==='diagnostics'&&<div className="dialog-scroll space-y-4"><div className="flex flex-wrap gap-2">{data.connections.filter(c=>c.enabled&&c.hasRefreshToken).map(c=><Button key={c.id} size="sm" variant="outline" disabled={busy} onClick={()=>action(()=>perform(`/api/connections/${c.id}/refresh`),`${c.name}: OAuth refreshed.`)}>Refresh OAuth · {c.name}</Button>)}</div><div className="space-y-1 text-xs text-muted-foreground">{data.audit.map((a,i)=><div key={i}>{new Date(a.at).toLocaleTimeString()} · {a.event}</div>)}</div></div>}
+    {displayedModal?.type==='order'&&<ConnectionOrderForm connections={data.connections} busy={busy} perform={perform} close={()=>setModal(null)} />}
+      {displayedModal?.type==='rename'&&<NameForm key={displayedModal.item.id} model={displayedModal} busy={busy} perform={perform} close={closeModal} />}
+      {displayedModal?.type==='delete'&&<><p className="text-sm">Permanently remove this connection, its local OAuth credentials and project settings?</p><p className="text-xs text-muted-foreground">This cannot be undone. Webflow sites are not deleted. You can authorize a new connection later.</p><DialogFooter><Button variant="outline" disabled={busy} onClick={()=>setModal(null)}>Cancel</Button><Button variant="destructive" disabled={busy} onClick={()=>action(async()=>{await perform(`/api/${displayedModal.kind}/${displayedModal.item.id}/delete`);setModal(null);},'Connection permanently deleted.')}>Delete connection</Button></DialogFooter></>}
+      {displayedModal?.type==='about'&&<AboutPanel />}
+      {displayedModal?.type==='diagnostics'&&<div className="dialog-scroll space-y-4"><div className="flex flex-wrap gap-2">{data.connections.filter(c=>c.enabled&&c.hasRefreshToken).map(c=><Button key={c.id} size="sm" variant="outline" disabled={busy} onClick={()=>action(()=>perform(`/api/connections/${c.id}/refresh`),`${c.name}: OAuth refreshed.`)}>Refresh OAuth · {c.name}</Button>)}</div><div className="space-y-1 text-xs text-muted-foreground">{data.audit.map((a,i)=><div key={i}>{new Date(a.at).toLocaleTimeString()} · {a.event}</div>)}</div></div>}
 
     </DialogContent></Dialog>
   </main>;

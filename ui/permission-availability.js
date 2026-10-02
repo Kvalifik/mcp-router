@@ -15,7 +15,7 @@ export function availablePreset(current, next, unavailable) {
 
 export function connectionTestUnavailable(project, connection, selectedChannel) {
   if (!connection?.enabled) return 'Enable this connection before testing.';
-  if (!project.enabled) return 'Enable this project before testing.';
+  if (project.available === false) return 'This project is no longer available.';
   const canRead = project.permissions ? project.permissions['site:read'] : project.read;
   if (!canRead) return 'Save Site → Read permission before testing.';
   const savedChannel = project.channel && project.channel !== 'inherit' ? project.channel : connection.channel || 'stable';

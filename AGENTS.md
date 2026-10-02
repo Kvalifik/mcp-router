@@ -13,6 +13,17 @@
   [security policy](SECURITY.md) when changing the behavior they describe.
   Follow [the release guide](docs/RELEASING.md) for release work.
 
+## UI icons
+
+- When neighboring menu items have icons, every comparable item must have an
+  icon too, including settings toggles. Do not introduce an iconless item into
+  an otherwise icon-bearing group.
+- Proactively suggest suitable icons when adding or changing UI actions and
+  settings. Choose a clear semantic match from the existing Lucide icon set
+  and briefly explain the choice; routine choices do not need approval.
+- Keep icon size and placement consistent. Verify that chosen menu icons are
+  supported in both the browser menu and Electron native menu registries.
+
 ## Security and public files
 
 - Preserve the controls described in [SECURITY.md](SECURITY.md): local owner

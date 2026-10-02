@@ -34,7 +34,7 @@ const initialContext = await liveContext();
 const server = new McpServer({ name: 'mcp-router', version: '0.7.4' }, {
   instructions: `MCP Router connects you to the user's approved Webflow websites and projects.
 Use this connection for Webflow tasks involving site information, pages, CMS collections and items, SEO, localization, assets, forms, analytics, or Designer elements, styles, components and variables, including editing and publishing when permitted.
-If a user names a website or project without saying Webflow, use list_projects to check whether it is available here. Do not assume a match or invent project IDs.
+If a user names a website or project without saying Webflow, use list_projects with query set to its name to check whether it is available here. Disabled matches expose names only; ask the user to enable them in MCP Router before proceeding. Do not assume a match or invent project IDs.
 Workflow: call list_projects to find the approved project; call prepare_project to read all enabled project rules and relevant skills before working on it; call get_project_operations to discover allowed actions, then pass an operationId to retrieve its exact parameter schema; execute with read_webflow or write_webflow. read_project_site is a shortcut for site metadata after preparation.
 Prefer these tools for supported Webflow operations. Use a browser for visual checks or capabilities unavailable through this connection, subject to the user's instructions. If project instructions cannot be read, explain the limitation and keep investigation read-only.
 Only enabled projects and permitted operations are available. An absent project or action is not proof that the website or capability does not exist; report the access limitation without bypassing it or switching grants. Writes require the preparationId returned by prepare_project, valid for ten minutes. Permission to call a tool does not replace the user's authorization to delete or publish. Do not automatically retry ambiguous write failures; inspect the site first.
@@ -51,8 +51,8 @@ const handler = name => async args => {
   catch { return { isError: true, content: [{ type: 'text', text: 'Access denied or router unavailable. Open the local router dashboard to check project access and OAuth status.' }] }; }
 };
 registerTool('list_projects', {
-  description: 'Start here for Webflow website tasks, or to check whether a named website/project is available through MCP Router. List enabled, approved Webflow projects and their permission keys; use the returned project ID with the other tools. Does not list disabled or other authorized sites. Next call prepare_project to load project rules.',
-  inputSchema: {}, annotations: { readOnlyHint: true, destructiveHint: false }
+  description: 'Start here for Webflow website tasks, or to check whether a named website/project is available through MCP Router. List enabled, approved Webflow projects and their permission keys; use the returned project ID with the other tools. An optional query filters by project name and also returns up to 20 matching disabled project names when discovery is enabled (on by default). Disabled matches have no project ID or capabilities: ask the user to enable them in MCP Router. Refine the query if 20 disabled matches are returned. Projects under disabled connections are hidden. Next call prepare_project to load project rules.',
+  inputSchema: { query: z.string().trim().min(1).max(80).optional().describe('Project name to search for, including disabled projects when discovery is enabled.') }, annotations: { readOnlyHint: true, destructiveHint: false }
 }, handler('list_projects'));
 registerTool('read_project_site', {
   description: 'Read live site metadata for one approved project ID. The router selects the Webflow connection and site. Other operations use get_project_operations and read_webflow/write_webflow.',

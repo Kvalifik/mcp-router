@@ -1,5 +1,6 @@
 import React from 'react';
 import { ChevronDown, Settings2, SunMoon, PanelTop, Monitor, Server, ArrowDownUp, ShieldCheck, Activity, RefreshCw, Info, Pencil, Trash2, MessageSquare, Code2, Terminal, Plus, Copy, Check, TriangleAlert, CloudOff, Eye, Ban, CheckCheck, Unplug } from 'lucide-react';
+import { AnimatedText } from './components/ui/animated-content.jsx';
 import { Button } from './components/ui/button.jsx';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuCheckboxItem } from './components/ui/dropdown-menu';
 import { toast } from 'sonner';
@@ -24,7 +25,7 @@ export function ActionMenu({items, trigger}) {
   };
   const button = native ? React.cloneElement(trigger, {onClick:open,onKeyDown:event=>{if(event.key==='ArrowDown'){event.preventDefault();open(event);}},'aria-haspopup':'menu'}) : trigger;
   if(native)return button;
-  const render=entries=>entries.map((item,index)=>item.separator?<DropdownMenuSeparator key={`separator-${index}`} />:item.children?<DropdownMenuSub key={item.label}><DropdownMenuSubTrigger><ItemIcon name={item.icon} />{item.label}</DropdownMenuSubTrigger><DropdownMenuSubContent>{render(item.children)}</DropdownMenuSubContent></DropdownMenuSub>:item.checked!==undefined?<DropdownMenuCheckboxItem key={item.id} disabled={item.disabled} checked={item.checked} onSelect={item.onSelect}><ItemIcon name={item.icon} />{item.label}</DropdownMenuCheckboxItem>:<DropdownMenuItem key={item.id} disabled={item.disabled} variant={item.variant} onSelect={item.onSelect}><ItemIcon name={item.icon} />{item.label}</DropdownMenuItem>);
+  const render=entries=>entries.map((item,index)=>item.separator?<DropdownMenuSeparator key={`separator-${index}`} />:item.children?<DropdownMenuSub key={item.label}><DropdownMenuSubTrigger><ItemIcon name={item.icon} /><AnimatedText>{item.label}</AnimatedText></DropdownMenuSubTrigger><DropdownMenuSubContent>{render(item.children)}</DropdownMenuSubContent></DropdownMenuSub>:item.checked!==undefined?<DropdownMenuCheckboxItem key={item.id} disabled={item.disabled} checked={item.checked} onSelect={item.onSelect}><ItemIcon name={item.icon} /><AnimatedText>{item.label}</AnimatedText></DropdownMenuCheckboxItem>:<DropdownMenuItem key={item.id} disabled={item.disabled} variant={item.variant} onSelect={item.onSelect}><ItemIcon name={item.icon} /><AnimatedText>{item.label}</AnimatedText></DropdownMenuItem>);
   return <DropdownMenu><DropdownMenuTrigger asChild>{button}</DropdownMenuTrigger><DropdownMenuContent align="end" sideOffset={20}>{render(items)}</DropdownMenuContent></DropdownMenu>;
 }
 

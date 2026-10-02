@@ -312,3 +312,69 @@ test('new connection naming waits for discovery and is shared across Stable and 
     assert.throws(() => router.edit('connections', id, { dismissNaming: false }));
   }
 });
+
+
+test('disabled project search is default-on, minimal, bounded, and never grants access', async t => {
+  const { router, store, dir, a, b, calls } = fixture(t);
+  router.saveProject({ id:'enabled', name:'Example live', connectionId:a, siteId:a, enabled:true });
+  router.saveProject({ id:'disabled', name:'Example draft', connectionId:a, siteId:a });
+  router.saveProject({ id:'hidden', name:'Example hidden', connectionId:b, siteId:b });
+  router.setConnection(b, false);
+  assert.deepEqual((await router.call('list_projects')).map(p => p.id), ['enabled']);
+  const results = await router.call('list_projects', {query:'  EXAMPLE  '});
+  assert.equal(results.length, 2);
+  assert.deepEqual(results[1], {name:'Example draft', status:'disabled', nextStep:'Ask the user to enable this project in MCP Router before accessing it.'});
+  assert.deepEqual(await router.call('list_projects', {query:'missing'}), []);
+  await assert.rejects(router.call('read_project_site', {projectId:'disabled'}), /denied/);
+  assert.deepEqual(calls, []);
+  store.data.projects.disabled.available = false;
+  assert.equal((await router.call('list_projects', {query:'Example'})).length, 1);
+  store.data.projects.disabled.available = true;
+  store.data.projects.disabled.deletedAt = '2026-01-01';
+  assert.equal((await router.call('list_projects', {query:'Example'})).length, 1);
+  delete store.data.projects.disabled.deletedAt;
+  router.setDisabledProjectDiscovery(false);
+  assert.equal(new Store(dir).data.settings.discoverDisabledProjects, false);
+  assert.equal((await router.call('list_projects', {query:'Example'})).length, 1);
+  router.setDisabledProjectDiscovery(true);
+  assert.equal(new Store(dir).data.settings.discoverDisabledProjects, true);
+  for (let i=0; i<25; i++) router.saveProject({id:`extra-${i}`, name:`Example ${i}`, connectionId:a, siteId:a});
+  assert.equal((await router.call('list_projects', {query:'Example'})).filter(p => p.status==='disabled').length, 20);
+  for (const query of ['', '  ', 42, null, 'x'.repeat(81)]) await assert.rejects(router.call('list_projects', {query}), /Invalid/);
+  await assert.rejects(router.call('list_projects', {includeDisabled:true}), /Invalid/);
+  assert.throws(() => router.setDisabledProjectDiscovery('false'), /Invalid/);
+});
+
+test('owner tests read disabled projects without granting MCP access', async t => {
+  const { router, store, a, b } = fixture(t);
+  router.saveProject({id:'owner-test',name:'Example',connectionId:a,siteId:a,enabled:false});
+  assert.equal((await router.testProject({projectId:'owner-test'})).id,a);
+  assert.equal(store.data.projects['owner-test'].enabled,false);
+  await assert.rejects(router.call('read_project_site',{projectId:'owner-test'}),/denied/);
+  await assert.rejects(router.testProject({projectId:'owner-test',siteId:b}),/Invalid/);
+  store.data.projects['owner-test'].read=false;
+  await assert.rejects(router.testProject({projectId:'owner-test'}),/denied/);
+  store.data.projects['owner-test'].read=true;
+  store.connection(a).enabled=false;
+  await assert.rejects(router.testProject({projectId:'owner-test'}),/disabled/);
+});
+
+test('owner tests retain grant isolation and reject policy changes during reads', async t => {
+  const { router, store, a, b } = fixture(t);
+  router.saveProject({id:'owner-test',name:'Example',connectionId:a,siteId:a,enabled:false});
+  const project=store.data.projects['owner-test'];
+  project.channel='beta';
+  await assert.rejects(router.testProject({projectId:'owner-test'}));
+  project.channel='stable';
+  router.open=async()=>({listSites:async()=>{project.siteId=b;return [{id:a,name:'Example'}];},close:async()=>{}});
+  await assert.rejects(router.testProject({projectId:'owner-test'}),/changed|denied/);
+});
+
+test('owner diagnostics withhold results after grant or read-permission revocation', async t => {
+  for (const revoke of [({store,a})=>{delete store.connection(a).tokens;},({store})=>{store.data.projects['owner-test'].read=false;}]) {
+    const f=fixture(t);
+    f.router.saveProject({id:'owner-test',name:'Example',connectionId:f.a,siteId:f.a,enabled:false});
+    f.router.open=async()=>({listSites:async()=>{revoke(f);return [{id:f.a,name:'Example'}];},close:async()=>{}});
+    await assert.rejects(f.router.testProject({projectId:'owner-test'}),/Authorization|denied/);
+  }
+});

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.8.4 — Smoother interface and connection testing
+
+- Animate changing text, icons, project filtering and ordering, expanding sections, scrollbars, and popups while respecting reduced-motion preferences.
+- Keep long project names within their rows and refine compact-window dialogs and controls.
+- Allow owner connection tests for disabled projects without enabling AI access, with clearer test feedback.
+- Let AI name searches discover disabled project names, with a setting to disable discovery; project content remains inaccessible until enabled.
+- Refresh demo coverage, documentation, screenshots, and third-party notices.
+
 ## 0.8.3 — Clearer permissions and compact controls
 
 - Add icons to permission presets and a Read & write preset that excludes Delete and Publish.

@@ -17,6 +17,7 @@ for rel,entry in sorted(lock['packages'].items()):
  if not files:missing.append(name);parts.append('\nLicense text requires review before redistribution.\n')
  for f in files:parts.append('\n### '+f.name+'\n\n```text\n'+f.read_text(errors='replace').rstrip()+'\n```\n')
 if (supplement/'shadcn-ui.txt').exists():parts.append('\n## shadcn/ui — copied and adapted UI components\n\n```text\n'+(supplement/'shadcn-ui.txt').read_text()+'\n```\n')
+if (supplement/'motion-primitives.txt').exists():parts.append('\n## Motion Primitives — adapted text animation components\n\n```text\n'+(supplement/'motion-primitives.txt').read_text()+'\n```\n')
 (r/'THIRD_PARTY_NOTICES.md').write_text(''.join(parts))
 print('Unresolved root license texts:',missing)
 # Preserve the generator, without network retrieval, for reproducible local inventories.

@@ -34,3 +34,17 @@ test('demo rejects invalid updates without applying partial edits',()=>{
   assert.throws(()=>demo.mutate('/settings/connection-order',{ids:['missing']}));
   assert.throws(()=>demo.mutate('/unknown'));
 });
+
+
+test('demo disabled-project discovery setting can be toggled', () => {
+  const demo = createDemoState(seed);
+  demo.mutate('/settings/disabled-project-discovery', {enabled:false});
+  demo.mutate('/settings/disabled-project-discovery', {enabled:true});
+  assert.throws(() => demo.mutate('/settings/disabled-project-discovery', {enabled:'false'}));
+});
+
+test('demo connection tests do not enable disabled projects',()=>{
+  const demo=createDemoState(seed);
+  assert.equal(demo.mutate('/read-project',{projectId:'project'}).simulated,true);
+  assert.equal(demo.state.projects[0].enabled,false);
+});

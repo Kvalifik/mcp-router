@@ -109,6 +109,11 @@ export class Router {
     this.store.audit('connection_order_saved');
   }
   setDefaultChannel(channel) { endpoint(channel); this.store.data.settings.defaultChannel=channel; this.store.audit('default_channel_saved',{channel}); }
+  setDisabledProjectDiscovery(enabled) {
+    if (typeof enabled !== 'boolean') throw new Error('Invalid settings');
+    this.store.data.settings.discoverDisabledProjects = enabled;
+    this.store.audit('disabled_project_discovery_saved', { enabled });
+  }
   setDefaultPermissions(value) { setDefaults(this.store, value); }
   async serial(id, action) {
     const previous = this.locks.get(id) || Promise.resolve();
@@ -251,6 +256,30 @@ export class Router {
       } catch { return false; }
     }).map(({context})=>context) };
   }
+  // Owner dashboard diagnostic only; never expose this through MCP tool dispatch.
+  async testProject(args) {
+    if (Object.keys(args).length !== 1 || typeof args.projectId !== 'string') throw new Error('Invalid test arguments');
+    const check = () => {
+      const p = this.store.data.projects[args.projectId];
+      if (!p || p.deletedAt || p.available === false || !permissions(p)['site:read']) throw new Error('Project access denied');
+      const c = this.store.connection(p.connectionId);
+      if (!c.enabled || c.deletedAt) throw new Error('Connection disabled');
+      if (!session(this.store, p.connectionId, this.channel(p)).tokens) throw new Error('Authorization required for selected MCP channel');
+      return p;
+    };
+    const p = structuredClone(check());
+    const channel = this.channel(p);
+    const signature = project => JSON.stringify([project.connectionId, project.siteId, this.channel(project), permissions(project)]);
+    const initial = signature(p);
+    const sites = await this.sites(p.connectionId, { channel });
+    const current = check();
+    if (signature(current) !== initial) throw new Error('Project policy changed during test');
+    const site = sites.find(site => site.id === p.siteId);
+    if (!site) throw new Error('Project site is no longer authorized');
+    this.store.audit('project_connection_test', { projectId: p.id, connectionId: p.connectionId });
+    return site;
+  }
+
   async extendedCall(name,args) {
     const fields={get_project_guidance:['projectId'],get_project_operations:['projectId','operationId'],prepare_project:['projectId'],read_webflow:['projectId','operationId','params','pageId'],write_webflow:['projectId','operationId','params','pageId','preparationId']}[name];
     if(Object.keys(args).some(k=>!fields.includes(k)) || typeof args.projectId!=='string')throw new Error('Invalid arguments');
@@ -325,9 +354,22 @@ export class Router {
   async call(name, args = {}) {
     if (!args || typeof args !== 'object' || Array.isArray(args)) throw new Error('Invalid arguments');
     if (name === 'get_agent_context' && !Object.keys(args).length) return this.agentContext();
-    if (name === 'list_projects' && !Object.keys(args).length) {
-      return Object.values(this.store.data.projects).filter(p => !p.deletedAt && !this.store.data.connections[p.connectionId]?.deletedAt && p.available !== false && p.enabled && Object.values(permissions(p)).some(Boolean) && this.store.connection(p.connectionId).enabled)
+    if (name === 'list_projects') {
+      if (Object.keys(args).some(key => key !== 'query') ||
+          ('query' in args && (typeof args.query !== 'string' || !args.query.trim() || args.query.length > 80))) throw new Error('Invalid project search');
+      const query = args.query?.trim().toLowerCase();
+      const projects = Object.values(this.store.data.projects).filter(p => {
+        const connection = this.store.data.connections[p.connectionId];
+        return !p.deletedAt && p.available !== false && connection?.enabled && !connection.deletedAt &&
+          (!query || p.name.toLowerCase().includes(query));
+      });
+      const approved = projects.filter(p => p.enabled && Object.values(permissions(p)).some(Boolean))
         .map(p => ({ id:p.id, name:p.name, capabilities: Object.entries(permissions(p)).filter(([,v])=>v).map(([k])=>k) }));
+      const disabled = query && this.store.data.settings.discoverDisabledProjects !== false
+        ? projects.filter(p => !p.enabled).sort((a,b) => a.name.localeCompare(b.name)).slice(0, 20)
+          .map(p => ({ name:p.name, status:'disabled', nextStep:'Ask the user to enable this project in MCP Router before accessing it.' }))
+        : [];
+      return [...approved, ...disabled];
     }
     if (['get_project_guidance','get_project_operations','prepare_project','read_webflow','write_webflow'].includes(name)) return this.extendedCall(name,args);
     if (name !== 'read_project_site' || Object.keys(args).length !== 1 || typeof args.projectId !== 'string') {
