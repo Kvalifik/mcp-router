@@ -11,7 +11,11 @@ Approved AI hub design: a white AI spark between two arch branches and two round
 - `mark.svg`: standalone transparent vector mark using `currentColor` (black by default).
 - `mark-black.svg`, `mark-white.svg`: fixed-colour vector marks.
 - `mark-black.png`, `mark-white.png`: transparent 1024px monochrome exports.
-- `menubar/MCPRouterTemplate.png`, `@2x.png`, `@3x.png`: 22pt macOS template assets with an 18pt black mark and transparent padding. Use as a template image so macOS supplies the appropriate tint. Assets only; no new menu-bar feature has been added.
+- `menubar/MCPRouterTemplate.png`, `@2x.png`, `@3x.png`: 22pt macOS template assets with an 18pt black mark and transparent padding. Use as a template image so macOS supplies the appropriate tint.
+
+- `menubar/MCPRouterWarningTemplate.png`, `@2x.png`, `@3x.png`: approved 25 × 24pt warning variant, with a transparent mask separating the triangle from the router mark. Rendered from the vector composition in `scripts/build-tray-warning.cjs`.
+
+Rebuild the warning variant with `npx electron scripts/build-tray-warning.cjs`.
 
 ## Rebuild
 

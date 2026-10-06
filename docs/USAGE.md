@@ -207,9 +207,28 @@ the selected total; both shows connections/projects (for example, `2/7`).
 Connections counts enabled connections with at least one ready authorization;
 Projects counts enabled, available projects with permissions and
 a ready authorization for their selected Stable or Beta version. These are
-configured access counts, not live AI sessions. Counts update when router state
-is saved, without a polling timer. Hover over the icon for labeled
-counts and an indication when access needs attention.
+configured access counts, not live AI sessions. Enabled switches preserve your
+selection even when access is not ready. Healthy views show ordinary counts with
+no readiness banner or extra status text. Disabled connections do not create warnings.
+Counts update when router state is saved, without a polling timer.
+
+When access needs attention, the menu bar icon gains a warning triangle (including
+in Icon only mode). Its tooltip then shows how many enabled projects are ready,
+names the affected projects or connections, and explains the next action. The
+normal tooltip uses plain connection and project counts. Pending checks are
+informational, with no warning triangle or “X of X” count.
+
+A small circular warning badge appears on the affected connection, including when
+collapsed. In its project row, the warning replaces the normal access badge; row
+height stays the same and the Beta badge continues to identify the selected version.
+Hover or focus the warning to read the reason, then click or press Enter to review
+and fix it. Connection details include affected projects hidden by search or pin
+filters. **Settings → Review access issues** lists every current issue.
+
+Details offer authorization for the selected Stable or Beta version, a retry for
+failed checks, or permission settings. These actions never switch versions
+automatically. After recovery the badges disappear. Pending checks use a neutral
+spinner badge with details available in the same way.
 
 Click the item to open the same interface in a compact, responsive window. Search,
 pinning, access switches, and settings use the same controls as the main window.

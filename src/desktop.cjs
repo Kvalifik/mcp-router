@@ -19,7 +19,12 @@ else {
     const { managementToken, router } = await main();
     const allowed = event => [win, popover].some(window => window && !window.isDestroyed() && event.sender === window.webContents && event.senderFrame === window.webContents.mainFrame) && event.senderFrame?.url === origin + '/';
     const { MODES, menuBarMode, menuBarStatus, menuBarTitle, popoverBounds, createTrayTextUpdater } = require('./menu-bar.cjs');
-    const updateTrayText = createTrayTextUpdater();
+    const trayIcons = Object.fromEntries([['normal','MCPRouterTemplate'],['warning','MCPRouterWarningTemplate']].map(([key,name])=>{
+      const icon=nativeImage.createFromPath(path.join(__dirname,`../assets/icons/menubar/${name}.png`));
+      icon.setTemplateImage(true);
+      return [key,icon];
+    }));
+    const updateTrayText = createTrayTextUpdater(trayIcons);
     const showMain = () => { popover?.hide(); if(win.isMinimized())win.restore(); win.show(); win.focus(); };
     const mode = () => menuBarMode(router.store.data.settings?.menuBar);
     ipcMain.handle('menu-bar-mode', event => { if(!allowed(event))throw new Error('Denied'); return mode(); });
@@ -80,8 +85,7 @@ else {
       if(process.platform!=='darwin')return;
       if(mode()==='off'){tray?.destroy();tray=null;popover?.hide();return;}
       if(!tray) {
-        const icon=nativeImage.createFromPath(path.join(__dirname,'../assets/icons/menubar/MCPRouterTemplate.png'));
-        icon.setTemplateImage(true);tray=new Tray(icon);
+        tray=new Tray(trayIcons.normal);
         tray.on('click',()=>{togglePopover().catch(()=>{});});
         tray.on('right-click',()=>tray.popUpContextMenu(Menu.buildFromTemplate([{label:'Open MCP Router',click:showMain},{type:'separator'},{role:'quit'}])));
       }

@@ -1,4 +1,5 @@
 import http from 'node:http';
+import access from './access-status.cjs';
 import paths from './paths.cjs';
 import privateDirectories from './private-directory.cjs';
 import { timingSafeEqual } from 'node:crypto';
@@ -83,7 +84,7 @@ export function createDashboard(router, oauth, origin, { managementToken = nonce
       const supplied = Buffer.from(cookies(req).router_session || '');
       const expected = Buffer.from(managementToken);
       if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) return json(res, {error:'Open MCP Router to access this dashboard.'}, 403);
-      if (req.method === 'GET' && url.pathname === '/api/state') return json(res, { ...router.store.summary(), csrf });
+      if (req.method === 'GET' && url.pathname === '/api/state') { const summary = router.store.summary(); return json(res, { ...summary, accessStatus: access.accessStatus(summary), csrf }); }
       if (req.method === 'GET' && (url.pathname === '/' || /^\/assets\/[A-Za-z0-9_-]+\.(js|css|png|svg)$/.test(url.pathname))) {
         const name = url.pathname === '/' ? 'index.html' : url.pathname.slice(1);
         res.setHeader('Content-Type', name.endsWith('.js') ? 'text/javascript' : name.endsWith('.css') ? 'text/css' : name.endsWith('.svg') ? 'image/svg+xml' : name.endsWith('.png') ? 'image/png' : 'text/html');
