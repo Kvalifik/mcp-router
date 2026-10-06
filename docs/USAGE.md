@@ -230,7 +230,8 @@ failed checks, or permission settings. These actions never switch versions
 automatically. After recovery the badges disappear. Pending checks use a neutral
 spinner badge with details available in the same way.
 
-Click the item to open the same interface in a compact, responsive window. Search,
+Click the item to open the same interface in a compact, responsive window,
+including while another app is fullscreen. Search,
 pinning, access switches, and settings use the same controls as the main window.
 Settings, Add connection, Apps, and Open main window appear as equally sized
 icons in the compact header. The expand icon opens the full window.

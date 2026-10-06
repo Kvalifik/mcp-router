@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.6 — Menu bar access in fullscreen
+
+- Allow the macOS menu bar window to open while another app is fullscreen.
+
 ## 0.8.5 — Clearer access warnings
 
 - Keep healthy views quiet and show compact warning badges on affected connections and projects.
