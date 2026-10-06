@@ -67,6 +67,8 @@ else {
       if(!popover) {
         popover = new BrowserWindow({width:400,height:560,show:false,frame:false,...(process.platform==='darwin'?{type:'panel'}:{}),resizable:false,fullscreenable:false,minimizable:false,maximizable:false,skipTaskbar:true,alwaysOnTop:true,
           webPreferences:{preload:path.join(__dirname,'preload.cjs'),nodeIntegration:false,contextIsolation:true,sandbox:true}});
+        // Let the menu bar panel join the active Space, including another app's fullscreen Space.
+        if(process.platform==='darwin')popover.setVisibleOnAllWorkspaces(true,{visibleOnFullScreen:true});
         popover.webContents.setWindowOpenHandler(()=>({action:'deny'}));
         popover.webContents.on('will-navigate',(event,url)=>{if(url!==origin+'/')event.preventDefault();});
         popover.on('blur',()=>{if(!nativeMenus.has(popover))popover?.hide();});
