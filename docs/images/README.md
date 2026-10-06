@@ -37,3 +37,15 @@ demo window or quit.
 The menu bar panel’s expand button opens the main demo window. Native dropdowns
 use the same validated menu templates and bundled icons as the app, and keep the
 panel open while a menu is active. The panel itself does not enter full screen.
+
+To preview access warnings with fictional data, run
+`npx electron scripts/capture-readme.mjs --attention`. This also captures the
+healthy compact window and warning states (collapsed, expanded, tooltip, and
+recovery details) in `/tmp/mcp-router-*.png`; these previews are not README assets.
+It checks that warnings do not increase row height, keyboard access and focus
+return work, filtered projects remain reachable, and simulated Beta recovery
+clears warnings without changing the Stable grant. All actions use in-memory demo
+state, including in this preview mode.
+
+For the same interaction checks without replacing screenshots, use
+`npx electron scripts/capture-readme.mjs --verify-attention`.

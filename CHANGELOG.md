@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.8.5 — Clearer access warnings
+
+- Keep healthy views quiet and show compact warning badges on affected connections and projects.
+- Explain access issues on hover or keyboard focus, with scoped recovery actions when opened.
+- Show ready-versus-enabled counts in the menu bar tooltip only when access needs attention, and add a warning variant of the menu bar icon.
+- Use shared readiness checks across the dashboard and menu bar while preserving separate Stable and Beta grants.
+- Add interaction checks for keyboard navigation, filtered projects, pending checks, and recovery; refresh screenshots and documentation.
+
 ## 0.8.4 — Smoother interface and connection testing
 
 - Animate changing text, icons, project filtering and ordering, expanding sections, scrollbars, and popups while respecting reduced-motion preferences.

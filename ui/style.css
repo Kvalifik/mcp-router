@@ -62,12 +62,17 @@ button:disabled { cursor:not-allowed; }
 .project-access-badge, .project-beta-badge { width:20px; height:20px; padding:3px; justify-content:center; flex-shrink:0; border:1px solid var(--border); border-radius:999px; color:var(--muted-foreground); }
 .project-access-badge { background:var(--secondary); }
 .project-beta-badge { background:transparent; }
-.project-beta-badge:has(.lucide-triangle-alert) { color:var(--color-amber-700); }
-.dark .project-beta-badge:has(.lucide-triangle-alert) { color:var(--color-amber-400); }
 .project-access-badge svg, .project-beta-badge svg { width:12px; height:12px; }
 .project-beta-badge > span { font-size:12px; }
 .project-access-badge:hover, .project-beta-badge:hover,
 .project-access-badge:focus-visible, .project-beta-badge:focus-visible { background:var(--secondary); color:var(--foreground); }
+.access-issue-badge { position:relative; overflow:visible; width:20px; height:20px; padding:3px; border:1px solid var(--border); border-radius:999px; background:var(--secondary); color:var(--muted-foreground); }
+.access-issue-badge::before { content:""; position:absolute; inset:-3px; border-radius:999px; }
+.access-issue-badge svg { width:12px; height:12px; }
+.access-issue-warning { color:var(--color-amber-700); }
+.dark .access-issue-warning { color:var(--color-amber-400); }
+.access-issue-badge:hover, .access-issue-badge:focus-visible { background:var(--accent); }
+.connection-controls > .access-issue-badge { margin-right:6px; }
 .project-badges { gap:8px; margin-right:10px; flex-shrink:0; }
 .connection-header [data-slot="accordion-trigger"] { padding-right:8px; }
 .project-row-motion + .project-row-motion > .project-row { border-top:1px solid var(--color-border); }

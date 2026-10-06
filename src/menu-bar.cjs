@@ -1,20 +1,7 @@
 const MODES = ['off', 'icon', 'connections', 'projects', 'both'];
 function menuBarMode(saved) { return MODES.includes(saved) ? saved : 'projects'; }
-function menuBarStatus(summary) {
-  const ready = grant => grant?.authorized && grant.status === 'connected' && !grant.inventoryPending;
-  const connections = summary.connections.filter(c => c.enabled);
-  const projects = summary.projects.filter(p => {
-    const c = connections.find(c => c.id === p.connectionId);
-    const channel = p.channel && p.channel !== 'inherit' ? p.channel : c?.channel || 'stable';
-    const grant = c?.channels?.[channel];
-    return p.enabled && p.available !== false && Object.values(p.permissions || {}).some(Boolean) && ready(grant) && grant.siteIds?.includes(p.siteId);
-  });
-  return {
-    connections: connections.filter(c => Object.values(c.channels || {}).some(ready)).length,
-    projects: projects.length,
-    attention: connections.some(c => c.lastError || !ready(c.channels?.[c.channel || 'stable'])) || summary.projects.some(p => p.enabled && connections.some(c => c.id === p.connectionId) && !projects.includes(p)),
-  };
-}
+const { accessStatus } = require('./access-status.cjs');
+function menuBarStatus(summary) { return accessStatus(summary); }
 function menuBarTitle(mode, status) {
   if (mode === 'both') return `${status.connections}/${status.projects}`;
   if (mode === 'connections') return String(status.connections);
@@ -25,13 +12,18 @@ function popoverBounds(anchor, area) {
   const width = Math.min(400, area.width), height = Math.min(560, area.height);
   return { width, height, x: Math.round(Math.max(area.x, Math.min(anchor.x + anchor.width / 2 - width / 2, area.x + area.width - width))), y: Math.round(Math.max(area.y, Math.min(anchor.y + anchor.height + 4, area.y + area.height - height))) };
 }
-function createTrayTextUpdater() {
-  let previousTray, previousTitle, previousTooltip;
+function createTrayTextUpdater(icons) {
+  let previousTray, previousTitle, previousTooltip, previousAttention;
   return (tray, mode, status) => {
     const title = menuBarTitle(mode, status);
-    const tooltip = `${status.connections} enabled ${status.connections===1?'connection':'connections'} · ${status.projects} enabled ${status.projects===1?'project':'projects'}${status.attention?' · Access needs attention':''}`;
+    const projectCount = status.attention
+      ? `${status.projects} of ${status.enabledProjects ?? status.projects} enabled projects ready`
+      : `${status.projects} ${status.projects===1?'project':'projects'}`;
+    const tooltip = `${status.connections} ${status.connections===1?'connection':'connections'} · ${projectCount}${status.attention?' · Access needs attention':''}${(status.issues || []).map(issue => `\n${issue.name}: ${issue.reason} — ${issue.actionLabel}`).join('')}`;
     if (tray !== previousTray || title !== previousTitle) tray.setTitle(title, {fontType:'monospacedDigit'});
     if (tray !== previousTray || tooltip !== previousTooltip) tray.setToolTip(tooltip);
+    if (icons && (tray !== previousTray || status.attention !== previousAttention)) tray.setImage(status.attention ? icons.warning : icons.normal);
+    previousAttention = status.attention;
     previousTray = tray; previousTitle = title; previousTooltip = tooltip;
   };
 }

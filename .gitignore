@@ -193,3 +193,11 @@ public/
 !/ui/components/ui/animated-content.jsx
 
 !/licenses/motion-primitives.txt
+
+!/scripts/build-tray-warning.cjs
+!/assets/icons/menubar/MCPRouterWarningTemplate.png
+!/assets/icons/menubar/MCPRouterWarningTemplate@2x.png
+!/assets/icons/menubar/MCPRouterWarningTemplate@3x.png
+
+!/src/access-status.cjs
+!/test/access-status.test.js

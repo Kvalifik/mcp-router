@@ -11,7 +11,7 @@ import {excludeFromPackage} from '../packaging.mjs';
 
 async function dashboard(t, options={}) {
  const origin='http://127.0.0.1:43138';
- const router={store:{summary:()=>({connections:[]})},createConnection:()=> 'synthetic'};
+ const router={store:{summary:()=>({connections:[],projects:[]})},createConnection:()=> 'synthetic'};
  const server=createDashboard(router,{},origin,{managementToken:'owner-secret',loginTicket:'one-time-ticket',...options});
  server.listen(43138,'127.0.0.1');await once(server,'listening');
  t.after(()=>new Promise(resolve=>{server.closeAllConnections();server.close(resolve);}));

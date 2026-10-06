@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import menuBar from '../src/menu-bar.cjs';
-const {menuBarStatus,menuBarTitle,popoverBounds}=menuBar;
+const {menuBarTitle,popoverBounds}=menuBar;
+const menuBarStatus = summary => { const {connections,projects,attention}=menuBar.menuBarStatus(summary); return {connections,projects,attention}; };
 const fixture=()=>({connections:[{id:'one',enabled:true,channel:'stable',channels:{stable:{authorized:true,status:'connected',siteIds:['a']},beta:{authorized:true,status:'connected',siteIds:['a','b']}}}],projects:[{id:'a',connectionId:'one',siteId:'a',enabled:true,permissions:{'site:read':true}},{id:'b',connectionId:'one',siteId:'b',enabled:true,channel:'beta',permissions:{'site:read':true}}]});
 test('counts a connection once across grants and honors project channel overrides',()=>{
   assert.deepEqual(menuBarStatus(fixture()),{connections:1,projects:2,attention:false});
@@ -52,4 +53,17 @@ test('defaults to projects without overwriting saved display preferences',()=>{
   assert.equal(menuBar.menuBarMode(undefined),'projects');
   assert.equal(menuBar.menuBarMode('unknown'),'projects');
   for(const mode of menuBar.MODES)assert.equal(menuBar.menuBarMode(mode),mode);
+});
+test('warning image follows attention, clears on recovery and initializes replacement trays',()=>{
+  const normal={},warning={},images=[];
+  const update=menuBar.createTrayTextUpdater({normal,warning});
+  const tray={setTitle(){},setToolTip(){},setImage:image=>images.push(image)};
+  const status={connections:1,projects:1,attention:false};
+  update(tray,'projects',status);
+  update(tray,'projects',status);
+  update(tray,'icon',{...status,attention:true});
+  update(tray,'icon',{...status,attention:true});
+  update(tray,'icon',status);
+  update({...tray},'icon',status);
+  assert.deepEqual(images,[normal,warning,normal,normal]);
 });
