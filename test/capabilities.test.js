@@ -48,7 +48,7 @@ test('scoped read injects site and rejects override, mixed actions and write via
  await router.call('read_webflow',request('data_pages_tool.list_pages'));
  assert.equal(calls.at(-1).args.actions[0].list_pages.site_id,site);
  await assert.rejects(router.call('read_webflow',request('data_pages_tool.list_pages',{site_id:other})),/Cross-project/);
- await assert.rejects(router.call('read_webflow',request('data_pages_tool.create_page',{title:'x',slug:'x'})),/permission/);
+ await assert.rejects(router.call('read_webflow',request('data_pages_tool.create_page',{title:'x',slug:'x'})),/Use write_webflow/);
  await assert.rejects(router.call('read_webflow',request('data_pages_tool.list_pages',{actions:[{delete_branch:{}}]})),/schema/);
 });
 test('CMS write requires preparation, resource ownership, and separate delete/publish grants',async t=>{
@@ -83,8 +83,27 @@ test('revocation during ownership preflight prevents dispatch; in-flight reads w
  await assert.rejects(router.call('read_webflow',request('data_pages_tool.list_pages')),/policy changed/);
 });
 test('design edits require explicit custom-code permission too',async t=>{
- const {router}=fixture(t);grant(router,{'element:write':true});
- await assert.rejects(router.call('write_webflow',request('data_element_tool.set_text',{}, {pageId:'owned-page'})),/permission/);
+ const {router,calls}=fixture(t);grant(router,{'element:write':true});
+ const expected='Missing project permissions: Custom code → Write. Ask the user to enable these in MCP Router using the sliders button next to the project, then save changes.';
+ await assert.rejects(router.call('write_webflow',request('data_element_tool.set_text',{}, {pageId:'owned-page'})),{message:expected});
+ await assert.rejects(router.call('get_project_operations',{projectId:'p',operationId:'data_element_tool.set_text'}),{message:expected});
+ assert.equal(calls.length,0);
+});
+test('permission errors list only missing grants and discovery remains filtered',async t=>{
+ const {router,calls}=fixture(t);
+ grant(router,{'element:write':true,'agent_instructions:read':false});
+ await assert.rejects(router.call('write_webflow',request('data_element_tool.set_text')),/Missing project permissions: Custom code → Write, Instructions → Read\./);
+ grant(router,{});
+ for(const [action,mode] of [['publish_collection_items','Publish'],['delete_collection_items','Delete']]) {
+   await assert.rejects(router.call('write_webflow',request('data_cms_tool.'+action)),new RegExp(`Missing project permissions: CMS → ${mode}\\.`));
+ }
+ const operations=await router.call('get_project_operations',{projectId:'p'});
+ assert(!operations.some(op=>op.id==='data_element_tool.set_text'));
+ await assert.rejects(router.call('get_project_operations',{projectId:'p',operationId:'unknown.operation'}),/Unknown operation/);
+ await assert.rejects(router.call('read_webflow',request('data_pages_tool.list_pages')),/Missing project permissions: Pages → Read\./);
+ grant(router,{'pages:read':true});
+ await assert.rejects(router.call('write_webflow',request('data_pages_tool.list_pages')),/Use read_webflow/);
+ assert.equal(calls.length,0);
 });
 test('publish is independently granted and dispatched only to the project site',async t=>{
  const {router,calls}=fixture(t);grant(router,{'site:publish':true});
@@ -101,7 +120,7 @@ test('delete permission does not grant write and preparation expires',async t=>{
  await assert.rejects(router.call('write_webflow',request('data_assets_tool.delete_asset',{asset_id:'owned-asset'},{preparationId})),/prepare_project/);
 });
 
-test('instruction preparation cannot bypass an absent instruction-read grant',async t=>{const {router,calls}=fixture(t);await assert.rejects(router.call('prepare_project',{projectId:'p'}),/Instruction read permission/);assert.equal(calls.length,0);});
+test('instruction preparation cannot bypass an absent instruction-read grant',async t=>{const {router,calls}=fixture(t);await assert.rejects(router.call('prepare_project',{projectId:'p'}),/Missing project permissions: Instructions → Read/);assert.equal(calls.length,0);});
 
 test('live guidance stays scoped to the selected grant and current permissions',async t=>{
  const {router,store}=fixture(t);let fail=false, authorized=true, revoke=false;
@@ -118,7 +137,7 @@ test('live guidance stays scoped to the selected grant and current permissions',
      }
    };
  };
- await assert.rejects(router.call('get_project_guidance',{projectId:'p'}),/Instruction read permission/);
+ await assert.rejects(router.call('get_project_guidance',{projectId:'p'}),/Missing project permissions: Instructions → Read/);
  assert.deepEqual(await router.call('get_agent_context'),{contexts:[]});
  assert.equal(opened.length,0);
  grant(router,{});

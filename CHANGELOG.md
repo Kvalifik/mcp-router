@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.8.7 — Faster discovery and clearer access recovery
+
+- Advertise MCP tools immediately and fetch Webflow guidance on demand for the selected project.
+- Give agents specific Router permission errors and safe recovery guidance without exposing provider payloads.
+- Provide short-lived, single-use reauthorization links while keeping Stable and Beta grants separate.
+- Keep permission toggles and presets editable when upstream authorization is missing.
+- Support current macOS ChatGPT/Codex CLI locations and open the releases page from update notifications.
+- Align connection and project status badges, refresh screenshots, and expand recovery checks and documentation.
+
 ## 0.8.6 — Menu bar access in fullscreen
 
 - Allow the macOS menu bar window to open while another app is fullscreen.

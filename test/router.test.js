@@ -123,7 +123,7 @@ test('revoking read permission during an upstream request blocks the response', 
   router.open = async () => ({ listSites: async () => {
     store.data.projects['project-a'].read = false; return [{ id: a, name: 'A' }];
   }, close: async () => {} });
-  await assert.rejects(router.call('read_project_site', { projectId: 'project-a' }), /denied/);
+  await assert.rejects(router.call('read_project_site', { projectId: 'project-a' }), error => ['project_access_denied','router_permission_denied'].includes(error.feedback?.code));
 });
 
 test('OAuth callback rejects swapped connection, wrong browser, expired state and replay', async t => {
@@ -164,7 +164,7 @@ test('upstream revocation of A leaves B usable and never falls back to B credent
     if (provider.id === a) throw new Error('invalid_grant with secret upstream payload');
     return { listSites: async () => [{ id: b, name: 'B' }], close: async () => {} };
   };
-  await assert.rejects(router.sites(a), /Connection check failed/);
+  await assert.rejects(router.sites(a), error => error.feedback?.code === 'upstream_failure');
   assert.equal((await router.sites(b))[0].id, b);
   assert.ok(!JSON.stringify(store.summary()).includes('secret upstream'));
 });
@@ -375,6 +375,6 @@ test('owner diagnostics withhold results after grant or read-permission revocati
     const f=fixture(t);
     f.router.saveProject({id:'owner-test',name:'Example',connectionId:f.a,siteId:f.a,enabled:false});
     f.router.open=async()=>({listSites:async()=>{revoke(f);return [{id:f.a,name:'Example'}];},close:async()=>{}});
-    await assert.rejects(f.router.testProject({projectId:'owner-test'}),/Authorization|denied/);
+    await assert.rejects(f.router.testProject({projectId:'owner-test'}),/authorization|denied/i);
   }
 });

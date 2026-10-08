@@ -201,3 +201,6 @@ public/
 
 !/src/access-status.cjs
 !/test/access-status.test.js
+
+!/src/agent-errors.js
+!/test/agent-recovery.test.js

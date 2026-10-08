@@ -226,6 +226,7 @@ try {
     await click('[aria-label="Expand Example Studio"]');
     await waitFor(projectBadge);
     await new Promise(resolve=>setTimeout(resolve,400));
+    await assertUI(`(()=>{const connection=document.querySelector('${connectionBadge}').getBoundingClientRect();const project=document.querySelector('${projectBadge}').getBoundingClientRect();return Math.abs(connection.x+connection.width/2-project.x-project.width/2)<1;})()`, 'connection and project attention badges must align');
     await assertUI(`Math.abs(document.querySelector('[data-project-id="demo-project-1"]').getBoundingClientRect().height - ${healthyHeight}) < 1`, 'warning must not increase project row height');
     await assertUI(`document.querySelectorAll('.access-issue-warning').length === 2 && !document.body.innerText.includes('enabled projects ready') && !document.body.innerText.includes('Project not included')`, 'one badge per affected project and connection, with no inline error prose');
     await capture('/tmp/mcp-router-attention-compact.png');

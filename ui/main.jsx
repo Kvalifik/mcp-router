@@ -19,7 +19,7 @@ import { ThemeProvider, useTheme } from './theme';
 import './style.css';
 import { projectAuthorized } from './channel-access.js';
 import { presetGrants, accessLabel } from './permission-presets.js';
-import { permissionUnavailable, availablePreset, connectionTestUnavailable } from './permission-availability.js';
+import { connectionTestUnavailable } from './permission-availability.js';
 import appPackage from '../package.json';
 import kvalifikLogo from '../assets/brand/kvalifik.svg';
 
@@ -186,15 +186,6 @@ function ProjectLinks({project}) {
     <Button asChild variant="ghost" size="icon-xs" className="shrink-0 text-muted-foreground"><a href={`https://webflow.com/design/${encodeURIComponent(slug)}`} target="_blank" rel="noopener noreferrer" title="Open in Designer" aria-label={`Open ${project.name} in Designer`} onClick={open('designer')}><Paintbrush className="size-3.5" /></a></Button>
   </div>;
 }
-function PermissionToggle({label,checked,reason,busy,onChange}) {
-  if(!reason)return <Switch aria-label={label} checked={checked} disabled={busy} onCheckedChange={onChange} />;
-  const explanation=`${reason} This permission is unavailable; your saved preference is kept.`;
-  return <Tooltip><TooltipTrigger asChild>
-    <span tabIndex={0} role="group" aria-label={`${label}: unavailable. ${explanation}`} className="inline-flex cursor-not-allowed rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring">
-      <Switch aria-label={label} checked={false} disabled className="pointer-events-none" />
-    </span>
-  </TooltipTrigger><TooltipContent side="top" className="z-[70]">{explanation}</TooltipContent></Tooltip>;
-}
 function PermissionForm({ model, data, busy, perform, close, connect, refresh }) {
   const defaults = model.type === 'defaults';
   const item = model.item || {};
@@ -244,9 +235,7 @@ function PermissionForm({ model, data, busy, perform, close, connect, refresh })
   const [query, setQuery] = useState('');
   const keys = data.permissionGroups.flatMap(g => g.modes.map(m => `${g.area}:${m}`));
   const groups = data.permissionGroups.filter(g => g.title.toLowerCase().includes(query.toLowerCase()));
-  const unavailable = key => permissionUnavailable({connection, channel:selectedChannel, siteId:item.siteId, key, defaults});
-  const hasUnavailable = keys.some(key=>unavailable(key));
-  const preset = type => setGrants(current=>availablePreset(current,presetGrants(keys, type),unavailable));
+  const preset = type => setGrants(presetGrants(keys, type));
   async function submit(e) {
     e.preventDefault();
     if(requestedChannel!==null){toast.error('Complete or cancel authorization before saving.');return;}
@@ -264,20 +253,16 @@ function PermissionForm({ model, data, busy, perform, close, connect, refresh })
     </DialogHeader>}
     {!defaults&&<div className="flex flex-wrap items-center gap-3"><Label htmlFor="project-mcp-version">MCP version</Label><ActionMenu trigger={<Button id="project-mcp-version" type="button" variant="outline" size="sm" disabled={busy}><AnimatedText>{channel==='inherit'?defaultChannelLabel:channel==='beta'?'β Beta':'Stable'}</AnimatedText><ChevronDown className="size-3.5" /></Button>} items={[['inherit',defaultChannelLabel],['stable','Stable'],['beta','β Beta']].map(([value,label])=>({id:value,label:label+(!hasAccess(value==='inherit'?(connection?.channel||'stable'):value)?' — Authorize':''),checked:channel===value,onSelect:()=>selectChannel(value)}))} /></div>}
     <AnimatedReveal show={!defaults&&requestedChannel!==null}><div role="status" className="rounded-md border bg-background p-3 space-y-2"><p className="text-sm font-medium"><AnimatedText>{authorizing?'Waiting for authorization…':`Authorize ${requestedEndpoint==='beta'?'β Beta':'Stable'} for ${item.name}`}</AnimatedText></p><p className="text-xs text-muted-foreground"><AnimatedText>{authorizing?'Complete the Webflow prompt in your browser, then return here. Your edits are kept.':'Select this project in Webflow’s authorization screen. Include any other projects that should keep access through this connection. Your current version stays unchanged until you save.'}</AnimatedText></p><div className="flex gap-2"><Button type="button" size="sm" disabled={busy||!connection} onClick={authorizeRequested}><AnimatedText>{authorizing?'Open authorization again':`Authorize ${requestedEndpoint==='beta'?'β Beta':'Stable'}`}</AnimatedText></Button><Button type="button" size="sm" variant="ghost" disabled={busy} onClick={()=>{setRequestedChannel(null);setAuthorizing(false);}}>Cancel</Button></div></div></AnimatedReveal>
-    {!defaults&&requestedChannel===null&&!hasAccess(selectedChannel)&&<Button type="button" variant="outline" size="sm" onClick={()=>selectChannel(channel)}><AnimatedText>{`Authorize ${selectedChannel==='beta'?'β Beta':'Stable'} for this project`}</AnimatedText></Button>}
 
     <div className="flex min-h-0 flex-col gap-3">
         <div className="flex shrink-0 items-center gap-2"><Input search className="min-w-0 flex-1" aria-label="Search permissions" placeholder="Search permissions…" value={query} onClear={()=>setQuery('')} onChange={e=>setQuery(e.target.value)} /><ActionMenu trigger={<Button type="button" variant="outline" disabled={busy}>Presets<ChevronDown className="size-4" /></Button>} items={[['all','All permissions','CheckCheck'],['no-publishing','No publishing','CloudOff'],['read-write','Read & write','Pencil'],['read','Read only','Eye'],['none','No permissions','Ban']].map(([key,label,icon])=>({id:key,label,icon,onSelect:()=>preset(key)}))} /></div>
         <div className="permission-frame"><Table containerClassName="permission-container" className="permission-table text-xs" aria-label="Permission areas"><TableHeader><TableRow><TableHead className="p-3 text-left">Area</TableHead>{MODES.map(m=><TableHead key={m} className="p-2 text-center capitalize">{m}</TableHead>)}</TableRow></TableHeader><TableBody className="permission-scroll">
-          {groups.map(g=><TableRow key={g.area}><TableHead className="p-3 text-left font-medium">{g.title}</TableHead>{MODES.map(m=><TableCell key={m} className="p-2 text-center">{g.modes.includes(m)?<PermissionToggle label={`${g.title}: ${m}`} checked={!!grants[`${g.area}:${m}`]} reason={unavailable(`${g.area}:${m}`)} busy={busy} onChange={value=>setGrants({...grants,[`${g.area}:${m}`]:value})} />:<span className="text-muted-foreground">—</span>}</TableCell>)}</TableRow>)}
+          {groups.map(g=><TableRow key={g.area}><TableHead className="p-3 text-left font-medium">{g.title}</TableHead>{MODES.map(m=><TableCell key={m} className="p-2 text-center">{g.modes.includes(m)?<Switch aria-label={`${g.title}: ${m}`} checked={!!grants[`${g.area}:${m}`]} disabled={busy} onCheckedChange={value=>setGrants({...grants,[`${g.area}:${m}`]:value})} />:<span className="text-muted-foreground">—</span>}</TableCell>)}</TableRow>)}
           {!groups.length&&<TableRow><TableCell colSpan={5} className="p-5 text-center text-muted-foreground">No matching permission areas.</TableCell></TableRow>}
         </TableBody></Table></div>
-        <p className="shrink-0 text-xs text-muted-foreground">Router permissions only limit access already granted by Webflow. Webflow may still reject restricted actions.</p>
-        <AnimatedReveal className="[--reveal-gap:0.75rem]" show={hasUnavailable}><p className="text-xs text-muted-foreground"><AnimatedWords>Unavailable permissions are locked off. Hover or focus a locked toggle for details. Saved preferences are kept for when access is restored.</AnimatedWords></p></AnimatedReveal>
-        <p className="shrink-0 text-xs text-muted-foreground">{defaults?'Applies to new projects and disabled projects still using defaults. New projects always start disabled.':'Changes require Instructions → Read. Canvas editing also requires Custom code → Write. Delete and publish are separate permissions.'}</p>
+        {defaults&&<p className="shrink-0 text-xs text-muted-foreground">Applies to new projects and disabled projects still using defaults. New projects always start disabled.</p>}
     </div>
-    <AnimatedReveal show={!defaults&&!!testUnavailable}><p id="connection-test-unavailable" className="text-xs text-muted-foreground"><AnimatedWords>{testUnavailable}</AnimatedWords></p></AnimatedReveal>
-    <DialogFooter className="shrink-0 border-t pt-4">{!defaults && <Button type="button" variant="outline" size="icon" aria-label={testing?'Testing connection…':testResult==='success'?'Connection test succeeded':testResult==='error'?'Connection test failed — retry':'Test connection'} aria-busy={testing} title={testing?'Testing connection…':testUnavailable || 'Test connection using saved permissions'} disabled={busy || testing || !!testUnavailable} aria-describedby={testUnavailable?'connection-test-unavailable':undefined} onClick={async()=>{if(testing)return;setTestResult(null);setTesting(true);try{await perform('/api/read-project',{projectId:item.id});setTestResult('success');toast.success(`${item.name}: read succeeded.`);}catch(e){setTestResult('error');toast.error(e.message);}finally{setTesting(false);}}}><AnimatedSwap icon value={testing?'testing':testResult} className="size-4">{testing?<LoaderCircle className="size-4 animate-spin motion-reduce:animate-none" />:testResult==='success'?<Check className="size-4" />:testResult==='error'?<TriangleAlert className="size-4" />:<TestTubeDiagonal className="size-4" />}</AnimatedSwap></Button>}<Button type="button" variant="outline" disabled={busy} onClick={close}>Cancel</Button><Button disabled={busy || requestedChannel!==null || !defaults && !name.trim()}><AnimatedText>{busy?'Saving…':'Save changes'}</AnimatedText></Button></DialogFooter>
+    <DialogFooter className="shrink-0 border-t pt-4">{!defaults && <Button type="button" variant="outline" size="icon" aria-label={testing?'Testing connection…':testResult==='success'?'Connection test succeeded':testResult==='error'?'Connection test failed — retry':'Test connection'} aria-busy={testing} title={testing?'Testing connection…':testUnavailable || 'Test connection using saved permissions'} disabled={busy || testing || !!testUnavailable} onClick={async()=>{if(testing)return;setTestResult(null);setTesting(true);try{await perform('/api/read-project',{projectId:item.id});setTestResult('success');toast.success(`${item.name}: read succeeded.`);}catch(e){setTestResult('error');toast.error(e.message);}finally{setTesting(false);}}}><AnimatedSwap icon value={testing?'testing':testResult} className="size-4">{testing?<LoaderCircle className="size-4 animate-spin motion-reduce:animate-none" />:testResult==='success'?<Check className="size-4" />:testResult==='error'?<TriangleAlert className="size-4" />:<TestTubeDiagonal className="size-4" />}</AnimatedSwap></Button>}<Button type="button" variant="outline" disabled={busy} onClick={close}>Cancel</Button><Button disabled={busy || requestedChannel!==null || !defaults && !name.trim()}><AnimatedText>{busy?'Saving…':'Save changes'}</AnimatedText></Button></DialogFooter>
   </form>;
 }
 function ClientConnections() {

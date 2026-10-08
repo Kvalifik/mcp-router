@@ -98,11 +98,12 @@ function createIntegrations({home,appData,executable,script,socket,run,getWindow
     try { await packageRefresh; } finally { packageRefresh = null; }
   }
   function discover() {
-    const codexApp=appPath('Codex')||appPath('ChatGPT');
+    const codexApps = windows ? [] : ['Codex','ChatGPT'].flatMap(name=>applicationsDirs.map(dir=>path.join(dir,name+'.app')));
+    const macBundledCodex = first(codexApps.flatMap(app=>['codex-cli/bin/codex','codex-cli/CodexCLI.app/Contents/MacOS/codex','codex'].map(relative=>path.join(app,'Contents/Resources',relative))));
     const codexBinary = binary('codex');
     const codexScript = windows && first(dirs.map(dir=>path.join(dir,'node_modules/@openai/codex/bin/codex.js')));
     const bundledCodex = windows && first(packageRoots.map(root=>path.join(root,'app/resources/codex.exe')));
-    const codex = windows ? (bundledCodex || (codexBinary?.toLowerCase().endsWith('.exe') ? codexBinary : codexScript ? executable : null)) : first([...(codexApp?[path.join(codexApp,'Contents/Resources/codex')]:[]),...(codexBinary?[codexBinary]:[])]);
+    const codex = windows ? (bundledCodex || (codexBinary?.toLowerCase().endsWith('.exe') ? codexBinary : codexScript ? executable : null)) : first([...(macBundledCodex?[macBundledCodex]:[]),...(codexBinary?[codexBinary]:[])]);
     const commandArgs = windows && codex === executable && codexScript ? [codexScript] : [];
     return [
       {id:'codex',name:'ChatGPT/Codex',command:codex,commandArgs,codexConfig:bundledCodex?path.join(codexHome,'config.toml'):null,installed:!!codex,download:'https://openai.com/codex/',hint:'Reload MCP connections or start a new Codex task.'},

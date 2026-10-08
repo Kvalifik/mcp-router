@@ -60,3 +60,13 @@ The owner-authenticated dashboard can test saved Site → Read access for a disa
 project without enabling it. This diagnostic is not an MCP tool and retains the
 saved channel, OAuth authorization, connection status, and project permission
 checks. Disabled projects remain inaccessible through MCP.
+
+Agent recovery exposes a short-lived, single-use OAuth launch link through the
+private MCP IPC channel for an enabled project and connection. It never exposes
+owner dashboard credentials or OAuth tokens. Opening the link rechecks project
+policy and the selected Stable/Beta grant before starting the existing PKCE and
+browser-bound OAuth flow; the user must complete consent. Pending authorization
+on either grant is not displaced. Merely requesting a link leaves tokens intact.
+Errors crossing MCP use safe router-authored codes and recovery guidance, never
+raw provider errors or request payloads. Unknown failures do not imply that
+reauthorization is necessary.

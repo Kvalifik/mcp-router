@@ -1,3 +1,4 @@
+import { authorizationRequired } from './agent-errors.js';
 import { randomBytes } from 'node:crypto';
 import { auth } from '@modelcontextprotocol/sdk/client/auth.js';
 
@@ -38,7 +39,7 @@ export class Provider {
     };
   }
   state() {
-    if (!this.interactive || !this.c.pending) throw new Error('Reconnect this connection in the dashboard');
+    if (!this.interactive || !this.c.pending) throw authorizationRequired();
     return this.c.pending.state;
   }
   clientInformation() { return this.c.client; }
@@ -62,7 +63,7 @@ export class Provider {
     this.store.audit('oauth_tokens_saved', { connectionId: this.id, tokenVersion: this.c.tokenVersion });
   }
   redirectToAuthorization(url) {
-    if (!this.interactive) throw new Error('Reconnect this connection in the dashboard');
+    if (!this.interactive) throw authorizationRequired();
     if (url.origin !== 'https://mcp.webflow.com') throw new Error('Unexpected authorization origin');
     this.store.save();
     this.authorizationUrl = url.toString();

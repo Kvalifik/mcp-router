@@ -1,12 +1,13 @@
+import { AgentError, authorizationRequired, upstreamError, checkUpstreamResponse } from './agent-errors.js';
 import { initializeInventory, syncProjects, setDefaults, purgeConnection } from './discovery.js';
-import { CATALOG, permissions, validatePermissions, operation, allowed, prepareArguments, checkOwnership, resultOf } from './permissions.js';
+import { CATALOG, permissions, validatePermissions, operation, allowed, requirePermissions, prepareArguments, checkOwnership, resultOf } from './permissions.js';
 import { randomUUID } from 'node:crypto';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { WEBFLOW_URL, webflowFetch, session, endpoint } from './oauth.js';
 
 export function parseSiteList(response) {
-  if (response.isError) throw new Error('Webflow site listing failed');
+  checkUpstreamResponse(response);
   for (const item of response.content || []) {
     if (item.type !== 'text') continue;
     let parsed; try { parsed = JSON.parse(item.text); } catch { continue; }
@@ -32,12 +33,12 @@ export async function openUpstream(provider) {
     await client.connect(transport);
     const identity = { agent_id: `router|local-poc|${randomUUID().slice(0, 6)}`, session_id: 'start', context: 'The local router is reading authorized site metadata to validate OAuth isolation and enforce explicit project access permissions.' };
     const guide = await client.callTool({ name: 'webflow_guide_tool', arguments: identity });
-    if (guide.isError) throw new Error('Webflow guide failed');
+    checkUpstreamResponse(guide);
     const session = JSON.stringify(guide).match(/ses_[A-Za-z0-9]+/);
     if (!session) throw new Error('Webflow did not issue a session');
     identity.session_id = session[0];
     return {
-      call: (name, args) => client.callTool({ name, arguments: { ...args, ...identity } }),
+      call: async (name, args) => checkUpstreamResponse(await client.callTool({ name, arguments: { ...args, ...identity } })),
       guide,
       instructions: client.getInstructions(),
       async listTools() {
@@ -134,9 +135,11 @@ export class Router {
     const c = this.store.connection(id); c.enabled = enabled;
     this.store.audit('connection_toggled', { connectionId: id, enabled });
   }
-  project(id, capability = 'site:read') {
+  project(id, capability = 'site:read', recovery = false) {
     const p = Object.hasOwn(this.store.data.projects, id) ? this.store.data.projects[id] : null;
-    if (!p || p.deletedAt || p.available === false || !p.enabled || (capability && !permissions(p)[capability]) || !this.store.connection(p.connectionId).enabled) throw new Error('Project access denied');
+    if (!p || p.deletedAt || !p.enabled || !this.store.connection(p.connectionId).enabled) throw new AgentError('project_access_denied', 'Project access denied. Enable the project and its connection in MCP Router.');
+    if (p.available === false && !recovery) throw authorizationRequired('Project is no longer available. Reauthorize if access should be restored; deleted sites cannot be recovered this way.');
+    if (capability) requirePermissions(p, [capability]);
     return p;
   }
   saveProject({ id = randomUUID(), name, connectionId, siteId, enabled = false, read = true, ...unknown }) {
@@ -194,7 +197,8 @@ export class Router {
         if (Number.isFinite(checked) && now - checked < 60 * 60_000) return;
       }
       const c = this.store.connection(id), auth=session(this.store,id,channel);
-      if ((!c.enabled && !afterAuthorization) || !auth.tokens) throw new Error('Connection disabled or authorization required');
+      if (!c.enabled && !afterAuthorization) throw new AgentError('project_access_denied', 'Connection disabled. Enable it in MCP Router.');
+      if (!auth.tokens) throw authorizationRequired();
       let client;
       try {
         if (refresh) await this.oauth.refresh(id,channel);
@@ -218,7 +222,7 @@ export class Router {
         c.lastError = 'Connection check failed. Retry or reconnect; credentials were not copied to another connection.';
         const category = ['InvalidGrantError', 'InvalidClientError', 'UnauthorizedError', 'StreamableHTTPError', 'InvalidScopeError'].includes(error.constructor?.name) ? error.constructor.name : 'upstream_or_transport_error';
         this.store.audit('connection_read_failed', { connectionId: id, category });
-        throw new Error(c.lastError);
+        throw upstreamError(error);
       } finally { await client?.close().catch(() => {}); }
     });
   }
@@ -264,7 +268,7 @@ export class Router {
       if (!p || p.deletedAt || p.available === false || !permissions(p)['site:read']) throw new Error('Project access denied');
       const c = this.store.connection(p.connectionId);
       if (!c.enabled || c.deletedAt) throw new Error('Connection disabled');
-      if (!session(this.store, p.connectionId, this.channel(p)).tokens) throw new Error('Authorization required for selected MCP channel');
+      if (!session(this.store, p.connectionId, this.channel(p)).tokens) throw authorizationRequired();
       return p;
     };
     const p = structuredClone(check());
@@ -275,7 +279,7 @@ export class Router {
     const current = check();
     if (signature(current) !== initial) throw new Error('Project policy changed during test');
     const site = sites.find(site => site.id === p.siteId);
-    if (!site) throw new Error('Project site is no longer authorized');
+    if (!site) throw authorizationRequired('Project site is no longer authorized. Reconnect and include this project.');
     this.store.audit('project_connection_test', { projectId: p.id, connectionId: p.connectionId });
     return site;
   }
@@ -289,20 +293,23 @@ export class Router {
     const recheck=()=>{if(signature()!==initial)throw new Error('Project policy changed during request');};
     if(name==='get_project_operations') {
       const operations=CATALOG.filter(op=>allowed(p,op));
-      if(args.operationId){const op=operations.find(o=>o.id===args.operationId);if(!op)throw new Error('Operation not permitted');return {...op,notes:'Site IDs are selected by the router. Supply pageId separately for page tools. Read project instructions with prepare_project before writes.'};}
+      if(args.operationId){const op=operation(args.operationId);requirePermissions(p,[op.permission,...op.extraPermissions]);return {...op,notes:'Site IDs are selected by the router. Supply pageId separately for page tools. Read project instructions with prepare_project before writes.'};}
       return operations.map(({id,title,mode,permission,extraPermissions,page})=>({id,area:title,mode,permission,extraPermissions,requiresPageId:page}));
     }
-    if(['prepare_project','get_project_guidance'].includes(name) && !permissions(p)['agent_instructions:read'])throw new Error('Instruction read permission is required to prepare a project');
+    if(['prepare_project','get_project_guidance'].includes(name))requirePermissions(p,['agent_instructions:read']);
     const op=['prepare_project','get_project_guidance'].includes(name)?null:operation(args.operationId);
-    if(op && (!allowed(p,op) || (name==='read_webflow' && op.mode!=='read') || (name==='write_webflow' && op.mode==='read')))throw new Error('Operation permission denied');
+    if(op) {
+      requirePermissions(p,[op.permission,...op.extraPermissions]);
+      if((name==='read_webflow' && op.mode!=='read') || (name==='write_webflow' && op.mode==='read'))throw new Error(`Wrong execution tool. Use ${op.mode==='read'?'read_webflow':'write_webflow'} for this operation.`);
+    }
     const prepared=op?prepareArguments(op,args.params||{},p.siteId,args.pageId):null;
     return this.serial(p.connectionId,async()=>{
       recheck();let client;
       try {
         const channel=this.channel(p);
-        if(!session(this.store,p.connectionId,channel).tokens)throw new Error('Authorization required for selected MCP channel');
+        if(!session(this.store,p.connectionId,channel).tokens)throw authorizationRequired();
         client=await this.open(this.oauth.provider(p.connectionId,false,channel));
-        if(channel==='beta' && !(await client.listSites()).some(s=>s.id===p.siteId))throw new Error('Project is not authorized on Beta');
+        if(channel==='beta' && !(await client.listSites()).some(s=>s.id===p.siteId))throw authorizationRequired('Project is not authorized on Beta. Reconnect and include this project.');
         let guidance;
         if(name==='get_project_guidance' || name==='prepare_project') {
           const permitted = CATALOG.filter(candidate=>allowed(p,candidate));
@@ -340,19 +347,25 @@ export class Router {
         this.store.audit('operation_started',{projectId:p.id,operationId:op.id,mode:op.mode});
         const response=await client.call(op.tool,prepared.args);
         recheck();
-        if(response.isError)throw new Error('Webflow rejected operation');
+        checkUpstreamResponse(response);
         this.store.audit('operation_completed',{projectId:p.id,operationId:op.id,mode:op.mode});
         return response;
       } catch(error) {
         this.store.audit('operation_failed',{projectId:p.id,operationId:op?.id||'prepare_project'});
         // Do not log or expose provider error payloads; they can include request content.
         if(['Operation permission denied','Resource does not belong to this project','Project policy changed during request','Run prepare_project and read its instructions before writing'].includes(error.message))throw error;
-        throw new Error('Operation failed or resource ownership could not be verified. Check OAuth, permissions and Webflow requirements.');
+        throw upstreamError(error);
       } finally {await client?.close().catch(()=>{});}
     });
   }
   async call(name, args = {}) {
     if (!args || typeof args !== 'object' || Array.isArray(args)) throw new Error('Invalid arguments');
+    if (name === 'request_reauthorization') {
+      if (Object.keys(args).length !== 1 || typeof args.projectId !== 'string') throw new Error('Invalid arguments');
+      const p = this.project(args.projectId, null, true);
+      if (!this.requestAuthorization) throw new AgentError('reauthorization_unavailable', 'Open MCP Router and reconnect the selected grant.');
+      return this.requestAuthorization(p.id, this.channel(p));
+    }
     if (name === 'get_agent_context' && !Object.keys(args).length) return this.agentContext();
     if (name === 'list_projects') {
       if (Object.keys(args).some(key => key !== 'query') ||
@@ -360,7 +373,7 @@ export class Router {
       const query = args.query?.trim().toLowerCase();
       const projects = Object.values(this.store.data.projects).filter(p => {
         const connection = this.store.data.connections[p.connectionId];
-        return !p.deletedAt && p.available !== false && connection?.enabled && !connection.deletedAt &&
+        return !p.deletedAt && (p.available !== false || p.enabled) && connection?.enabled && !connection.deletedAt &&
           (!query || p.name.toLowerCase().includes(query));
       });
       const approved = projects.filter(p => p.enabled && Object.values(permissions(p)).some(Boolean))
@@ -381,7 +394,7 @@ export class Router {
     const current = this.project(p.id);
     if (this.channel(current)!==channel || current.connectionId !== p.connectionId || current.siteId !== p.siteId) throw new Error('Project mapping changed during request');
     const site = sites.find(s => s.id === p.siteId);
-    if (!site) throw new Error('Project site is no longer authorized');
+    if (!site) throw authorizationRequired('Project site is no longer authorized. Reconnect and include this project.');
     this.store.audit('project_site_read', { projectId: p.id, connectionId: p.connectionId });
     return site;
   }

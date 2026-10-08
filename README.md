@@ -129,7 +129,9 @@ Codex MCP client; it does not add a connector to the ChatGPT website.
 
 You can authorize fewer projects or permissions. Router permissions only limit
 access already granted by Webflow; the router cannot inspect the full Webflow
-permission grant. Review authorized projects under **More options → MCP version**.
+permission grant. Permission toggles stay editable; agents receive specific access
+feedback and can request a browser link for reauthorization when needed.
+Review authorized projects under **More options → MCP version**.
 
 Moving the installed app changes the executable path. Reconnect each client
 after moving or renaming its bundle. Other registrations, project overrides,

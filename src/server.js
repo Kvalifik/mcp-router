@@ -1,3 +1,4 @@
+import { agentFeedback } from './agent-errors.js';
 import http from 'node:http';
 import access from './access-status.cjs';
 import paths from './paths.cjs';
@@ -27,6 +28,17 @@ export function createDashboard(router, oauth, origin, { managementToken = nonce
   const csrf = nonce();
   const launches = new Map();
   const results = new Map();
+  router.requestAuthorization = (projectId, channel) => {
+    const project = router.project(projectId, null, true);
+    for (const [key, launch] of launches) if (launch.expires < Date.now()) launches.delete(key);
+    let ticket = [...launches].find(([, launch]) => launch.projectId === projectId && launch.channel === channel)?.[0];
+    if (!ticket) {
+      ticket = nonce();
+      launches.set(ticket, {id:project.connectionId, projectId, siteId:project.siteId, channel, expires:Date.now()+60000});
+    }
+    return {status:'user_action_required', channel, url:`${origin}/oauth/launch/${ticket}`, expiresInSeconds:Math.max(0, Math.ceil((launches.get(ticket).expires-Date.now())/1000)),
+      nextStep:'Open this link in the user’s browser on the computer running MCP Router. The user must complete Webflow authorization and include this project plus other projects that should keep access. Request a new link if it expires. This has not changed permissions or completed authorization.'};
+  };
   function finishOAuth(res, success) {
     for (const [key, result] of results) if (result.expires < Date.now()) results.delete(key);
     const ticket = nonce();
@@ -56,6 +68,16 @@ export function createDashboard(router, oauth, origin, { managementToken = nonce
         const ticket = url.pathname.slice('/oauth/launch/'.length), launch = launches.get(ticket);
         launches.delete(ticket);
         if (!launch || Date.now() > launch.expires) return json(res, { error: 'Login link expired. Connect again.' }, 400);
+        if (launch.projectId) {
+          const result = await router.serial(launch.id, async () => {
+            const project = router.project(launch.projectId, null, true);
+            if (project.connectionId !== launch.id || project.siteId !== launch.siteId || router.channel(project) !== launch.channel) throw new Error('Project changed');
+            const connection = router.store.connection(launch.id);
+            if ([connection.pending, connection.beta?.pending].some(pending => pending && Date.now() - pending.createdAt < 600000)) throw new Error('Authorization already in progress');
+            return oauth.begin(launch.id, launch.channel);
+          });
+          Object.assign(launch, result);
+        }
         res.setHeader('Set-Cookie', `oauth_${launch.id}=${launch.browserNonce}; Path=/oauth/callback/${launch.id}; HttpOnly; SameSite=Lax; Max-Age=600`);
         res.writeHead(303, { Location: launch.url }); return res.end();
       }
@@ -149,7 +171,7 @@ export function createIPC(router, token = null) {
       if (req.method !== 'POST' || req.url !== '/call') return json(res, { error: 'Not found' }, 404);
       const { name, arguments: args } = await body(req);
       return json(res, { result: await router.call(name, args) });
-    } catch { return json(res, { error: 'Request denied or upstream connection unavailable' }, 400); }
+    } catch (error) { const feedback = agentFeedback(error); return json(res, {error:feedback.message, feedback}, 400); }
   });
 }
 

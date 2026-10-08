@@ -72,7 +72,7 @@ button:disabled { cursor:not-allowed; }
 .access-issue-warning { color:var(--color-amber-700); }
 .dark .access-issue-warning { color:var(--color-amber-400); }
 .access-issue-badge:hover, .access-issue-badge:focus-visible { background:var(--accent); }
-.connection-controls > .access-issue-badge { margin-right:6px; }
+.connection-controls > .access-issue-badge { margin-right:10px; }
 .project-badges { gap:8px; margin-right:10px; flex-shrink:0; }
 .connection-header [data-slot="accordion-trigger"] { padding-right:8px; }
 .project-row-motion + .project-row-motion > .project-row { border-top:1px solid var(--color-border); }

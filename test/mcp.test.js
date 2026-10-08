@@ -2,6 +2,7 @@ import test from 'node:test';
 import paths from '../src/paths.cjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
 import { once } from 'node:events';
@@ -49,19 +50,23 @@ test('real MCP stdio client enforces live policy through the daemon', async t =>
   assert.match(instructions, /Webflow websites and projects/);
   assert.match(instructions, /list_projects.*prepare_project.*get_project_operations/s);
   assert.match(instructions, /without bypassing it or switching grants/);
-  assert.match(instructions, /Webflow server guidance revision 1/);
+  assert.match(instructions.slice(0,512), /list_projects.*prepare_project.*get_project_operations/s);
+  assert.match(instructions.slice(0,512), /Missing direct Webflow tools/);
+  assert.doesNotMatch(instructions, /Webflow server guidance revision/);
   const { tools } = await client.listTools();
-  assert.deepEqual(tools.map(t => t.name).sort(), ['get_project_guidance', 'get_project_operations', 'list_projects', 'prepare_project', 'read_project_site', 'read_webflow', 'write_webflow']);
+  assert.deepEqual(tools.map(t => t.name).sort(), ['get_project_guidance', 'get_project_operations', 'list_projects', 'prepare_project', 'read_project_site', 'read_webflow', 'request_reauthorization', 'write_webflow']);
   assert.match(tools.find(t => t.name === 'list_projects').description, /Start here for Webflow/);
   assert.match(tools.find(t => t.name === 'get_project_operations').description, /CMS.*SEO.*Designer/);
   assert.match(tools.find(t => t.name === 'prepare_project').description, /including read-only/);
-  const discovery = tools.find(t=>t.name==='get_project_operations').description;
-  assert.match(discovery,/Site guidance revision 1/);
-  assert.doesNotMatch(discovery,/CMS access is not granted|Unreviewed capability/);
+  const guidanceForProject = async () => JSON.parse((await client.callTool({name:'get_project_guidance',arguments:{projectId:'a'}})).content[0].text);
+  const firstGuidance = await guidanceForProject();
+  assert.match(JSON.stringify(firstGuidance), /Site guidance revision 1/);
+  assert.doesNotMatch(JSON.stringify(firstGuidance), /CMS access is not granted|Unreviewed capability/);
   revision = 2;
-  const updated = (await client.listTools()).tools.find(t=>t.name==='get_project_operations').description;
-  assert.match(updated,/Site guidance revision 2/);
-  assert.doesNotMatch(updated,/Site guidance revision 1/);
+  const updated = await guidanceForProject();
+  assert.equal(updated.instructions, 'Webflow server guidance revision 2');
+  assert.match(JSON.stringify(updated), /Site guidance revision 2/);
+  assert.doesNotMatch(JSON.stringify(updated), /Site guidance revision 1/);
   const resource = (await client.listResources()).resources[0];
   assert.equal(resource.uri,'webflow-router://projects/a/guidance');
   const guidance = JSON.parse((await client.readResource({uri:resource.uri})).contents[0].text);
@@ -82,6 +87,14 @@ test('real MCP stdio client enforces live policy through the daemon', async t =>
   assert.equal((await client.callTool({name:'read_project_site', arguments:{projectId:'draft'}})).isError, true);
   const read = await client.callTool({ name: 'read_project_site', arguments: { projectId: 'a' } });
   assert.equal(JSON.parse(read.content[0].text).id, id);
+  const denied = await client.callTool({name:'read_webflow',arguments:{projectId:'a',operationId:'data_cms_tool.get_collection_list',params:{}}});
+  assert.equal(JSON.parse(denied.content[0].text).code,'router_permission_denied');
+  delete store.connection(id).tokens;
+  const expired = await client.callTool({name:'prepare_project',arguments:{projectId:'a'}});
+  assert.equal(JSON.parse(expired.content[0].text).code,'reauthorization_required');
+  router.requestAuthorization = (projectId,channel) => ({status:'user_action_required',channel,url:'http://127.0.0.1:43127/oauth/launch/synthetic'});
+  const recovery = await client.callTool({name:'request_reauthorization',arguments:{projectId:'a'}});
+  assert.equal(JSON.parse(recovery.content[0].text).channel,'stable');
   router.setConnection(id, false);
   assert.equal((await client.listResources()).resources.length,0);
   assert.doesNotMatch((await client.listTools()).tools.find(t=>t.name==='get_project_operations').description,/Site guidance revision/);
@@ -90,3 +103,38 @@ test('real MCP stdio client enforces live policy through the daemon', async t =>
   assert.equal((await client.callTool({ name: 'read_project_site', arguments: { projectId: 'a' } })).isError, true);
   assert.equal((await client.callTool({ name: 'publish_site', arguments: { projectId: 'a' } })).isError, true);
 });
+
+// A daemon that accepts requests but never answers simulates stalled upstream
+// metadata. Initialization and tools/list must not depend on any daemon request.
+for (const daemon of ['stalled', 'absent']) {
+  test(`MCP initialization and repeated discovery work with a ${daemon} daemon`, {timeout:10000}, async t => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'wfr-discovery-'));
+    const socket = path.join(dir, 'ipc.sock');
+    let requests = 0;
+    const ipc = http.createServer(() => { requests++; });
+    const client = new Client({name:'discovery-test',version:'1.0.0'});
+    t.after(async () => {
+      await client.close();
+      ipc.closeAllConnections();
+      if (ipc.listening) await new Promise(resolve => ipc.close(resolve));
+      fs.rmSync(dir, {recursive:true,force:true});
+    });
+    if (process.platform === 'win32') fs.writeFileSync(path.join(dir,'ipc-token'),'synthetic-token');
+    if (daemon === 'stalled') {
+      ipc.listen(paths.ipcEndpoint(socket));
+      await once(ipc, 'listening');
+    }
+    await client.connect(new StdioClientTransport({command:process.execPath,args:[fileURLToPath(new URL('../src/stdio.js',import.meta.url))],env:{...process.env,ROUTER_SOCKET:socket}}), {timeout:3000});
+    const first = await client.listTools({}, {timeout:3000});
+    const second = await client.listTools({}, {timeout:3000});
+    assert.ok(first.tools.some(tool => tool.name === 'prepare_project'));
+    assert.ok(first.tools.some(tool => tool.name === 'list_projects'));
+    assert.deepEqual(second,first);
+    assert.equal(requests,0);
+    if (daemon === 'absent') {
+      const result = await client.callTool({name:'list_projects',arguments:{}});
+      assert.equal(result.isError,true);
+      assert.equal(JSON.parse(result.content[0].text).code,'router_unavailable');
+    }
+  });
+}

@@ -79,3 +79,19 @@ test('migration refuses to overwrite a current registration with a legacy one',t
  const raw=JSON.stringify({mcpServers:{webflow_router_poc:{command:'old'},[NAME]:{command:'new'}}});fs.writeFileSync(file,raw);
  assert.throws(()=>client.migrateLegacy(),/Both legacy/);assert.equal(fs.readFileSync(file,'utf8'),raw);
 });
+
+for (const app of ['ChatGPT','Codex']) {
+ for (const relative of ['codex-cli/bin/codex','codex-cli/CodexCLI.app/Contents/MacOS/codex','codex']) {
+  test(`macOS detects and connects ${app} with bundled ${relative}`,async t=>{
+   const {client,home}=fixture(t);
+   fs.unlinkSync(path.join(home,'.local/bin/codex'));
+   const binary=path.join(home,'Applications',app+'.app','Contents/Resources',relative);
+   fs.mkdirSync(path.dirname(binary),{recursive:true});fs.writeFileSync(binary,'');
+   // An app without its bundled CLI must not hide the other installation.
+   fs.mkdirSync(path.join(home,'Applications','Codex.app'),{recursive:true});
+   assert.equal((await client.status())[0].state,'not-connected');
+   assert.equal((await client.connect('codex')).ok,true);
+   assert.equal((await client.status())[0].state,'configured');
+  });
+ }
+}

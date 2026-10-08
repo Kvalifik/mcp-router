@@ -8,11 +8,6 @@ export function permissionUnavailable({ connection, channel, siteId, defaults = 
   return null;
 }
 
-export function availablePreset(current, next, unavailable) {
-  return Object.fromEntries(Object.entries(next).map(([key, value]) =>
-    [key, unavailable(key) ? !!current[key] : value]));
-}
-
 export function connectionTestUnavailable(project, connection, selectedChannel) {
   if (!connection?.enabled) return 'Enable this connection before testing.';
   if (project.available === false) return 'This project is no longer available.';

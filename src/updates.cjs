@@ -20,7 +20,7 @@ function createUpdateChecker({repository,currentVersion,fetchImpl=fetch}) {
     const release=JSON.parse(text);
     if(release.draft||release.prerelease||typeof release.tag_name!=='string'||!VERSION.test(release.tag_name))return {state:'no-release'};
     if(newer(release.tag_name,currentVersion)){
-     latest=`https://github.com/${repository}/releases/tag/${encodeURIComponent(release.tag_name)}`;
+     latest=`https://github.com/${repository}/releases`;
      return {state:'available',version:release.tag_name.replace(/^v/,'')};
     }
     latest=null;return {state:'current'};

@@ -1,3 +1,4 @@
+import { AgentError, checkUpstreamResponse } from './agent-errors.js';
 import fs from 'node:fs';
 import Ajv from 'ajv';
 export const CATALOG = JSON.parse(fs.readFileSync(new URL('./catalog.json', import.meta.url)));
@@ -12,6 +13,16 @@ const ajv = new Ajv({ strict: false, validateFormats: false, allErrors: false })
 const validators = new Map();
 export function operation(id) { const op=CATALOG.find(o=>o.id===id); if(!op)throw new Error('Unknown operation');return op; }
 export function allowed(p,op) { const grants=permissions(p);return [op.permission,...op.extraPermissions].every(key=>grants[key]===true); }
+export function requirePermissions(p, keys) {
+  const grants=permissions(p);
+  const missing=[...new Set(keys)].filter(key=>grants[key]!==true);
+  if(!missing.length)return;
+  const labels=missing.map(key=>{
+    const [area,mode]=key.split(':');
+    return `${GROUPS.find(group=>group.area===area)?.title || area} → ${mode[0].toUpperCase()+mode.slice(1)}`;
+  });
+  throw new AgentError('router_permission_denied', `Missing project permissions: ${labels.join(', ')}. Ask the user to enable these in MCP Router using the sliders button next to the project, then save changes.`);
+}
 export function prepareArguments(op, params, siteId, pageId) {
   if (!params || typeof params!=='object' || Array.isArray(params)) throw new Error('Invalid operation parameters');
   const value=structuredClone(params);
@@ -31,7 +42,7 @@ export function prepareArguments(op, params, siteId, pageId) {
 }
 // A structured envelope is required for ownership checks; unfamiliar responses fail closed.
 export function resultOf(response, action) {
-  if(response?.isError)throw new Error('Webflow rejected the request');
+  checkUpstreamResponse(response);
   for(const c of response?.content||[]) {if(c.type!=='text')continue;let data;try{data=JSON.parse(c.text);}catch{continue;}
     for(const block of Array.isArray(data)?data:[data]) if(block.action===action) {
       if(block.error || block.result==null)throw new Error('Webflow action failed');return block.result;

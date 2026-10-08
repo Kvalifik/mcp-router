@@ -50,18 +50,31 @@ and pinning easier to follow. The animation respects reduced-motion preferences.
 
 ## Project permissions
 
-Permission toggles are locked while the selected Stable or Beta authorization is
-missing, project access is still being checked, or the project is not authorized
-on that server. Hover or keyboard-focus a locked toggle to see why. Presets leave
-locked preferences unchanged, and saved choices return when access is restored.
-Default permissions remain editable because they are a template for future projects.
+Permission toggles and presets remain editable even when Webflow authorization
+is missing. They define the user's Router policy; the table does not display
+OAuth warnings or lock saved choices off.
+
+Agent tool failures report safe error codes and next steps. Missing Router
+permissions identify the settings to enable. Confirmed missing authorization
+returns `reauthorization_required`; other access denials and unknown failures
+are kept distinct. Provider messages, tokens and request payloads are not echoed.
+
+The agent can call `request_reauthorization` with an enabled project's ID to
+obtain a single-use link valid for 60 seconds. Open it on the computer running
+MCP Router to start Webflow authorization for that project's selected Stable or
+Beta grant. Include this project and other projects that should retain access.
+The link does not sign in or approve access for you, and requesting it does not
+change the grant. Existing authorization flows are not replaced. Disabled
+projects and connections must be enabled in the dashboard first. Enabled
+projects that have become unavailable remain discoverable for recovery; their
+operations stay blocked. Reauthorization cannot restore a deleted Webflow site.
 
 Router permissions only limit access already granted by Webflow. Editable toggles
 do not confirm upstream permission; Webflow may still reject restricted actions.
 
 **Test connection** uses saved settings and requires an enabled connection and Site → Read.
-Disabled projects can be tested without enabling them for AI clients. If testing is unavailable, the reason appears above
-the button. It tests a read, not write, delete, or publish access. Enabling a project
+Disabled projects can be tested without enabling them for AI clients. If testing is unavailable, the reason is available in
+the button’s tooltip. It tests a read, not write, delete, or publish access. Enabling a project
 exposes its allowed actions to connected AI clients; review permissions first.
 
 Use the sliders button next to a project to edit its permissions. The searchable matrix covers 27 areas and 223 pinned Webflow actions: site metadata/publishing, CMS, pages and branches, localization, elements/builders, styles, components/props/variants, variables, assets/fonts, custom code, forms, comments, analytics, webhooks, sitemap, enterprise settings, instructions, and Designer sessions/snapshots/uploads.
@@ -92,13 +105,14 @@ Project search covers both local and original site names. Rename changes local l
 
 ## Codex tools
 
-The MCP connection forwards Webflow's current server instructions at startup and
-adds Webflow's original tool names, titles and descriptions to operation discovery
-each time an AI client requests its tool list. Metadata is fetched from each enabled
-project's selected Stable or Beta grant and requires **Instructions → Read**.
-Only tools with at least one permitted, reviewed operation are described, alongside
-their allowed operation IDs. A tool's upstream description may mention additional
-actions; that description does not grant access to them.
+The MCP connection advertises its tools immediately, without waiting for the
+router daemon or Webflow metadata during initialization or tool listing. This
+keeps slow or unavailable upstream connections from blocking tool discovery.
+Webflow's current server instructions and original tool descriptions are fetched
+on demand for the selected project through the guidance/preparation calls below.
+Metadata requires **Instructions → Read** and uses that project's selected Stable
+or Beta grant. Only tools with permitted, reviewed operations are described;
+upstream descriptions do not grant access to additional actions.
 
 `get_project_guidance` fetches the current server instructions, guide and tool
 descriptions. `prepare_project` also returns this metadata along with enabled site
@@ -108,15 +122,20 @@ The router does not expose arbitrary upstream resources: project rules are read
 through the existing site-scoped instruction checks. Guidance is not persisted or
 reused from a failed grant, and metadata failures never switch Stable/Beta grants.
 
-Webflow guidance updates take effect on the next discovery or guidance request;
-startup instructions refresh on reconnect. An AI app may cache tool lists and may
+Webflow guidance updates take effect on the next preparation or guidance request;
+router workflow instructions refresh on reconnect. An AI app may cache tool lists and may
 need a reconnect to display changed descriptions. Content already loaded into a
 conversation cannot be withdrawn by revoking access, but subsequent requests are
 checked again. Actual tool selection still depends on the AI app and model.
 Agents are instructed to load project rules before reads as well as writes; only
 writes enforce a preparation ID.
-If an agent still misses it, say: “Use MCP Router to find this Webflow project and
-load its project instructions before proceeding.”
+For clients with standing agent instructions, add: “For Webflow tasks, discover
+MCP Router for Webflow before declaring tools unavailable. Use `list_projects`,
+then `prepare_project` to load project rules. Missing direct Webflow tools is not
+evidence that reconnection is needed. Recommend reauthorization only when a tool
+reports `reauthorization_required`.” If router tools are genuinely absent from the
+client, check its MCP registration and reload the connection; changing Webflow
+OAuth grants does not make missing client tools appear.
 
 - `list_projects`: enabled projects and their effective permission keys. Supply `query` to search names (case-insensitive substring, 1–80 characters). Searches also return up to 20 matching disabled project names with a disabled status and instructions to enable them; narrow the query if the limit is reached. Disabled matches include no IDs, permissions, or project content. The default list remains enabled-only.
 - `read_project_site`: compatible site-metadata read.
@@ -129,6 +148,8 @@ load its project instructions before proceeding.”
 **Settings → Let AI discover disabled project names** is on by default, including for existing installations. Turn it off to hide disabled projects from AI name searches. Projects under disabled connections, deleted projects, and projects marked unavailable are always hidden. Discovery uses the saved inventory, grants no access, and does not enable projects.
 
 Both execution tools accept `projectId`, `operationId`, `params`, and (where required) `pageId`. The router injects the selected site's ID. Collection/page/asset/folder/form/webhook IDs are checked against site-scoped discovery before dispatch. Unknown actions and malformed payloads fail closed. Calls serialize per OAuth connection. Policies are checked before dispatch and before releasing responses. A write already sent to Webflow cannot be rolled back by revoking a permission; do not automatically retry ambiguous write failures.
+
+When a requested action lacks router permissions, the error names the missing settings (for example, **Custom code → Write**) and tells the agent to ask you to enable them using the project's sliders button and save. Preparation and guidance similarly identify missing **Instructions → Read** access. Action listings still show only permitted operations. Calling an action through the wrong execution tool identifies the correct tool. Upstream failures remain sanitized because provider errors may contain sensitive content; they do not reliably identify missing Webflow access.
 
 The execution catalog remains a pinned snapshot of Webflow's `tools/list` schema;
 live guidance does not replace its reviewed parameter schemas, ownership checks or
@@ -186,6 +207,8 @@ steps the agent provides. Copying the snippet does not connect the app by itself
 
 On Windows, the app header includes the native minimize, maximize, and close controls. Drag the header to move the window; press Alt to reveal the application menu when needed.
 
+On macOS, ChatGPT/Codex detection supports both current and legacy bundled CLI locations, with a standalone `codex` executable as a fallback.
+
 Microsoft Store installations of ChatGPT/Codex are detected for the current Windows user. Connecting updates the shared Codex `config.toml` (`CODEX_HOME` when set, otherwise `~/.codex`) without launching protected Store executables. Existing comments, other servers, and tool restrictions are preserved; an existing configuration is backed up before changes.
 
 ### Checking for updates
@@ -193,9 +216,10 @@ Microsoft Store installations of ChatGPT/Codex are detected for the current Wind
 Use **Settings → Check for updates** to check the latest public GitHub release.
 If a check fails, the message distinguishes connection failures, timeouts, GitHub
 rate limits, and invalid responses when that information is available. Updates
-are downloaded manually from the release page when a newer version is found.
+are downloaded manually from the releases page when a newer version is found.
 The update-available notification stays visible until you dismiss it or select
-**Download update**.
+**Download update**. The notification shows the version detected by the check;
+the button opens the repository's releases page so newer releases are also available.
 
 ### macOS menu bar
 

@@ -1,7 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {permissionUnavailable, availablePreset, connectionTestUnavailable} from '../ui/permission-availability.js';
-import {presetGrants} from '../ui/permission-presets.js';
+import {permissionUnavailable, connectionTestUnavailable} from '../ui/permission-availability.js';
 
 const state = missingScopes => ({authorized:true,siteIds:['demo'],access:{status:'limited',missingScopes}});
 const connection = {channels:{stable:state(['cms:write','sites:write','custom_code:write','pages:write']),beta:state([])}};
@@ -19,24 +18,14 @@ test('connection testing allows disabled projects and uses saved permissions and
   assert.match(connectionTestUnavailable({...p,siteId:'missing'},c,'stable'),/isn’t authorized/);
 });
 
-test('OAuth scope metadata never locks router permissions',()=>{
+test('OAuth scope metadata does not block connection testing',()=>{
   for(const key of ['cms:read','cms:write','cms:delete','site:publish']) assert.equal(reason(key),null);
 });
 
-test('missing project authorization locks all toggles, but defaults and unknown scopes stay editable',()=>{
+test('connection diagnostics identify missing or pending authorization',()=>{
   assert.match(reason('element:read',{siteId:'not-authorized'}),/include this project/);
   assert.match(reason('cms:read',{connection:{channels:{}}}),/Authorize Stable/);
   assert.match(reason('cms:read',{connection:{channels:{stable:{...state([]),inventoryPending:true}}}}),/still being checked/);
   assert.equal(reason('cms:write',{defaults:true}),null);
   assert.equal(reason('cms:write',{connection:{channels:{stable:{...state([]),access:{status:'unverified'}}}}}),null);
-});
-
-test('presets cannot turn on unavailable permissions or erase previously saved preferences',()=>{
-  const keys=['cms:read','cms:write','cms:delete'];
-  const current={'cms:read':false,'cms:write':false,'cms:delete':true};
-  assert.deepEqual(availablePreset(current,presetGrants(keys,'all'),()=>reason('cms:read',{siteId:'missing'})),
-    {'cms:read':false,'cms:write':false,'cms:delete':true});
-  assert.deepEqual(availablePreset(current,presetGrants(keys,'none'),()=>reason('cms:read',{siteId:'missing'})),
-    {'cms:read':false,'cms:write':false,'cms:delete':true});
-  assert.deepEqual(current,{'cms:read':false,'cms:write':false,'cms:delete':true});
 });

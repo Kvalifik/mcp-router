@@ -42,7 +42,7 @@ To preview access warnings with fictional data, run
 `npx electron scripts/capture-readme.mjs --attention`. This also captures the
 healthy compact window and warning states (collapsed, expanded, tooltip, and
 recovery details) in `/tmp/mcp-router-*.png`; these previews are not README assets.
-It checks that warnings do not increase row height, keyboard access and focus
+It checks that connection and project warning badges align, warnings do not increase row height, keyboard access and focus
 return work, filtered projects remain reachable, and simulated Beta recovery
 clears warnings without changing the Stable grant. All actions use in-memory demo
 state, including in this preview mode.
