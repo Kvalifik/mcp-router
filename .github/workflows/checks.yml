@@ -10,14 +10,37 @@ concurrency:
   group: checks-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 jobs:
+  changes:
+    name: Detect packaging changes
+    runs-on: ubuntu-24.04
+    outputs:
+      package: ${{ steps.changed.outputs.package }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - id: changed
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          # PR checkout is GitHub's merge commit; its first parent is the base.
+          package=true
+          if [ "$EVENT_NAME" != workflow_dispatch ] && git diff --name-only HEAD^ HEAD > "$RUNNER_TEMP/changed-files"; then
+            if ! grep -Eq '^(package(-lock)?\.json|build\.mjs|packaging\.mjs|scripts/(sign-mac|smoke-package)\.mjs|scripts/package-release\.py|\.github/workflows/[^/]+\.ya?ml)$' "$RUNNER_TEMP/changed-files"; then
+              package=false
+            fi
+          fi
+          echo "package=$package" >> "$GITHUB_OUTPUT"
   checks:
     name: Tests and UI build
+    needs: changes
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-24.04, windows-2022, macos-15, macos-15-intel]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 10
+    timeout-minutes: 20
     env:
       ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
     steps:
@@ -31,10 +54,22 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - run: npm test
       - run: npm run build:ui
+      - name: Build desktop package without release credentials
+        if: needs.changes.outputs.package == 'true' && runner.os != 'Linux'
+        env:
+          MAC_SIGNING_MODE: adhoc
+        run: npm run build:desktop
+      - name: Test packaged runtime and verify release bundle
+        if: needs.changes.outputs.package == 'true' && runner.os != 'Linux'
+        env:
+          MAC_SIGNING_MODE: adhoc
+        run: |
+          node scripts/smoke-package.mjs
+          python3 scripts/package-release.py
       - run: git diff --exit-code
   required-checks:
     name: Tests and UI build
-    needs: checks
+    needs: [changes, checks]
     if: always()
     runs-on: ubuntu-24.04
     steps:

@@ -70,3 +70,15 @@ captured UI do not need new screenshots.
 
 Use the two existing screenshots by default. Add further views only when they
 demonstrate a distinct feature and the user requests or agrees to the addition.
+
+## Dependency review before releases
+
+Before preparing a release, review open Dependabot PRs using the dependency
+review procedure in `docs/RELEASING.md`. Routine patch/minor updates may be merged
+within the requested release work after diff review, refreshed license notices,
+and all required checks pass; do not ask for a separate routine merge approval.
+Do not treat semver or a green test suite alone as evidence that an update is low
+risk. Keep major upgrades and runtime/security-sensitive changes separate, run
+the additional checks described in the guide, and report any deferrals with a
+specific reason. Close superseded PRs only after verifying the replacement is
+merged. Never bypass branch protections or expose signing secrets to PR jobs.
