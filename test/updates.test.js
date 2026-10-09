@@ -29,3 +29,14 @@ test('update failures expose safe diagnostic categories without remote error con
   assert.deepEqual(await checker.check(),{state:'error',reason});
  }
 });
+
+test('Mac feed is pinned to the detected release and architecture, ignoring supplied URLs',async()=>{
+ let release={tag_name:'v1.2.3',assets:[{name:'update-mac-arm64.json',browser_download_url:'https://evil.example/feed'}]};
+ const checker=createUpdateChecker({repository:'example/router',currentVersion:'1.0.0',fetchImpl:async()=>({ok:true,text:async()=>JSON.stringify(release)})});
+ assert.equal(checker.macFeed('arm64'),null);
+ await checker.check();
+ assert.equal(checker.macFeed('arm64'),'https://github.com/example/router/releases/download/v1.2.3/update-mac-arm64.json');
+ assert.equal(checker.macFeed('x64'),null);assert.equal(checker.macFeed('../arm64'),null);
+ release={tag_name:'v1.2.4',prerelease:true};await checker.check();
+ assert.equal(checker.macFeed('arm64'),null);assert.equal(checker.releaseUrl(),null);
+});

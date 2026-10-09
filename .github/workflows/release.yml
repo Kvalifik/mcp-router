@@ -7,6 +7,11 @@ on:
         required: true
         type: boolean
         default: false
+      sign_mac:
+        description: Sign and notarize Mac apps (requires mac-signing environment credentials)
+        required: true
+        type: boolean
+        default: true
 permissions:
   contents: read
 concurrency:
@@ -29,13 +34,15 @@ jobs:
             platform: win32
             arch: x64
     runs-on: ${{ matrix.os }}
+    environment: ${{ inputs.sign_mac && matrix.platform == 'darwin' && 'mac-signing' || 'build' }}
     defaults:
       run:
         shell: bash
     env:
       BUILD_PLATFORM: ${{ matrix.platform }}
       BUILD_ARCH: ${{ matrix.arch }}
-    timeout-minutes: 25
+      MAC_SIGNING_MODE: ${{ inputs.sign_mac && 'developer-id' || 'adhoc' }}
+    timeout-minutes: 60
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
@@ -60,9 +67,47 @@ jobs:
           JS
       - run: npm ci --no-audit --no-fund
       - run: npm test
+      - name: Prepare temporary Mac signing keychain
+        if: inputs.sign_mac && matrix.platform == 'darwin'
+        env:
+          CERTIFICATE: ${{ secrets.MAC_CERTIFICATE_P12_BASE64 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.MAC_CERTIFICATE_PASSWORD }}
+          SIGNING_IDENTITY: ${{ vars.MAC_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+          APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          umask 077
+          test -n "$CERTIFICATE" && test -n "$CERTIFICATE_PASSWORD"
+          test -n "$SIGNING_IDENTITY" && test -n "$APPLE_ID"
+          test -n "$APPLE_APP_PASSWORD" && test -n "$APPLE_TEAM_ID"
+          keychain="$RUNNER_TEMP/router-signing.keychain-db"
+          certificate="$RUNNER_TEMP/router-signing.p12"
+          password=$(openssl rand -hex 32)
+          echo "::add-mask::$password"
+          printf '%s' "$CERTIFICATE" | base64 --decode > "$certificate"
+          chmod 600 "$certificate"
+          security create-keychain -p "$password" "$keychain"
+          security set-keychain-settings -lut 7200 "$keychain"
+          security unlock-keychain -p "$password" "$keychain"
+          security import "$certificate" -P "$CERTIFICATE_PASSWORD" -k "$keychain" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$password" "$keychain" > /dev/null
+          xcrun notarytool store-credentials router-notary --keychain "$keychain" \
+            --apple-id "$APPLE_ID" --password "$APPLE_APP_PASSWORD" --team-id "$APPLE_TEAM_ID"
+          rm -f "$certificate"
+          printf 'MAC_SIGNING_IDENTITY=%s\nMAC_SIGNING_KEYCHAIN=%s\nMAC_NOTARY_PROFILE=router-notary\n' \
+            "$SIGNING_IDENTITY" "$keychain" >> "$GITHUB_ENV"
       - run: npm run build:desktop
       - run: node scripts/smoke-package.mjs
       - run: python3 scripts/package-release.py
+      - name: Remove temporary signing credentials
+        if: always() && inputs.sign_mac && matrix.platform == 'darwin'
+        run: |
+          if [ -f "$RUNNER_TEMP/router-signing.keychain-db" ]; then
+            security delete-keychain "$RUNNER_TEMP/router-signing.keychain-db"
+          fi
+          rm -f "$RUNNER_TEMP/router-signing.p12"
       - run: git diff --exit-code
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
@@ -94,6 +139,8 @@ jobs:
         run: |
           cat SHA256SUMS-*.txt > SHA256SUMS.txt
           sha256sum --check SHA256SUMS.txt
-          gh release create "v$RELEASE_VERSION" MCP-Router-*.zip SHA256SUMS.txt \
+          shopt -s nullglob
+          feeds=(update-mac-*.json)
+          gh release create "v$RELEASE_VERSION" MCP-Router-*.zip SHA256SUMS.txt "${feeds[@]}" \
             --target "$RELEASE_COMMIT" --title "MCP Router v$RELEASE_VERSION" \
             --draft --notes-file release-notes.md

@@ -1,6 +1,6 @@
 {
   "name": "mcp-router",
-  "version": "0.8.7",
+  "version": "0.8.8",
   "main": "src/desktop.cjs",
   "private": true,
   "type": "module",
@@ -37,6 +37,8 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@electron/notarize": "3.1.1",
+    "@electron/osx-sign": "2.7.0",
     "@electron/packager": "20.3.0",
     "@tailwindcss/vite": "^4.3.3",
     "@vitejs/plugin-react": "^6.1.1",

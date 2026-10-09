@@ -214,12 +214,23 @@ Microsoft Store installations of ChatGPT/Codex are detected for the current Wind
 ### Checking for updates
 
 Use **Settings → Check for updates** to check the latest public GitHub release.
-If a check fails, the message distinguishes connection failures, timeouts, GitHub
-rate limits, and invalid responses when that information is available. Updates
-are downloaded manually from the releases page when a newer version is found.
-The update-available notification stays visible until you dismiss it or select
-**Download update**. The notification shows the version detected by the check;
-the button opens the repository's releases page so newer releases are also available.
+The desktop app also checks on startup and every six hours while it is open.
+
+Developer ID Mac builds download newer signed releases automatically when the
+release includes an update feed for your Mac's architecture. Electron verifies
+the update's signature before installation. A persistent notification offers
+**Restart to update**; otherwise the downloaded update installs when you quit.
+Restarting briefly disconnects active AI clients. Closing the window only hides
+the app and does not install the update. Connections and settings remain saved.
+
+Windows, development builds, and releases without a compatible update feed use
+**Download update**, which opens GitHub Releases for manual installation. Existing
+versions without updater support need one manual install of a signed version
+that includes it. Install the Mac app in Applications before using auto-updates.
+
+If checking or downloading fails, the app shows a safe error message and does not
+install an unverified update. Check again to retry, or use GitHub Releases. If a
+download times out but remains pending, restart the app before retrying.
 
 ### macOS menu bar
 
