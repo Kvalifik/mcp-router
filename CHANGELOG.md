@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.8.9 — OAuth security and dependency maintenance
+
+- Update the MCP SDK to bind saved OAuth credentials to their authorization server, while preserving Webflow-only requests and separate Stable/Beta grants.
+- Update UI dependencies with fixes for focus and interaction in nested dialogs and popovers.
+- Refresh build dependencies and third-party license notices.
+- Validate packaged app startup and bundle integrity across Apple Silicon, Intel Mac, and Windows before merging dependency updates.
+
 ## 0.8.8 — Signed Mac releases and automatic updates
 
 - Sign and notarize Mac releases with Developer ID and verify the delivered ZIP.
