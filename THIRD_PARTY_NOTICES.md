@@ -796,7 +796,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @oxc-project/types 0.149.0
+## @oxc-project/types 0.152.0
 
 License: MIT. Build dependency.
 
@@ -887,7 +887,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @radix-ui/react-accessible-icon 1.1.15
+## @radix-ui/react-accessible-icon 1.1.16
 
 License: MIT. Runtime dependency.
 
@@ -917,7 +917,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @radix-ui/react-accordion 1.2.20
+## @radix-ui/react-accordion 1.2.21
 
 License: MIT. Runtime dependency.
 
@@ -947,7 +947,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @radix-ui/react-alert-dialog 1.1.23
+## @radix-ui/react-alert-dialog 1.1.24
 
 License: MIT. Runtime dependency.
 
@@ -977,7 +977,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @radix-ui/react-arrow 1.1.15
+## @radix-ui/react-arrow 1.1.16
 
 License: MIT. Runtime dependency.
 
@@ -1007,7 +1007,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @radix-ui/react-aspect-ratio 1.1.15
+## @radix-ui/react-aspect-ratio 1.1.16
 
 License: MIT. Runtime dependency.
 
@@ -1037,7 +1037,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @radix-ui/react-avatar 1.2.6
+## @radix-ui/react-avatar 1.2.7
 
 License: MIT. Runtime dependency.
 
@@ -1067,7 +1067,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @radix-ui/react-checkbox 1.3.11
+## @radix-ui/react-checkbox 1.3.12
 
 License: MIT. Runtime dependency.
 
@@ -1097,7 +1097,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @radix-ui/react-collapsible 1.1.20
+## @radix-ui/react-collapsible 1.1.21
 
 License: MIT. Runtime dependency.
 
@@ -1127,7 +1127,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @radix-ui/react-collection 1.1.15
+## @radix-ui/react-collection 1.1.16
 
 License: MIT. Runtime dependency.
 
@@ -1217,7 +1217,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @radix-ui/react-context-menu 2.3.7
+## @radix-ui/react-context-menu 2.3.8
 
 License: MIT. Runtime dependency.
 
@@ -1247,7 +1247,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @radix-ui/react-dialog 1.1.23
+## @radix-ui/react-dialog 1.2.0
 
 License: MIT. Runtime dependency.
 
@@ -1277,7 +1277,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @radix-ui/react-direction 1.1.4
+## @radix-ui/react-direction 1.1.5
 
 License: MIT. Runtime dependency.
 
@@ -1307,7 +1307,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @radix-ui/react-dismissable-layer 1.1.19
+## @radix-ui/react-dismissable-layer 1.1.20
 
 License: MIT. Runtime dependency.
 
@@ -1337,7 +1337,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @radix-ui/react-dropdown-menu 2.1.24
+## @radix-ui/react-dropdown-menu 2.1.25
 
 License: MIT. Runtime dependency.
 
@@ -1397,7 +1397,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @radix-ui/react-focus-scope 1.1.16
+## @radix-ui/react-focus-scope 1.2.0
 
 License: MIT. Runtime dependency.
 
@@ -1427,7 +1427,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @radix-ui/react-form 0.1.16
+## @radix-ui/react-form 0.2.0
 
 License: MIT. Runtime dependency.
 
@@ -1457,7 +1457,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @radix-ui/react-hover-card 1.1.23
+## @radix-ui/react-hover-card 1.1.24
 
 License: MIT. Runtime dependency.
 
@@ -1517,7 +1517,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @radix-ui/react-label 2.1.15
+## @radix-ui/react-label 2.1.16
 
 License: MIT. Runtime dependency.
 
@@ -1547,7 +1547,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @radix-ui/react-menu 2.1.24
+## @radix-ui/react-menu 2.1.25
 
 License: MIT. Runtime dependency.
 
@@ -1577,7 +1577,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @radix-ui/react-menubar 1.1.24
+## @radix-ui/react-menubar 1.1.25
 
 License: MIT. Runtime dependency.
 
@@ -1607,7 +1607,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @radix-ui/react-navigation-menu 1.2.22
+## @radix-ui/react-navigation-menu 1.3.0
 
 License: MIT. Runtime dependency.
 
@@ -1637,7 +1637,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @radix-ui/react-one-time-password-field 0.1.16
+## @radix-ui/react-one-time-password-field 0.1.17
 
 License: MIT. Runtime dependency.
 
@@ -1667,7 +1667,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @radix-ui/react-password-toggle-field 0.1.11
+## @radix-ui/react-password-toggle-field 0.1.12
 
 License: MIT. Runtime dependency.
 
@@ -1697,7 +1697,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @radix-ui/react-popover 1.1.23
+## @radix-ui/react-popover 1.2.0
 
 License: MIT. Runtime dependency.
 
@@ -1727,7 +1727,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @radix-ui/react-popper 1.3.7
+## @radix-ui/react-popper 1.3.8
 
 License: MIT. Runtime dependency.
 
@@ -1757,7 +1757,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @radix-ui/react-portal 1.1.17
+## @radix-ui/react-portal 1.1.18
 
 License: MIT. Runtime dependency.
 
@@ -1787,7 +1787,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @radix-ui/react-presence 1.1.10
+## @radix-ui/react-presence 1.1.11
 
 License: MIT. Runtime dependency.
 
@@ -1817,7 +1817,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @radix-ui/react-primitive 2.1.10
+## @radix-ui/react-primitive 2.1.11
 
 License: MIT. Runtime dependency.
 
@@ -1847,7 +1847,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @radix-ui/react-progress 1.1.16
+## @radix-ui/react-progress 1.1.17
 
 License: MIT. Runtime dependency.
 
@@ -1877,7 +1877,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @radix-ui/react-radio-group 1.4.7
+## @radix-ui/react-radio-group 1.4.8
 
 License: MIT. Runtime dependency.
 
@@ -1907,7 +1907,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @radix-ui/react-roving-focus 1.1.19
+## @radix-ui/react-roving-focus 1.1.20
 
 License: MIT. Runtime dependency.
 
@@ -1937,7 +1937,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @radix-ui/react-scroll-area 1.2.18
+## @radix-ui/react-scroll-area 1.3.0
 
 License: MIT. Runtime dependency.
 
@@ -1967,7 +1967,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @radix-ui/react-select 2.3.7
+## @radix-ui/react-select 2.3.8
 
 License: MIT. Runtime dependency.
 
@@ -1997,7 +1997,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @radix-ui/react-separator 1.1.15
+## @radix-ui/react-separator 1.1.16
 
 License: MIT. Runtime dependency.
 
@@ -2027,7 +2027,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @radix-ui/react-slider 1.4.7
+## @radix-ui/react-slider 1.5.0
 
 License: MIT. Runtime dependency.
 
@@ -2057,7 +2057,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @radix-ui/react-slot 1.3.3
+## @radix-ui/react-slot 1.4.0
 
 License: MIT. Runtime dependency.
 
@@ -2087,7 +2087,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @radix-ui/react-switch 1.3.7
+## @radix-ui/react-switch 1.3.8
 
 License: MIT. Runtime dependency.
 
@@ -2117,7 +2117,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @radix-ui/react-tabs 1.1.21
+## @radix-ui/react-tabs 1.1.22
 
 License: MIT. Runtime dependency.
 
@@ -2147,7 +2147,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @radix-ui/react-toast 1.2.23
+## @radix-ui/react-toast 1.2.24
 
 License: MIT. Runtime dependency.
 
@@ -2177,7 +2177,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @radix-ui/react-toggle 1.1.18
+## @radix-ui/react-toggle 1.1.19
 
 License: MIT. Runtime dependency.
 
@@ -2207,7 +2207,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @radix-ui/react-toggle-group 1.1.19
+## @radix-ui/react-toggle-group 1.1.20
 
 License: MIT. Runtime dependency.
 
@@ -2237,7 +2237,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @radix-ui/react-toolbar 1.1.19
+## @radix-ui/react-toolbar 1.1.20
 
 License: MIT. Runtime dependency.
 
@@ -2267,7 +2267,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @radix-ui/react-tooltip 1.2.16
+## @radix-ui/react-tooltip 1.3.0
 
 License: MIT. Runtime dependency.
 
@@ -2537,7 +2537,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @radix-ui/react-use-size 1.1.4
+## @radix-ui/react-use-size 1.1.5
 
 License: MIT. Runtime dependency.
 
@@ -2567,7 +2567,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @radix-ui/react-visually-hidden 1.2.11
+## @radix-ui/react-visually-hidden 1.2.12
 
 License: MIT. Runtime dependency.
 
@@ -2627,7 +2627,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @rolldown/binding-darwin-arm64 1.2.8
+## @rolldown/binding-darwin-arm64 1.2.12
 
 License: MIT. Build dependency.
 
@@ -2841,7 +2841,7 @@ License: MIT. Build dependency.
     SOFTWARE
 ```
 
-## @vitejs/plugin-react 6.1.1
+## @vitejs/plugin-react 6.1.2
 
 License: MIT. Build dependency.
 
@@ -6401,7 +6401,7 @@ will be liable to anyone for any damages related to this
 software or this license, under any kind of legal claim.***
 ```
 
-## lucide-react 1.46.0
+## lucide-react 1.52.0
 
 License: ISC. Runtime dependency.
 
@@ -7765,7 +7765,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```
 
-## radix-ui 1.6.7
+## radix-ui 1.7.0
 
 License: MIT. Runtime dependency.
 
@@ -8098,7 +8098,7 @@ Felix Geisendörfer (felix@debuggable.com)
  THE SOFTWARE.
 ```
 
-## rolldown 1.2.8
+## rolldown 1.2.12
 
 License: MIT. Build dependency.
 
@@ -9218,7 +9218,7 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-## vite 8.3.0
+## vite 8.3.3
 
 License: MIT. Build dependency.
 
@@ -9901,35 +9901,6 @@ Repository: https://github.com/expressjs/cors
 
 ---------------------------------------
 
-## cross-spawn
-License: MIT
-By: André Cruz
-Repository: https://github.com/moxystudio/node-cross-spawn
-
-> The MIT License (MIT)
-> 
-> Copyright (c) 2018 Made With MOXY Lda <hello@moxy.studio>
-> 
-> Permission is hereby granted, free of charge, to any person obtaining a copy
-> of this software and associated documentation files (the "Software"), to deal
-> in the Software without restriction, including without limitation the rights
-> to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-> copies of the Software, and to permit persons to whom the Software is
-> furnished to do so, subject to the following conditions:
-> 
-> The above copyright notice and this permission notice shall be included in
-> all copies or substantial portions of the Software.
-> 
-> THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-> IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-> FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-> AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-> LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-> OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-> THE SOFTWARE.
-
----------------------------------------
-
 ## cssesc
 License: MIT
 By: Mathias Bynens
@@ -10453,29 +10424,6 @@ Repository: https://github.com/Rich-Harris/is-reference
 
 ---------------------------------------
 
-## isexe, which
-License: ISC
-By: Isaac Z. Schlueter
-Repositories: https://github.com/isaacs/isexe, https://github.com/isaacs/node-which
-
-> The ISC License
-> 
-> Copyright (c) Isaac Z. Schlueter and Contributors
-> 
-> Permission to use, copy, modify, and/or distribute this software for any
-> purpose with or without fee is hereby granted, provided that the above
-> copyright notice and this permission notice appear in all copies.
-> 
-> THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-> WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-> MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-> ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-> WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-> ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR
-> IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
----------------------------------------
-
 ## js-tokens
 License: MIT
 By: Simon Lydell
@@ -10896,23 +10844,6 @@ Repository: https://github.com/pillarjs/parseurl
 
 ---------------------------------------
 
-## path-key, shebang-regex
-License: MIT
-By: Sindre Sorhus
-Repositories: https://github.com/sindresorhus/path-key, https://github.com/sindresorhus/shebang-regex
-
-> MIT License
-> 
-> Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-> 
-> Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-> 
-> The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-> 
-> THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
----------------------------------------
-
 ## periscopic
 License: MIT
 Repository: https://github.com/Rich-Harris/periscopic
@@ -11223,23 +11154,6 @@ Repositories: https://github.com/lukeed/resolve.exports, https://github.com/luke
 
 ---------------------------------------
 
-## shebang-command
-License: MIT
-By: Kevin Mårtensson
-Repository: https://github.com/kevva/shebang-command
-
-> MIT License
-> 
-> Copyright (c) Kevin Mårtensson <kevinmartensson@gmail.com> (github.com/kevva)
-> 
-> Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-> 
-> The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-> 
-> THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
----------------------------------------
-
 ## shell-quote
 License: MIT
 By: James Halliday
@@ -11324,6 +11238,35 @@ Repository: https://github.com/antfu/strip-literal
 > MIT License
 > 
 > Copyright (c) 2022 Anthony Fu <https://github.com/antfu>
+> 
+> Permission is hereby granted, free of charge, to any person obtaining a copy
+> of this software and associated documentation files (the "Software"), to deal
+> in the Software without restriction, including without limitation the rights
+> to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+> copies of the Software, and to permit persons to whom the Software is
+> furnished to do so, subject to the following conditions:
+> 
+> The above copyright notice and this permission notice shall be included in all
+> copies or substantial portions of the Software.
+> 
+> THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+> IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+> FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+> AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+> LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+> OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+> SOFTWARE.
+
+---------------------------------------
+
+## tinyexec
+License: MIT
+By: James Garbutt
+Repository: https://github.com/tinylibs/tinyexec
+
+> MIT License
+> 
+> Copyright (c) 2024 Tinylibs
 > 
 > Permission is hereby granted, free of charge, to any person obtaining a copy
 > of this software and associated documentation files (the "Software"), to deal
