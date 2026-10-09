@@ -7,8 +7,27 @@ updates:
       day: monday
     open-pull-requests-limit: 3
     groups:
-      minor-and-patch:
+      routine:
+        patterns: ['*']
         update-types: [minor, patch]
+        exclude-patterns:
+          - '@modelcontextprotocol/*'
+          - '@electron/*'
+          - electron
+          - '@decimalturn/toml-patch'
+          - ajv
+          - zod
+          - jsonc-parser
+      runtime-and-security:
+        update-types: [minor, patch]
+        patterns:
+          - '@modelcontextprotocol/*'
+          - '@electron/*'
+          - electron
+          - '@decimalturn/toml-patch'
+          - ajv
+          - zod
+          - jsonc-parser
   - package-ecosystem: github-actions
     directory: /
     schedule:
@@ -18,3 +37,4 @@ updates:
     groups:
       actions:
         patterns: ['*']
+        update-types: [minor, patch]

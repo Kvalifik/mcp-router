@@ -2,11 +2,11 @@
 
 Pull requests and pushes to main run the tests and UI build on Linux, Windows x64, Apple Silicon, and Intel Mac with Node.js 22. Older runs on the same branch are cancelled. Dependencies are cached; normal checks do not upload artifacts. Documentation changes also run the check so a required status is always reported.
 
-Dependabot opens grouped minor/patch updates weekly and separate major updates. GitHub Actions updates are grouped separately. Review changes and regenerate THIRD_PARTY_NOTICES.md with `python3 scripts/generate-notices.py` when dependencies change. Updates are not merged automatically.
+Dependabot opens grouped patch/minor updates weekly, separating routine dependencies from runtime/security-sensitive dependencies. Major updates stay separate; GitHub Actions groups contain only patch/minor updates. Follow the dependency review below before every release. Merges are performed as part of the release review, not by an unattended auto-merge bot.
 
 ## Prepare a release
 
-1. Use `npm version patch --no-git-tag-version` (or minor/major) to update package.json and package-lock.json. Add the matching version entry to CHANGELOG.md.
+1. Review and clear eligible Dependabot PRs using the procedure below, then use `npm version patch --no-git-tag-version` (or minor/major) to update package.json and package-lock.json. Add the matching version entry to CHANGELOG.md.
 2. Merge the version and application changes into main after checks pass.
 3. Open Actions → Release → Run workflow, select main, and leave **Create a draft release** off for a build-only validation, or enable it to prepare a release. Enable **Sign and notarize Mac apps** for Developer ID releases after configuring the signing environment below.
 4. The workflow tests and builds on Apple Silicon, Intel Mac, and Windows x64, starts each packaged runtime to test IPC, verifies bundle contents and versions, checks Mac signatures before and after ZIP extraction, and prepares three ZIPs, combined SHA-256 checksums, and changelog-based notes. Build artifacts expire after one day.
@@ -14,7 +14,7 @@ Dependabot opens grouped minor/patch updates weekly and separate major updates. 
 
 The workflow never overwrites an existing release. Choose a new version for subsequent releases. A failed build-only run creates no release or tag. Draft publication uses a separate job with write access; build jobs have read-only repository access. Only explicitly selected signed Mac builds receive signing credentials from the `mac-signing` environment.
 
-Standard GitHub-hosted runners are used throughout. Release packaging runs only when this workflow is manually started; there are no scheduled builds. Windows builds remain unsigned. The release workflow defaults to Developer ID signing. Local builds without signing settings, or workflow runs with signing disabled, use ad-hoc signing for credential-free validation. Developer ID mode signs with hardened runtime after all bundle resources are written, notarizes with Apple, and staples the ticket. Missing credentials or failed notarization stop that build; it never falls back to ad-hoc signing. Signing and strict recursive verification failures stop the build; release packaging also verifies the extracted ZIP. Ad-hoc verification checks bundle integrity, not Gatekeeper approval. Developer ID mode additionally verifies the expected signing identity, stapled ticket, and Gatekeeper acceptance after ZIP extraction. Test a browser-downloaded ZIP on a separate Mac before publication, including the Privacy & Security approval flow. Windows distributes a portable app folder rather than an installer.
+Standard GitHub-hosted runners are used throughout. Release publication runs only when this workflow is manually started; there are no scheduled builds. Dependency, build, and workflow PRs also run credential-free packaging checks. Windows builds remain unsigned. The release workflow defaults to Developer ID signing. Local builds without signing settings, or workflow runs with signing disabled, use ad-hoc signing for credential-free validation. Developer ID mode signs with hardened runtime after all bundle resources are written, notarizes with Apple, and staples the ticket. Missing credentials or failed notarization stop that build; it never falls back to ad-hoc signing. Signing and strict recursive verification failures stop the build; release packaging also verifies the extracted ZIP. Ad-hoc verification checks bundle integrity, not Gatekeeper approval. Developer ID mode additionally verifies the expected signing identity, stapled ticket, and Gatekeeper acceptance after ZIP extraction. Test a browser-downloaded ZIP on a separate Mac before publication, including the Privacy & Security approval flow. Windows distributes a portable app folder rather than an installer.
 
 ## Local builds
 
@@ -108,3 +108,49 @@ different signing team requires migration testing and may require manual install
 Local signing works with automatic updates too: sign and notarize on a Mac, then
 upload only the finished ZIPs, update feeds, and checksums to the draft release.
 GitHub signing secrets are only needed for signing within Actions.
+
+## Dependency review before each release
+
+The agent preparing a requested release should inspect open Dependabot PRs before
+bumping the app version. The release request includes authorization to merge
+routine updates that pass this procedure; separate per-PR approval is unnecessary.
+This review does not publish a release or authorize bypassing branch protections.
+
+1. List open Dependabot PRs (`gh pr list --author app/dependabot`) and inspect the
+   actual manifest/lockfile or workflow diff plus upstream release notes. Check
+   changed transitive dependencies, install scripts, registry URLs, license changes,
+   and platform constraints. Prioritize security fixes, but still verify them.
+2. Classify by impact, not just version number:
+   - Routine patch/minor changes with no sensitive behavior or migration requirements:
+     review and merge after the checks below pass. A mixed group takes the highest
+     risk of any member; split it or validate the entire group at that level.
+   - Electron, packaging/signing tools, MCP/OAuth, schema validation, configuration
+     parsing, or storage: inspect compatibility and run relevant integration checks.
+     Electron/signing changes additionally need a signed local build and
+     `scripts/test-mac-update.mjs`; keep credentials out of PR workflows.
+   - Major versions, migration requirements, new permissions, or changes to release
+     workflow actions: keep separate and assess their specific migration and release
+     behavior. Green unit tests alone are not sufficient. Verify action commit pins
+     against upstream and exercise affected packaging/artifact behavior without secrets.
+3. Rebase/update onto current main, install the locked dependencies with `npm ci`,
+   regenerate `THIRD_PARTY_NOTICES.md` with `python3 scripts/generate-notices.py`,
+   and resolve missing license texts. Commit notice changes on the update branch
+   or a replacement maintenance PR; do not modify generated output by hand.
+4. Require `npm test`, `npm run build:ui`, and the required GitHub checks on the
+   current PR head. Dependency/build/workflow changes also build and smoke-test
+   packaged apps on Apple Silicon, Intel Mac, and Windows in CI, then verify the
+   bundles. These PR jobs use ad-hoc Mac signing and no release credentials.
+   For UI library changes, check the affected dialogs/menus with fictional data;
+   refresh README screenshots only if the captured UI changes.
+5. Merge eligible PRs sequentially through normal branch protections. Recheck the
+   combined result on current main, especially overlapping lockfile updates. Never
+   use an admin bypass to merge a stale or failing PR. Regenerate notices again
+   if resolving conflicts changes the final dependency set.
+6. Close duplicates/superseded PRs only after confirming every intended update is
+   included in merged main. Leave intentional major upgrades open with a concrete
+   reason for deferral; do not close them merely to make the list empty. Summarize
+   merged updates and remaining work in the release handoff.
+
+A failed or deferred dependency update should not force an unrelated release to
+wait unless it is required for that release's correctness or security. Do not
+silently ignore a relevant unresolved security advisory.
