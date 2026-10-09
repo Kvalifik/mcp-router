@@ -19,6 +19,9 @@ guaranteed support period.
 - State is encrypted with a file-based key, not macOS Keychain.
 - The management interface requires an owner session, binds to loopback, and
   checks Host/Origin and CSRF headers; the renderer uses Electron isolation and sandboxing.
+- OAuth credential storage preserves the SDK's authorization-server issuer binding.
+  All OAuth and MCP requests, including legacy credentials without an issuer,
+  remain restricted to `https://mcp.webflow.com` and cannot follow redirects.
 - OAuth uses PKCE and browser-bound, one-use state; Stable and Beta grants are
   separate. Owner-initiated authorization and its project inventory check can run
   while a connection is off; AI calls and background sync remain blocked.
