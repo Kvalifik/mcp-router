@@ -91,6 +91,13 @@ jobs:
           security create-keychain -p "$password" "$keychain"
           security set-keychain-settings -lut 7200 "$keychain"
           security unlock-keychain -p "$password" "$keychain"
+          python3 - <<'PYTHON'
+          import json, os, pathlib, shlex, subprocess
+          folder = pathlib.Path(os.environ['RUNNER_TEMP'])
+          original = shlex.split(subprocess.check_output(['security', 'list-keychains', '-d', 'user'], text=True))
+          (folder / 'router-keychain-search-list.json').write_text(json.dumps(original))
+          subprocess.run(['security', 'list-keychains', '-d', 'user', '-s', str(folder / 'router-signing.keychain-db'), *original], check=True)
+          PYTHON
           security import "$certificate" -P "$CERTIFICATE_PASSWORD" -k "$keychain" -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$password" "$keychain" > /dev/null
           xcrun notarytool store-credentials router-notary --keychain "$keychain" \
@@ -108,6 +115,13 @@ jobs:
             security delete-keychain "$RUNNER_TEMP/router-signing.keychain-db"
           fi
           rm -f "$RUNNER_TEMP/router-signing.p12"
+          python3 - <<'PYTHON'
+          import json, os, pathlib, subprocess
+          saved = pathlib.Path(os.environ['RUNNER_TEMP']) / 'router-keychain-search-list.json'
+          if saved.exists():
+              subprocess.run(['security', 'list-keychains', '-d', 'user', '-s', *json.loads(saved.read_text())], check=True)
+              saved.unlink()
+          PYTHON
       - run: git diff --exit-code
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
