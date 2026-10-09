@@ -18,11 +18,11 @@
     "build:desktop": "npm run build:ui && node build.mjs"
   },
   "dependencies": {
-    "@decimalturn/toml-patch": "3.1.0",
-    "@modelcontextprotocol/sdk": "1.31.0",
+    "@decimalturn/toml-patch": "3.3.0",
+    "@modelcontextprotocol/sdk": "1.32.1",
     "@radix-ui/react-dialog": "^1.2.0",
     "@radix-ui/react-popover": "^1.2.0",
-    "ajv": "8.18.0",
+    "ajv": "8.20.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -38,11 +38,11 @@
   },
   "devDependencies": {
     "@electron/notarize": "3.1.1",
-    "@electron/osx-sign": "2.7.0",
+    "@electron/osx-sign": "2.7.1",
     "@electron/packager": "20.3.0",
     "@tailwindcss/vite": "^4.3.3",
     "@vitejs/plugin-react": "^6.1.2",
-    "electron": "44.3.0",
+    "electron": "44.5.1",
     "tailwindcss": "^4.3.3",
     "vite": "^8.3.3"
   },
