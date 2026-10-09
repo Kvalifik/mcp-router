@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { Store } from '../src/store.js';
-import { OAuthManager } from '../src/oauth.js';
+import { OAuthManager, webflowFetch } from '../src/oauth.js';
 import { Router } from '../src/router.js';
 
 test('real SDK: two DCR clients, PKCE code exchanges, refresh rotation and persistence', async t => {
@@ -56,4 +56,14 @@ test('real SDK: two DCR clients, PKCE code exchanges, refresh rotation and persi
   assert.equal(reloaded.connection(a).tokens.scope, 'sites:read');
   assert.equal(reloaded.connection(a).tokens.refresh_token, 'refresh2-client-1');
   assert.equal(reloaded.connection(b).tokens.refresh_token, 'refresh-client-2');
+  for (const id of [a, b]) {
+    assert.equal(reloaded.connection(id).client.issuer, 'https://mcp.webflow.com');
+    assert.equal(reloaded.connection(id).tokens.issuer, 'https://mcp.webflow.com');
+  }
+});
+
+test('OAuth transport rejects foreign credential destinations before fetching', async () => {
+  await assert.rejects(webflowFetch('https://other.example/oauth/token', {
+    method: 'POST', body: 'refresh_token=synthetic-legacy-token'
+  }), /Unexpected OAuth or MCP origin/);
 });

@@ -766,7 +766,7 @@ License: Apache-2.0. Build dependency.
    limitations under the License.
 ```
 
-## @modelcontextprotocol/sdk 1.30.0
+## @modelcontextprotocol/sdk 1.31.0
 
 License: MIT. Runtime dependency.
 
