@@ -14,7 +14,7 @@ Dependabot opens grouped minor/patch updates weekly and separate major updates. 
 
 The workflow never overwrites an existing release. Choose a new version for subsequent releases. A failed build-only run creates no release or tag. Draft publication uses a separate job with write access; build jobs have read-only repository access. Only explicitly selected signed Mac builds receive signing credentials from the `mac-signing` environment.
 
-Standard GitHub-hosted runners are used throughout. Release packaging runs only when this workflow is manually started; there are no scheduled builds. Windows builds remain unsigned. Mac builds default to ad-hoc signing for credential-free validation. Developer ID mode signs with hardened runtime after all bundle resources are written, notarizes with Apple, and staples the ticket. Missing credentials or failed notarization stop that build; it never falls back to ad-hoc signing. Signing and strict recursive verification failures stop the build; release packaging also verifies the extracted ZIP. Ad-hoc verification checks bundle integrity, not Gatekeeper approval. Developer ID mode additionally verifies the expected signing identity, stapled ticket, and Gatekeeper acceptance after ZIP extraction. Test a browser-downloaded ZIP on a separate Mac before publication, including the Privacy & Security approval flow. Windows distributes a portable app folder rather than an installer.
+Standard GitHub-hosted runners are used throughout. Release packaging runs only when this workflow is manually started; there are no scheduled builds. Windows builds remain unsigned. The release workflow defaults to Developer ID signing. Local builds without signing settings, or workflow runs with signing disabled, use ad-hoc signing for credential-free validation. Developer ID mode signs with hardened runtime after all bundle resources are written, notarizes with Apple, and staples the ticket. Missing credentials or failed notarization stop that build; it never falls back to ad-hoc signing. Signing and strict recursive verification failures stop the build; release packaging also verifies the extracted ZIP. Ad-hoc verification checks bundle integrity, not Gatekeeper approval. Developer ID mode additionally verifies the expected signing identity, stapled ticket, and Gatekeeper acceptance after ZIP extraction. Test a browser-downloaded ZIP on a separate Mac before publication, including the Privacy & Security approval flow. Windows distributes a portable app folder rather than an installer.
 
 ## Local builds
 
@@ -59,7 +59,9 @@ selects a keychain containing both the signing identity and notarization profile
 Local development builds with none of these settings remain ad-hoc signed.
 
 For GitHub Actions, create the **mac-signing** environment, restrict it to `main`,
-and configure required reviewer approval before adding credentials. Add:
+and add the credentials below. Required reviewers are optional; this repository
+runs signed releases without a separate deployment approval. Keep the `main`
+branch restriction in place. Add:
 
 - Secrets: `MAC_CERTIFICATE_P12_BASE64` (base64 of an encrypted P12 export containing
   the certificate and private key), `MAC_CERTIFICATE_PASSWORD`, `APPLE_ID`, and
