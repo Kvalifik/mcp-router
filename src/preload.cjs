@@ -5,6 +5,8 @@ contextBridge.exposeInMainWorld('routerDesktop', {
   setMenuBarMode: mode => ipcRenderer.invoke('set-menu-bar-mode', mode),
   openMainWindow: () => ipcRenderer.invoke('open-main-window'),
   checkUpdates: () => ipcRenderer.invoke('check-updates'),
+  installUpdate: () => ipcRenderer.invoke('install-update'),
+  onUpdateStatus: callback => { const handler = (_event,state) => callback(state); ipcRenderer.on('update-status',handler); return () => ipcRenderer.removeListener('update-status',handler); },
   downloadUpdate: () => ipcRenderer.invoke('download-update'),
   openPublisher: () => ipcRenderer.invoke('open-publisher'),
   openLicenses: () => ipcRenderer.invoke('open-licenses'),

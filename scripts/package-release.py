@@ -16,6 +16,8 @@ version = json.loads((root / 'package.json').read_text(encoding='utf-8'))['versi
 assert re.fullmatch(r'(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)', version)
 platform = os.environ.get('BUILD_PLATFORM', sys.platform)
 arch = os.environ.get('BUILD_ARCH', 'arm64' if host_platform.machine().lower() in {'arm64', 'aarch64'} else 'x64')
+signing_mode = os.environ.get('MAC_SIGNING_MODE', 'adhoc')
+assert signing_mode in {'adhoc', 'developer-id'}, 'Invalid MAC_SIGNING_MODE'
 assert (platform, arch) in {('darwin', 'arm64'), ('darwin', 'x64'), ('win32', 'x64')}
 output = root / f'dist/MCP Router-{platform}-{arch}'
 app = output / 'MCP Router.app' if platform == 'darwin' else output
@@ -24,6 +26,7 @@ bundle = resources / 'app'
 if platform == 'darwin':
     metadata = plistlib.loads((app / 'Contents/Info.plist').read_bytes())
     assert metadata['CFBundleShortVersionString'] == version, 'Bundle version mismatch'
+    assert json.loads((resources / 'mac-update.json').read_text()) == {'enabled': signing_mode == 'developer-id'}, 'Update configuration mismatch'
 else:
     assert (app / 'MCP Router.exe').is_file()
 assert json.loads((bundle / 'package.json').read_text(encoding='utf-8'))['version'] == version
@@ -46,6 +49,9 @@ out = root / 'dist/release'
 out.mkdir(parents=True, exist_ok=True)
 target = f"{'mac' if platform == 'darwin' else 'windows'}-{arch}"
 archive = out / f'MCP-Router-{version}-{target}.zip'
+manifest = out / f'update-mac-{arch}.json'
+if platform == 'darwin':
+    manifest.unlink(missing_ok=True)  # Never retain an old signed feed after an ad-hoc/failed build.
 if platform == 'darwin':
     subprocess.run(['codesign', '--verify', '--deep', '--strict', str(app)], check=True)
     subprocess.run(['ditto', '-c', '-k', '--norsrc', '--keepParent', str(app), str(archive)], check=True)
@@ -54,26 +60,50 @@ if platform == 'darwin':
         subprocess.run(['ditto', '-x', '-k', str(archive), extracted], check=True)
         subprocess.run(['codesign', '--verify', '--deep', '--strict',
                         str(Path(extracted) / 'MCP Router.app')], check=True)
+        if signing_mode == 'developer-id':
+            delivered = str(Path(extracted) / 'MCP Router.app')
+            signature = subprocess.run(['codesign', '-dv', '--verbose=4', delivered],
+                                       capture_output=True, text=True, check=True).stderr
+            identity = os.environ.get('MAC_SIGNING_IDENTITY', '')
+            assert identity.startswith('Developer ID Application: '), 'Missing Developer ID identity'
+            assert f'Authority={identity}\n' in signature, 'Unexpected signing identity'
+            subprocess.run(['xcrun', 'stapler', 'validate', delivered], check=True)
+            subprocess.run(['spctl', '--assess', '--type', 'execute', delivered], check=True)
 else:
     with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED) as archive_file:
         for file in sorted(app.rglob('*')):
             if file.is_file():
                 archive_file.write(file, Path('MCP Router') / file.relative_to(app))
 (out / f'SHA256SUMS-{target}.txt').write_text(hashlib.sha256(archive.read_bytes()).hexdigest() + '  ' + archive.name + '\n', encoding='utf-8', newline='\n')
+if platform == 'darwin' and signing_mode == 'developer-id':
+    repository = json.loads((root / 'package.json').read_text())['updateRepository']
+    assert re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9-]*/[A-Za-z0-9_.-]+', repository)
+    manifest.write_text(json.dumps({
+        'currentRelease': version,
+        'releases': [{'version': version, 'updateTo': {
+            'version': version, 'name': version,
+            'url': f'https://github.com/{repository}/releases/download/v{version}/{archive.name}',
+            'sha256': hashlib.sha256(archive.read_bytes()).hexdigest(),
+            'size': archive.stat().st_size,
+        }}],
+    }, indent=2) + '\n', encoding='utf-8')
 changelog = (root / 'CHANGELOG.md').read_text(encoding='utf-8')
 section = re.search(r'^## ' + re.escape(version) + r' — (.*?)(?=^## |\Z)', changelog, re.M | re.S)
 assert section, 'Missing changelog entry'
+mac_install = ('On Mac, extract and move **MCP Router.app** to Applications. The Mac apps are Developer ID signed and notarized by Apple.'
+               if signing_mode == 'developer-id' else
+               'On Mac, extract and move **MCP Router.app** to Applications. Mac builds are ad-hoc signed, without an Apple Developer ID or notarization. If blocked, first attempt to open the app, then use System Settings → Privacy & Security → Open Anyway for this trusted download. Managed Macs may require IT approval. If macOS says the app is damaged, download a fresh copy and report the release version if it persists; do not disable Gatekeeper.')
 notes = f'''{section.group(1).strip()}
 
 ## Install
 
 Choose the ZIP for your computer: **mac-arm64** for Apple Silicon, **mac-x64** for Intel Mac, or **windows-x64** for Windows x64.
 
-On Mac, extract and move **MCP Router.app** to Applications. Mac builds are ad-hoc signed, without an Apple Developer ID or notarization. If blocked, first attempt to open the app, then use System Settings → Privacy & Security → Open Anyway for this trusted download. Managed Macs may require IT approval. If macOS says the app is damaged, download a fresh copy and report the release version if it persists; do not disable Gatekeeper.
+{mac_install}
 
 On Windows, extract the entire ZIP into a permanent folder and run **MCP Router.exe**. Keep the resources and supporting files together. The Windows build is unsigned and may show a publisher warning.
 
-For updates, quit MCP Router before replacing the app folder. Connections and settings remain in the separate application-data folder. Reconnect AI clients if you move the app.
+Signed Mac installations with updater support download new signed releases automatically and install on quit; choose **Restart to update** to apply immediately. Older Mac installations and Windows users should quit MCP Router before replacing the app folder. Connections and settings remain in the separate application-data folder. Reconnect AI clients if you move the app.
 
 SHA-256 checksum is included in SHA256SUMS.txt.
 '''

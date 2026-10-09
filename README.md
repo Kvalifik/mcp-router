@@ -32,8 +32,8 @@ Choose **mac-arm64** for Apple Silicon (M1 or later), or **mac-x64** for Intel M
 1. Open the [GitHub Releases page](https://github.com/Kvalifik/mcp-router/releases) and download the latest
    `MCP-Router-…-mac-arm64.zip` or `MCP-Router-…-mac-x64.zip`. Choose the app ZIP, not GitHub’s “Source code” ZIP.
 2. Extract the ZIP and drag **MCP Router.app** into **Applications**.
-3. Open MCP Router. This release is **ad-hoc signed, without an Apple Developer ID or notarization**.
-   If macOS blocks it, first attempt to open it, then go to
+3. Open MCP Router. Check the release notes for signing status. Developer ID releases are signed and notarized.
+   For older or ad-hoc builds, if macOS blocks it, first attempt to open it, then go to
    **System Settings → Privacy & Security → Open Anyway** and confirm opening
    the app. Only do this for a download you trust; don’t disable Gatekeeper.
    Managed company Macs may require IT approval. If macOS says the app is damaged,
@@ -41,6 +41,10 @@ Choose **mac-arm64** for Apple Silicon (M1 or later), or **mac-x64** for Intel M
 4. Choose **Add connection**, authorize Webflow, then enable the projects and
    permissions you want to use. New projects start disabled.
 5. Open **Apps**, connect your AI app, and follow its restart/reload instructions.
+
+Signed Mac builds with updater support download new signed releases in the background.
+Choose **Restart to update**, or quit the app to install. Older versions need one
+manual installation of an updater-enabled build. See [update behavior](docs/USAGE.md#checking-for-updates).
 
 ## Install on Windows
 
@@ -71,7 +75,7 @@ Update checks use public releases from `Kvalifik/mcp-router`.
 ## Status
 
 Build targets are macOS on Apple Silicon and Intel, and Windows x64. Windows builds are unsigned;
-Mac builds are ad-hoc signed without an Apple Developer ID and are unnotarized. See [SECURITY.md](SECURITY.md) for the security model and
+Mac builds support Developer ID signing and notarization; credential-free builds remain ad-hoc signed. Release notes identify which mode was used. See [SECURITY.md](SECURITY.md) for the security model and
 known limitations.
 
 ## Build and run

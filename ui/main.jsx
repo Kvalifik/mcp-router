@@ -99,17 +99,27 @@ function PublisherLink({ className = '', large = false, children }) {
     try { await window.routerDesktop.openPublisher(); } catch { toast.error('Could not open kvalifik.dk.'); }
   }}>{children || <><img src={kvalifikLogo} alt="Kvalifik" className={`${large ? 'h-5' : 'h-[0.8em]'} w-auto dark:invert`} /><ArrowUpRight className="size-3.5" aria-hidden="true" /></>}</a>;
 }
+function showUpdateStatus(result,manual=false) {
+  if(result.state==='downloading') {
+    toast.loading(`Downloading version ${result.version}…`,{id:'app-update',description:'You can keep working. The app will let you know when it is ready.'});
+  } else if(result.state==='ready') {
+    toast.success(`Version ${result.version} is ready`,{id:'app-update',duration:Infinity,description:'Installs when you quit, or restart now to update. Active AI connections will briefly disconnect.',action:{label:'Restart to update',onClick:()=>window.routerDesktop.installUpdate().catch(()=>toast.error('Could not restart to update. Quit and reopen MCP Router.'))}});
+  } else if(result.state==='installing') {
+    toast.loading('Restarting to update…',{id:'app-update'});
+  } else if(result.state==='available') {
+    toast.info(`Version ${result.version} is available`,{id:'app-update',duration:Infinity,description:'Download and replace the app to update.',action:{label:'Download update',onClick:()=>window.routerDesktop.downloadUpdate().catch(()=>toast.error('Could not open the download page.'))}});
+  } else if(manual || result.reason==='install' || result.reason==='download-timeout') {
+    const message={current:'You’re using the latest version.','no-release':'No public release is available yet.',unconfigured:'Update checks will be available when the GitHub release repository is set.',error:'Could not complete the update. Try again later.'}[result.state];
+    const description=result.state==='error'?{timeout:'GitHub took too long to respond. Check your connection and try again.',network:'Could not connect to GitHub. Check your connection, VPN, or firewall.', 'rate-limit':'GitHub’s request limit has been reached. Try again later.',server:'GitHub could not complete the request. Try again later.','invalid-response':'GitHub returned an unreadable response. Try again later.',install:'The update could not be downloaded or verified. Try checking again, or install from GitHub Releases.','download-timeout':'The download is taking longer than expected. It may still finish; restart the app before retrying.'}[result.reason]:undefined;
+    toast[result.state==='error'?'error':'info'](message,{id:'app-update',description});
+  } else {
+    toast.dismiss('app-update');
+  }
+}
 async function checkForUpdates(manual=false) {
   if (!window.routerDesktop?.checkUpdates) return;
   if(manual)toast.loading('Checking for updates…',{id:'app-update'});
-  const result=await window.routerDesktop.checkUpdates().catch(()=>({state:'error'}));
-  if(result.state==='available') {
-    toast.info(`Version ${result.version} is available`,{id:'app-update',duration:Infinity,description:'Download and replace the app to update.',action:{label:'Download update',onClick:()=>window.routerDesktop.downloadUpdate().catch(()=>toast.error('Could not open the download page.'))}});
-  } else if(manual) {
-    const message={current:'You’re using the latest version.','no-release':'No public release is available yet.',unconfigured:'Update checks will be available when the GitHub release repository is set.',error:'Could not check for updates. Try again later.'}[result.state];
-    const description=result.state==='error'?{timeout:'GitHub took too long to respond. Check your connection and try again.',network:'Could not connect to GitHub. Check your connection, VPN, or firewall.', 'rate-limit':'GitHub’s request limit has been reached. Try again later.',server:'GitHub could not complete the request. Try again later.','invalid-response':'GitHub returned an unreadable response. Try again later.'}[result.reason]:undefined;
-    toast[result.state==='error'?'error':'info'](message,{id:'app-update',description});
-  }
+  showUpdateStatus(await window.routerDesktop.checkUpdates().catch(()=>({state:'error'})),manual);
 }
 function AboutPanel() {
   return <div className="space-y-6">
@@ -410,6 +420,7 @@ function App() {
     setModal(null);
   }
   async function connect(id,channel) {const r=await perform(`/api/connections/${id}/authorize`,channel?{channel}:{});if(window.routerDesktop)await window.routerDesktop.openOAuth(r.url);else location.assign(r.url);}
+  useEffect(()=>window.routerDesktop?.onUpdateStatus?.(state=>showUpdateStatus(state)),[]);
   useEffect(()=>{checkForUpdates();const timer=setInterval(()=>checkForUpdates(),6*60*60*1000);return()=>clearInterval(timer);},[]);
   useEffect(() => window.routerDesktop?.onShowAbout(() => { if (modalRef.current && modalRef.current.type !== 'about') { toast.info('Close the current dialog before opening About.'); return; } setModal({type:'about'}); }), []);
   if(!data)return <div className="p-8 text-sm text-muted-foreground">{bootFailed ? <Button variant="outline" onClick={()=>{setBootFailed(false);load().catch(()=>{setBootFailed(true);toast.error('Cannot connect to the router. Reopen the app.');});}}>Retry connection</Button> : 'Opening connections…'}</div>;

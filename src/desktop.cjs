@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell, dialog, Menu, nativeTheme, screen, clipboard, Tray, nativeImage } = require('electron');
+const { app, autoUpdater, BrowserWindow, ipcMain, shell, dialog, Menu, nativeTheme, screen, clipboard, Tray, nativeImage } = require('electron');
 const path = require('node:path');
 const { execFile } = require('node:child_process');
 const { promisify } = require('node:util');
@@ -106,7 +106,19 @@ else {
     const openPublisher = () => shell.openExternal('https://kvalifik.dk');
     const { createUpdateChecker } = require('./updates.cjs');
     const updates = createUpdateChecker({repository:require('../package.json').updateRepository,currentVersion:app.getVersion()});
-    ipcMain.handle('check-updates', event => {if(!allowed(event))throw new Error('Denied');return updates.check();});
+    let nativeUpdates;
+    if(process.platform==='darwin' && app.isPackaged) {
+      let enabled=false;
+      try { enabled=JSON.parse(require('node:fs').readFileSync(path.join(process.resourcesPath,'mac-update.json'),'utf8')).enabled===true; } catch {}
+      if(enabled) {
+        nativeUpdates=require('./mac-updates.cjs').createMacUpdater({checker:updates,autoUpdater,arch:process.arch,
+          onChange:state=>{for(const window of [win,popover])if(window&&!window.isDestroyed())window.webContents.send('update-status',state);}});
+        // quitAndInstall closes windows before Electron's ordinary before-quit.
+        autoUpdater.on('before-quit-for-update',()=>{app.isQuitting=true;});
+      }
+    }
+    ipcMain.handle('check-updates', event => {if(!allowed(event))throw new Error('Denied');return (nativeUpdates||updates).check();});
+    ipcMain.handle('install-update', event => {if(!allowed(event)||!nativeUpdates)throw new Error('Denied');nativeUpdates.install();});
     ipcMain.handle('download-update', async event => {if(!allowed(event)||!updates.releaseUrl())throw new Error('No verified release');await shell.openExternal(updates.releaseUrl());});
 
     let licensesWindow;
