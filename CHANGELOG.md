@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.8.8 — Signed Mac releases and automatic updates
+
+- Sign and notarize Mac releases with Developer ID and verify the delivered ZIP.
+- Download signed Mac updates in the background and install on quit or with Restart to update.
+- Publish update feeds for Apple Silicon and Intel Macs; retain manual downloads on Windows.
+- Existing installations need one manual installation of this signed version to enable future automatic updates.
+
 ## 0.8.7 — Faster discovery and clearer access recovery
 
 - Advertise MCP tools immediately and fetch Webflow guidance on demand for the selected project.
