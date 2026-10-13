@@ -38,6 +38,11 @@ guaranteed support period.
   They are guidance, not permission grants: executable schemas and ownership
   checks remain pinned and reviewed. Project guidance resources use the same
   checks as preparation; arbitrary upstream resource URIs are not proxied.
+- Preparation loads enabled rule bodies and a skill metadata index. Agents must
+  fetch relevant skills through the existing permission-checked instruction read
+  operation; the preparation ID does not attest that the agent read those skills.
+  Unknown instruction kinds remain eagerly loaded. Rule references are not
+  automatically expanded; agents must read references required by those rules.
 
 This is a single-user convenience and policy tool, not a security boundary
 against the OS account owner, privileged software, or an agent able to edit local
@@ -73,6 +78,12 @@ on either grant is not displaced. Merely requesting a link leaves tokens intact.
 Errors crossing MCP use safe router-authored codes and recovery guidance, never
 raw provider errors or request payloads. Unknown failures do not imply that
 reauthorization is necessary.
+
+Operation diagnostics use router-defined stages and error codes, numeric HTTP
+statuses and allowlisted failure categories, never provider messages or payloads.
+Preparation/guidance reads may retry once on an explicit transient failure after
+rechecking project policy, on the same grant. Authorization failures and project
+operations are not retried; incomplete preparation cannot authorize a write.
 
 ### Release signing
 

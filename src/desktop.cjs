@@ -14,17 +14,20 @@ if (!app.requestSingleInstanceLock()) app.quit();
 else {
   app.on('second-instance', () => { win?.show(); win?.focus(); });
   app.whenReady().then(async () => {
+    const { offerApplicationMove } = require('./mac-install.cjs');
+    if (await offerApplicationMove({ app, dialog })) return;
     app.setAboutPanelOptions({ applicationName: 'MCP Router', applicationVersion: app.getVersion(), copyright: 'Copyright © 2026 Kvalifik ApS', credits: 'Connect multiple Webflow workspaces to your AI tools through one MCP connection. Independent software; not affiliated with or endorsed by Webflow or connected AI providers. contact@kvalifik.dk' });
     const { main } = await import('./server.js');
     const { managementToken, router } = await main();
     const allowed = event => [win, popover].some(window => window && !window.isDestroyed() && event.sender === window.webContents && event.senderFrame === window.webContents.mainFrame) && event.senderFrame?.url === origin + '/';
     const { MODES, menuBarMode, menuBarStatus, menuBarTitle, popoverBounds, createTrayTextUpdater } = require('./menu-bar.cjs');
-    const trayIcons = Object.fromEntries([['normal','MCPRouterTemplate'],['warning','MCPRouterWarningTemplate']].map(([key,name])=>{
+    const trayIcons = Object.fromEntries([['normal','MCPRouterTemplate'],['warning','MCPRouterWarningTemplate'],['update','MCPRouterUpdateTemplate']].map(([key,name])=>{
       const icon=nativeImage.createFromPath(path.join(__dirname,`../assets/icons/menubar/${name}.png`));
       icon.setTemplateImage(true);
       return [key,icon];
     }));
     const updateTrayText = createTrayTextUpdater(trayIcons);
+    let trayUpdateState = {state:'current'};
     const showMain = () => { popover?.hide(); if(win.isMinimized())win.restore(); win.show(); win.focus(); };
     const mode = () => menuBarMode(router.store.data.settings?.menuBar);
     ipcMain.handle('menu-bar-mode', event => { if(!allowed(event))throw new Error('Denied'); return mode(); });
@@ -91,7 +94,7 @@ else {
         tray.on('click',()=>{togglePopover().catch(()=>{});});
         tray.on('right-click',()=>tray.popUpContextMenu(Menu.buildFromTemplate([{label:'Open MCP Router',click:showMain},{type:'separator'},{role:'quit'}])));
       }
-      const status=menuBarStatus(router.store.summary());
+      const status=menuBarStatus(router.store.summary(), trayUpdateState);
       updateTrayText(tray, mode(), status);
     }
     ipcMain.handle('open-oauth', async (event, url) => {
@@ -112,7 +115,7 @@ else {
       try { enabled=JSON.parse(require('node:fs').readFileSync(path.join(process.resourcesPath,'mac-update.json'),'utf8')).enabled===true; } catch {}
       if(enabled) {
         nativeUpdates=require('./mac-updates.cjs').createMacUpdater({checker:updates,autoUpdater,arch:process.arch,
-          onChange:state=>{for(const window of [win,popover])if(window&&!window.isDestroyed())window.webContents.send('update-status',state);}});
+          onChange:state=>{trayUpdateState=state;updateTray();for(const window of [win,popover])if(window&&!window.isDestroyed())window.webContents.send('update-status',state);}});
         // quitAndInstall closes windows before Electron's ordinary before-quit.
         autoUpdater.on('before-quit-for-update',()=>{app.isQuitting=true;});
       }

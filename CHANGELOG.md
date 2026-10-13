@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.8.10 — Reliable preparation and clearer Mac setup
+
+- Load enabled project rules and a skill index during preparation; fetch relevant skill bodies on demand instead of downloading every skill.
+- Retry explicitly transient preparation reads once and report safe failure stages without exposing provider payloads. Writes remain non-retrying.
+- Offer to move downloaded Mac apps into Applications before setup, with an option to remember the user's preference.
+- Show a menu-bar indicator when a signed update is ready to install, while preserving access-warning priority.
+- Require a documented Stable/Beta Webflow MCP compatibility review before releases and provide a read-only catalog comparison command.
+- Update Lucide and Vite and refresh third-party notices.
+
+Compatibility review: both Webflow channels were inspected. New Apps, Campaigns,
+Interactions and additional Beta tools remain unavailable pending permission and
+ownership review. Expanded CMS locale/publishing, popover and Beta site-branch
+schemas are deferred for dedicated compatibility coverage; the pinned execution
+catalog is unchanged. Major Zod/checkout upgrades and the grouped Electron,
+signing, MCP SDK, TOML and validator update remain separate maintenance work.
+
 ## 0.8.9 — OAuth security and dependency maintenance
 
 - Update the MCP SDK to bind saved OAuth credentials to their authorization server, while preserving Webflow-only requests and separate Stable/Beta grants.

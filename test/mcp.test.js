@@ -30,7 +30,7 @@ test('real MCP stdio client enforces live policy through the daemon', async t =>
       const action=args.actions[0].read_instruction?'read_instruction':'search_instructions';
       if(action==='read_instruction')assert.equal(args.actions[0].read_instruction.path,'rules/site.md');
       return {content:[{type:'text',text:JSON.stringify({action,result:action==='read_instruction' ? {markdown:`Site rule revision ${revision}`} : {
-        instructions:[{path:'rules/site.md',enabled:true},{path:'rules/disabled.md',enabled:false},{path:'rules/draft.md',isDraft:true}],pagination:{total:3}
+        instructions:[{path:'rules/site.md',enabled:true},{path:'rules/disabled.md',enabled:false},{path:'rules/draft.md',isDraft:true},{path:'example/SKILL.md',kind:'skill',name:'Example',description:'Synthetic skill'}],pagination:{total:4}
       }})}]};
     },
     listSites: async () => [{ id: p.id, name: p.c.name }], close: async () => {}
@@ -73,6 +73,7 @@ test('real MCP stdio client enforces live policy through the daemon', async t =>
   assert.equal(guidance.upstream.instructions,'Webflow server guidance revision 2');
   assert.equal(guidance.guide.content[0].text,'Webflow guide revision 2');
   assert.equal(guidance.instructions.length,1);
+  assert.deepEqual(guidance.skills,[{path:'example/SKILL.md',name:'Example',description:'Synthetic skill'}]);
   assert.match(JSON.stringify(guidance.instructions[0]),/Site rule revision 2/);
   assert.ok(guidance.preparationId);
   assert.equal((await client.listResourceTemplates()).resourceTemplates.length,1);

@@ -1,6 +1,6 @@
 {
   "name": "mcp-router",
-  "version": "0.8.9",
+  "version": "0.8.10",
   "main": "src/desktop.cjs",
   "private": true,
   "type": "module",
@@ -27,7 +27,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "jsonc-parser": "^3.3.1",
-    "lucide-react": "^1.52.0",
+    "lucide-react": "^1.53.0",
     "motion": "13.5.0",
     "radix-ui": "^1.7.0",
     "react": "^19.3.0",
@@ -44,7 +44,7 @@
     "@vitejs/plugin-react": "^6.1.2",
     "electron": "44.3.0",
     "tailwindcss": "^4.3.3",
-    "vite": "^8.3.3"
+    "vite": "^8.3.4"
   },
   "license": "SEE LICENSE IN LICENSE",
   "description": "Connect multiple Webflow workspaces to your AI tools through one MCP connection, with local OAuth and per-project permissions.",

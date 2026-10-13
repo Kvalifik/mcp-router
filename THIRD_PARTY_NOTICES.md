@@ -6401,7 +6401,7 @@ will be liable to anyone for any damages related to this
 software or this license, under any kind of legal claim.***
 ```
 
-## lucide-react 1.52.0
+## lucide-react 1.53.0
 
 License: ISC. Runtime dependency.
 
@@ -6862,7 +6862,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## nanoid 3.3.19
+## nanoid 3.3.20
 
 License: MIT. Build dependency.
 
@@ -7363,7 +7363,7 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-## postcss 8.5.28
+## postcss 8.5.29
 
 License: MIT. Build dependency.
 
@@ -9218,7 +9218,7 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-## vite 8.3.3
+## vite 8.3.4
 
 License: MIT. Build dependency.
 

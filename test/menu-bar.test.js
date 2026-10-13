@@ -67,3 +67,28 @@ test('warning image follows attention, clears on recovery and initializes replac
   update({...tray},'icon',status);
   assert.deepEqual(images,[normal,warning,normal,normal]);
 });
+test('only verified ready updates enable the update badge',()=>{
+  for(const state of ['current','available','downloading','installing','error']) {
+    assert.equal(menuBar.menuBarStatus(fixture(),{state}).updateReady,false);
+  }
+  assert.equal(menuBar.menuBarStatus(fixture(),{state:'ready'}).updateReady,true);
+});
+test('warnings take priority while the tooltip preserves update readiness',()=>{
+  const normal={},warning={},update={},images=[];
+  let tooltip;
+  const apply=menuBar.createTrayTextUpdater({normal,warning,update});
+  const tray={setTitle(){},setToolTip:value=>{tooltip=value;},setImage:image=>images.push(image)};
+  const status={connections:1,projects:1,attention:false,updateReady:false};
+  apply(tray,'icon',status);
+  apply(tray,'icon',{...status,updateReady:true});
+  assert.match(tooltip,/Update ready to install/);
+  apply(tray,'icon',{...status,attention:true,updateReady:true});
+  assert.match(tooltip,/Access needs attention.*Update ready to install/);
+  apply(tray,'icon',{...status,attention:true});
+  assert.doesNotMatch(tooltip,/Update ready/);
+  apply(tray,'icon',{...status,attention:true,updateReady:true});
+  apply(tray,'icon',{...status,updateReady:true});
+  apply({...tray},'icon',{...status,updateReady:true});
+  apply(tray,'icon',status);
+  assert.deepEqual(images,[normal,update,warning,update,update,normal]);
+});

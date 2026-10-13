@@ -73,6 +73,13 @@ demonstrate a distinct feature and the user requests or agrees to the addition.
 
 ## Dependency review before releases
 
+Before every release, also perform the Webflow MCP compatibility review in
+`docs/RELEASING.md` for Stable and Beta separately. New operations may reuse
+existing permissions only after reviewing effects, project scope and ownership
+checks. New permission categories require explicit review. Never grant unseen
+upstream tools access automatically. Document deferred changes and unavailable
+channel checks; do not claim parity from an incomplete snapshot.
+
 Before preparing a release, review open Dependabot PRs using the dependency
 review procedure in `docs/RELEASING.md`. Routine patch/minor updates may be merged
 within the requested release work after diff review, refreshed license notices,
