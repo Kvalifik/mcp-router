@@ -13,7 +13,7 @@ function fixture(t) {
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'wfr-caps-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));
  const store=new Store(dir), calls=[];
  let intercept=async()=>{};
- const router=new Router(store,{provider:(id,interactive,channel)=>({id,channel})},{open:async()=>({guide:{content:[]},close:async()=>{},call:async(tool,args)=>{
+ const router=new Router(store,{provider:(id,interactive,channel)=>({id,channel})},{open:async()=>({listSites:async()=>[{id:site}],guide:{content:[]},close:async()=>{},call:async(tool,args)=>{
    calls.push({tool,args});const intercepted=await intercept(tool,args);if(intercepted!==undefined)return intercepted;
    const action=Object.keys(args.actions?.[0]||{}).find(k=>k!=='label');
    if(action==='search_instructions')return envelope(action,{instructions:[],pagination:{total:0}});
@@ -260,4 +260,163 @@ test('live guidance stays scoped to the selected grant and current permissions',
  assert.deepEqual(opened,['beta']);
  fail=false;revoke=true;
  await assert.rejects(router.call('get_project_guidance',{projectId:'p'}),/policy changed/);
+});
+
+for(const channel of ['stable','beta'])test(`${channel} analytics are permission-gated and project-bound`,async t=>{
+ const {router,store,calls}=fixture(t);grant(router,{'analyze:read':true});
+ const ids=['get_browser_window_height_report','get_goal_performance','get_page_flow_report','get_scroll_depth_report','list_goals'].map(action=>'data_analyze_tool.'+action);
+ router.edit('projects','p',{channel});
+ const connection=store.connection(router.project('p',null).connectionId);
+ connection.beta={tokens:{access_token:'synthetic-beta'},sites:[{id:site}]};
+ router.open=async provider=>{assert.equal(provider.channel,channel);return {listSites:async()=>[{id:site}],close:async()=>{},call:async(tool,args)=>{
+  calls.push({tool,args});const action=Object.keys(args.actions[0]).find(k=>k!=='label');
+  if(action==='list_pages')return envelope(action,{pages:[{id:'owned-page'}],pagination:{total:1}});
+  if(action==='get_collection_list')return envelope(action,{collections:[{id:'owned-collection'}]});
+  return envelope(action,{ok:true});
+ }};};
+ for(const id of ids){
+  assert((await router.call('get_project_operations',{projectId:'p'})).some(op=>op.id===id));
+  const params=id.endsWith('list_goals')?{}:{startTime:'2026-04-01T00:00:00Z',endTime:'2026-04-02T00:00:00Z',...(id.endsWith('get_goal_performance')?{goal_id:'1'}:{}),...(id.endsWith('get_page_flow_report')?{direction:'next',metricScope:'session',pageId:'owned-page',collectionId:'owned-collection',itemSlug:'demo'}:{})};
+  await router.call('read_webflow',request(id,params));
+  assert.equal(calls.at(-1).args.actions[0][id.split('.')[1]].site_id,site);
+  await assert.rejects(router.call('read_webflow',request(id,{...params,site_id:other})),/Cross-project/);
+  if(id.endsWith('get_page_flow_report'))await assert.rejects(router.call('read_webflow',request(id,{...params,pageId:'foreign-page'})),/does not belong/);
+ }
+ grant(router,{'analyze:read':false});
+ await assert.rejects(router.call('read_webflow',request(ids[0])),/Missing project permissions/);
+});
+
+test('localized CMS creation and publishing preserve separate grants and collection ownership',async t=>{
+ const {router,calls}=fixture(t);grant(router,{'cms:write':true});
+ const {preparationId}=await router.call('prepare_project',{projectId:'p'});
+ const params={collection_id:'owned-collection',request:{items:[{allCmsLocales:true,fieldData:{name:'Demo',slug:'demo'}}]}};
+ await router.call('write_webflow',request('data_cms_tool.create_collection_items',params,{preparationId}));
+ assert.deepEqual(calls.at(-1).args.actions[0].create_collection_items,params);
+ await assert.rejects(router.call('write_webflow',request('data_cms_tool.create_collection_items',{...params,collection_id:'foreign'},{preparationId})),/does not belong/);
+ const publish={collection_id:'owned-collection',request:{items:[{id:'demo-item',cmsLocaleIds:['demo-locale']}]}};
+ await assert.rejects(router.call('write_webflow',request('data_cms_tool.publish_collection_items',publish,{preparationId})),/Missing project permissions/);
+ grant(router,{'cms:publish':true});
+ const proof=await router.call('prepare_project',{projectId:'p'});
+ await router.call('write_webflow',request('data_cms_tool.publish_collection_items',publish,{preparationId:proof.preparationId}));
+ assert.deepEqual(calls.at(-1).args.actions[0].publish_collection_items,publish);
+});
+
+test('popover component properties retain canvas code permission requirements',async t=>{
+ const {router,calls}=fixture(t);grant(router,{'component_props:write':true});
+ const params={component_id:'synthetic-component',props:[{type:'link',name:'Open details',default_link:{mode:'popover',popover_action:'show'}}]};
+ const op=operation('data_component_props_tool.create_prop');
+ assert.doesNotThrow(()=>prepareArguments(op,params,site,'owned-page'));
+ await assert.rejects(router.call('write_webflow',request(op.id,params,{pageId:'owned-page'})),/Custom code/);
+ grant(router,{'component_props:write':true,'scripts:write':true});
+ const {preparationId}=await router.call('prepare_project',{projectId:'p'});
+ await router.call('write_webflow',request(op.id,params,{pageId:'owned-page',preparationId}));
+ assert.deepEqual(calls.at(-1).args.actions[0].create_prop,params);
+});
+
+test('CMS creation accepts custom fields only inside fieldData for both request formats',async t=>{
+ const {router,calls}=fixture(t);grant(router,{'cms:write':true});
+ const {preparationId}=await router.call('prepare_project',{projectId:'p'});
+ const op=operation('data_cms_tool.create_collection_items');
+ const fieldData={name:'Demo',slug:'demo',custom_text:'Retain me',custom_number:2,custom_toggle:false,custom_array:['one','two']};
+ for(const body of [{items:[{isDraft:true,fieldData}]},{fieldData:[fieldData],isDraft:true}]){
+  const params={collection_id:'owned-collection',request:body};
+  await router.call('write_webflow',request(op.id,params,{preparationId}));
+  assert.deepEqual(calls.at(-1).args.actions[0].create_collection_items,params);
+  assert.throws(()=>prepareArguments(op,{...params,unreviewed_target:'foreign'},site),/schema/);
+  assert.throws(()=>prepareArguments(op,{...params,request:{...body,unreviewed_target:'foreign'}},site),/schema/);
+ }
+ for(const fieldData of [{name:'Missing slug'},{name:12,slug:'invalid'}])assert.throws(()=>prepareArguments(op,{collection_id:'owned-collection',request:{items:[{fieldData}]}},site),/schema/);
+ assert.throws(()=>prepareArguments(op,{collection_id:'owned-collection',request:{items:[{fieldData,unreviewed_target:'foreign'}]}},site),/schema/);
+ grant(router,{'cms:write':false});
+ await assert.rejects(router.call('write_webflow',request(op.id,{collection_id:'owned-collection',request:{items:[{fieldData}]}},{preparationId})),/Missing project permissions/);
+});
+
+test('site Releases use distinct permissions, verify ownership and stay unavailable on Stable',async t=>{
+ const {router,store,calls}=fixture(t);
+ const actions={list_site_branches:'read',create_site_branch:'write',stage_site_branch:'publish',discard_site_branch:'delete'};
+ grant(router,{'pages:read':true,'pages:write':true,'pages:publish':true,'pages:delete':true});
+ for(const [action,mode] of Object.entries(actions)){
+  const id='data_pages_tool.'+action;
+  assert.equal(operation(id).permission,'pages:'+mode);
+  await assert.rejects(router.call('get_project_operations',{projectId:'p',operationId:id}),/selected MCP channel/);
+  await assert.rejects(router.call(mode==='read'?'read_webflow':'write_webflow',request(id)),/selected MCP channel/);
+ }
+ const connection=store.connection(router.project('p',null).connectionId);
+ connection.beta={tokens:{access_token:'synthetic-beta'},sites:[{id:site}]};
+ router.edit('projects','p',{channel:'beta'});
+ let branchResult={branches:[{id:'owned-release'}]}, revoke=false;
+ router.open=async provider=>{assert.equal(provider.channel,'beta');return {listSites:async()=>[{id:site}],close:async()=>{},call:async(tool,args)=>{
+  calls.push({tool,args});const action=Object.keys(args.actions[0]).find(k=>k!=='label');
+  if(action==='search_instructions')return envelope(action,{instructions:[]});
+  if(action==='list_site_branches'){
+   if(revoke)grant(router,{'pages:write':false});
+   return envelope(action,branchResult);
+  }
+  if(action==='list_pages')return envelope(action,{pages:[{id:'owned-page'}],pagination:{total:1}});
+  return envelope(action,{ok:true});
+ }};};
+ const {preparationId}=await router.call('prepare_project',{projectId:'p'});
+ for(const [action,mode] of Object.entries(actions)){
+  const id='data_pages_tool.'+action;
+  const params=action==='list_site_branches'?{}:action==='create_site_branch'?{name:'Synthetic Release',origin_page_id:'owned-page'}:{site_branch_id:'owned-release'};
+  await router.call(mode==='read'?'read_webflow':'write_webflow',request(id,params,mode==='read'?{}:{preparationId}));
+  assert.equal(calls.at(-1).args.actions[0][action].site_id,site);
+  await assert.rejects(router.call(mode==='read'?'read_webflow':'write_webflow',request(id,{...params,site_id:other},mode==='read'?{}:{preparationId})),/Cross-project/);
+ }
+ const pageId='data_pages_tool.create_page', page={title:'Synthetic',slug:'synthetic',draft:true,site_branch_id:'owned-release'};
+ const betaSchema=(await router.call('get_project_operations',{projectId:'p',operationId:pageId})).schema;
+ assert(betaSchema.properties.site_branch_id);
+ await router.call('write_webflow',request(pageId,page,{preparationId}));
+ for(const action of ['stage_site_branch','discard_site_branch','create_page']){
+  const params=action==='create_page'?{...page,site_branch_id:'foreign'}:{site_branch_id:'foreign'};
+  await assert.rejects(router.call('write_webflow',request('data_pages_tool.'+action,params,{preparationId})),/does not belong/);
+ }
+ await assert.rejects(router.call('write_webflow',request('data_pages_tool.create_site_branch',{name:'Synthetic',origin_page_id:'foreign'},{preparationId})),/does not belong/);
+ branchResult={unexpected:[]};
+ await assert.rejects(router.call('write_webflow',request(pageId,page,{preparationId})),error=>error.feedback.stage==='resource_ownership');
+ branchResult={branches:[{id:'owned-release'}]};revoke=true;
+ await assert.rejects(router.call('write_webflow',request(pageId,page,{preparationId})),/policy changed/);
+ for(const [action,mode] of Object.entries(actions)){
+  grant(router,{['pages:'+mode]:false});
+  await assert.rejects(router.call(mode==='read'?'read_webflow':'write_webflow',request('data_pages_tool.'+action,{},mode==='read'?{}:{preparationId})),/Missing project permissions/);
+ }
+ router.edit('projects','p',{channel:'stable'});grant(router,{'pages:write':true});
+ assert(!(await router.call('get_project_operations',{projectId:'p',operationId:pageId})).schema.properties.site_branch_id);
+ // Compiling the Beta schema first must not pollute Stable validation.
+ assert.throws(()=>prepareArguments(operation(pageId),page,site),/schema/);
+ assert.doesNotThrow(()=>prepareArguments(operation(pageId),{title:'Synthetic',slug:'synthetic'},site));
+});
+
+for(const channel of ['stable','beta'])test(`${channel} AEO and recommendation reads enforce grants, site scope and channel`,async t=>{
+ const {router,store,calls,setIntercept}=fixture(t);
+ setIntercept(async(tool,args)=>{if(args.actions?.[0]?.list_pages)return envelope('list_pages',{pages:[{id:'333333333333333333333333'}],pagination:{total:1}});});
+ router.edit('projects','p',{channel});
+ store.connection(router.project('p',null).connectionId).beta={tokens:{access_token:'synthetic-beta'},sites:[{id:site}]};
+ const ops=CATALOG.filter(op=>['data_aeo_tool','data_recommendations_tool'].includes(op.tool));
+ assert.equal(ops.length,19);
+ const sample={startTime:'2026-04-01T00:00:00Z',endTime:'2026-04-02T00:00:00Z',breakdown:'prompt',domain:'example.com',pageId:'333333333333333333333333',executionId:'111111111111111111111111',recommendationId:'222222222222222222222222'};
+ for(const op of ops){
+  grant(router,{'analyze:read':true});
+  const params=Object.fromEntries((op.schema.required||[]).filter(k=>k!=='site_id').map(k=>[k,sample[k]]));
+  if(channel==='stable'&&op.channels){
+   await assert.rejects(router.call('read_webflow',request(op.id,params)),/selected MCP channel/);
+   assert(!(await router.call('get_project_operations',{projectId:'p'})).some(x=>x.id===op.id));
+   continue;
+  }
+  grant(router,{'analyze:read':false});
+  const before=calls.length;
+  await assert.rejects(router.call('read_webflow',request(op.id,params)),/Missing project permissions/);
+  assert.equal(calls.length,before);
+  grant(router,{'analyze:read':true});
+  await router.call('read_webflow',request(op.id,params));
+  if(op.schema.properties.site_id){
+   assert.equal(calls.at(-1).args.actions[0][op.action].site_id,site);
+   await assert.rejects(router.call('read_webflow',request(op.id,{...params,site_id:other})),/Cross-project/);
+  }
+  if(op.schema.properties.pageId)await assert.rejects(router.call('read_webflow',request(op.id,{...params,pageId:'444444444444444444444444'})),/does not belong/);
+  if(op.schema.properties.collectionId)await assert.rejects(router.call('read_webflow',request(op.id,{...params,collectionId:'555555555555555555555555',itemSlug:'demo'})),/does not belong/);
+  await assert.rejects(router.call('read_webflow',request(op.id,{...params,actions:[{update_recommendation_settings:{recurringAuditsEnabled:true}}]})),/schema/);
+ }
+ assert.throws(()=>operation('data_recommendations_tool.update_recommendation_settings'),/Unknown operation/);
+ assert.throws(()=>operation('data_optimize_tool.list_optimize_resources'),/Unknown operation/);
 });

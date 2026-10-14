@@ -31,3 +31,19 @@ test('intentionally excluded guide utilities do not require execution permission
   const snapshot=[tool({list_items:schema}),{name:'webflow_guide_tool',inputSchema:{properties:{}}}];
   assert.deepEqual(compareCatalog(snapshot,catalog).unclassifiedTools,[]);
 });
+
+test('channel-specific catalog entries are excluded from other channel comparisons',()=>{
+ const beta={...catalog[0],id:'data_example_tool.get_beta',channels:['beta']};
+ assert.deepEqual(compareCatalog([tool({list_items:schema})],[...catalog,beta],'stable').removed,[]);
+ assert.deepEqual(compareCatalog([tool({list_items:schema})],[...catalog,beta],'beta').removed,[beta.id]);
+});
+
+test('channel-specific schemas are compared only against the selected channel',()=>{
+ const schema={type:'object',properties:{site_id:{type:'string'}},required:['site_id']};
+ const betaSchema={...schema,properties:{...schema.properties,site_branch_id:{type:'string'}}};
+ const op={id:'data_pages_tool.create_page',tool:'data_pages_tool',action:'create_page',schema,channelSchemas:{beta:betaSchema},topSite:null,page:false,builder:false,direct:false};
+ const snapshot=value=>[{name:op.tool,inputSchema:{properties:{actions:{items:{properties:{create_page:value}}}}}}];
+ assert.deepEqual(compareCatalog(snapshot(schema),[op],'stable').changed,[]);
+ assert.deepEqual(compareCatalog(snapshot(betaSchema),[op],'beta').changed,[]);
+ assert.equal(compareCatalog(snapshot(betaSchema),[op],'stable').changed.length,1);
+});

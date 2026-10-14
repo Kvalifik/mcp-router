@@ -104,3 +104,13 @@ repository, detected stable release tag, and native architecture; renderer IPC
 accepts no update URLs or file paths. Ad-hoc and Windows builds use manual downloads.
 Release metadata also supplies ZIP SHA-256 and size. A compromised signing key or
 approved release workflow can still produce trusted malicious releases.
+
+Beta Releases are channel-gated and use separate Pages read, write, publish and
+delete grants. The router checks site-branch membership before dispatching an
+operation targeting an existing Release, and checks origin-page ownership on
+creation. Stable cannot accept the Beta-only branch target in page creation.
+
+Site-scoped AEO and recommendation reads use Analytics read. The router injects
+the selected site and rejects site overrides; page and collection filters require
+project ownership. Account-wide Optimize discovery and recommendation settings
+writes are not exposed. Upstream feature entitlements remain required.

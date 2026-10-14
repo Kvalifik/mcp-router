@@ -10,8 +10,8 @@ export function validatePermissions(value) {
   return { ...value };
 }
 const ajv = new Ajv({ strict: false, validateFormats: false, allErrors: false });
-const validators = new Map();
-export function operation(id) { const op=CATALOG.find(o=>o.id===id); if(!op)throw new Error('Unknown operation');return op; }
+const validators = new WeakMap();
+export function operation(id, channel='stable') { const op=CATALOG.find(o=>o.id===id); if(!op)throw new Error('Unknown operation');const {channelSchemas,...selected}=op;return {...selected,schema:channelSchemas?.[channel]||op.schema}; }
 export function allowed(p,op) { const grants=permissions(p);return [op.permission,...op.extraPermissions].every(key=>grants[key]===true); }
 export function requirePermissions(p, keys) {
   const grants=permissions(p);
@@ -33,7 +33,7 @@ export function prepareArguments(op, params, siteId, pageId) {
     for(const variant of schema.anyOf||schema.oneOf||[])inject(variant);
   }
   inject(op.schema);
-  let validate=validators.get(op.id);if(!validate){validate=ajv.compile(op.schema);validators.set(op.id,validate);}
+  let validate=validators.get(op.schema);if(!validate){validate=ajv.compile(op.schema);validators.set(op.schema,validate);}
   if(!validate(value)) throw new Error('Parameters do not match the operation schema');
   const args = op.direct ? value : {actions:[op.builder ? value : {label:'Project operation', [op.action]:value}]};
   if(op.topSite)args[op.topSite]=siteId;
@@ -79,11 +79,17 @@ export async function checkOwnership(client, op, value, siteId, pageId) {
     if(!cache.get(kind).has(id))throw new Error('Resource does not belong to this project');
   }
   if(op.page)await owns('page',pageId);
+  if(value.site_branch_id) {
+    const result=resultOf(await client.call('data_pages_tool',{actions:[{label:'Verify project Release ownership',list_site_branches:{site_id:siteId}}]}),'list_site_branches');
+    const branches=Array.isArray(result)?result:result.branches || result.siteBranches;
+    if(!Array.isArray(branches) || result.pagination?.hasMore || result.pagination?.nextCursor)throw new Error('Cannot verify resource ownership');
+    if(!branches.some(branch=>branch.id===value.site_branch_id))throw new Error('Resource does not belong to this project');
+  }
   async function walk(node,parent='') {
     if(!node||typeof node!=='object')return;
     for(const [key,v] of Object.entries(node)) {
       if(['siteId','site_id'].includes(key)&&v!==siteId)throw new Error('Cross-project site denied');
-      if(['page_id','pageId','duplicateOf'].includes(key)&&v)await owns('page',v);
+      if(['page_id','pageId','duplicateOf','origin_page_id'].includes(key)&&v)await owns('page',v);
       if(['collection_id','collectionId'].includes(key)&&v && !['variable'].includes(op.area))await owns('collection',v);
       if(['asset_id','image_asset_id'].includes(key)&&v)await owns('asset',v);
       if(key==='asset_ids'&&Array.isArray(v))for(const id of v)await owns('asset',id);

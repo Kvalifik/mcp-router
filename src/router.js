@@ -291,13 +291,15 @@ export class Router {
     const signature=()=>JSON.stringify([this.project(p.id,null),this.channel(p)]);
     const initial=signature();
     const recheck=()=>{if(signature()!==initial)throw new Error('Project policy changed during request');};
+    const available=op=>!op.channels || op.channels.includes(this.channel(p));
+    const selectedOperation=id=>{const op=operation(id,this.channel(p));if(!available(op))throw new Error('Operation unavailable on the selected MCP channel');return op;};
     if(name==='get_project_operations') {
-      const operations=CATALOG.filter(op=>allowed(p,op));
-      if(args.operationId){const op=operation(args.operationId);requirePermissions(p,[op.permission,...op.extraPermissions]);return {...op,notes:'Site IDs are selected by the router. Supply pageId separately for page tools. Read project instructions with prepare_project before writes.'};}
+      const operations=CATALOG.filter(op=>available(op)&&allowed(p,op));
+      if(args.operationId){const op=selectedOperation(args.operationId);requirePermissions(p,[op.permission,...op.extraPermissions]);return {...op,notes:'Site IDs are selected by the router. Supply pageId separately for page tools. Read project instructions with prepare_project before writes.'};}
       return operations.map(({id,title,mode,permission,extraPermissions,page})=>({id,area:title,mode,permission,extraPermissions,requiresPageId:page}));
     }
     if(['prepare_project','get_project_guidance'].includes(name))requirePermissions(p,['agent_instructions:read']);
-    const op=['prepare_project','get_project_guidance'].includes(name)?null:operation(args.operationId);
+    const op=['prepare_project','get_project_guidance'].includes(name)?null:selectedOperation(args.operationId);
     if(op) {
       requirePermissions(p,[op.permission,...op.extraPermissions]);
       if((name==='read_webflow' && op.mode!=='read') || (name==='write_webflow' && op.mode==='read'))throw new Error(`Wrong execution tool. Use ${op.mode==='read'?'read_webflow':'write_webflow'} for this operation.`);
@@ -324,7 +326,7 @@ export class Router {
         if(channel==='beta' && !(await client.listSites()).some(s=>s.id===p.siteId))throw authorizationRequired('Project is not authorized on Beta. Reconnect and include this project.');
         let guidance;
         if(name==='get_project_guidance' || name==='prepare_project') {
-          const permitted = CATALOG.filter(candidate=>allowed(p,candidate));
+          const permitted = CATALOG.filter(candidate=>available(candidate)&&allowed(p,candidate));
           const tools = (await read('tool_discovery',()=>client.listTools?.()) || []).filter(tool=>permitted.some(candidate=>candidate.tool===tool.name))
             .map(({name,title,description})=>({name,title,description,operationIds:permitted.filter(candidate=>candidate.tool===name).map(candidate=>candidate.id)}));
           recheck();

@@ -6,7 +6,7 @@ Third-party components retain their own licenses, including commercial-use permi
 
 Locally copied shadcn/ui components are derived from shadcn/ui under MIT; see licenses/shadcn-ui.txt. Vendor trademarks are not licensed by these software licenses.
 
-## @decimalturn/toml-patch 3.1.0
+## @decimalturn/toml-patch 3.3.0
 
 License: MIT. Runtime dependency.
 
@@ -142,7 +142,7 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-## @electron/osx-sign 2.7.0
+## @electron/osx-sign 2.7.1
 
 License: BSD-2-Clause. Build dependency.
 
@@ -766,7 +766,7 @@ License: Apache-2.0. Build dependency.
    limitations under the License.
 ```
 
-## @modelcontextprotocol/sdk 1.31.0
+## @modelcontextprotocol/sdk 1.32.1
 
 License: MIT. Runtime dependency.
 
@@ -2920,7 +2920,7 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-## ajv 8.18.0
+## ajv 8.20.0
 
 License: MIT. Runtime dependency.
 
@@ -4083,7 +4083,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ```
 
-## electron 44.3.0
+## electron 44.5.1
 
 License: MIT. Build dependency.
 
@@ -12357,7 +12357,7 @@ WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
 ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 ```
 
-## zod 3.25.76
+## zod 4.6.5
 
 License: MIT. Runtime dependency.
 

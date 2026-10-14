@@ -6,7 +6,8 @@ import { pathToFileURL } from 'node:url';
 const excluded = new Set(['ask_webflow_ai', 'get_more_tools', 'webflow_guide_tool']);
 const builders = new Set(['data_element_builder', 'data_component_builder', 'data_whtml_builder']);
 
-export function compareCatalog(snapshot, catalog) {
+export function compareCatalog(snapshot, catalog, channel) {
+  if(channel) catalog=catalog.filter(op=>!op.channels || op.channels.includes(channel)).map(op=>({...op,schema:op.channelSchemas?.[channel]||op.schema}));
   const tools = Array.isArray(snapshot) ? snapshot : snapshot?.tools;
   if (!Array.isArray(tools) || !tools.length || snapshot?.nextCursor) throw Error('A complete, nonempty tools/list snapshot is required');
   const upstream = new Map(), seen = new Set(), unclassifiedTools = [];
@@ -55,7 +56,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   try {
     const [channel, filename] = process.argv.slice(2);
     if (!['stable', 'beta'].includes(channel) || !filename || process.argv.length !== 4) throw Error('Usage: node scripts/check-webflow-catalog.mjs stable|beta SNAPSHOT.json');
-    const report = compareCatalog(JSON.parse(fs.readFileSync(filename, 'utf8')), JSON.parse(fs.readFileSync(new URL('../src/catalog.json', import.meta.url), 'utf8')));
+    const report = compareCatalog(JSON.parse(fs.readFileSync(filename, 'utf8')), JSON.parse(fs.readFileSync(new URL('../src/catalog.json', import.meta.url), 'utf8')), channel);
     const reviewRequired = Object.values(report).some(entries => entries.length);
     console.log(JSON.stringify({ channel, reviewRequired, ...report }, null, 2));
     process.exitCode = reviewRequired ? 1 : 0;

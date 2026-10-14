@@ -6,6 +6,15 @@ Dependabot opens grouped patch/minor updates weekly, separating routine dependen
 
 ## Prepare a release
 
+Whenever a new candidate for the release is discovered, flag it to the user before
+including or deferring it. Summarize what changed, its benefit, risk, required
+validation and recommended scope. This applies to dependencies, upstream MCP
+tools and schemas, bug fixes and security updates. Ask for a scope decision unless
+the user has already explicitly decided on that candidate. Continue independent
+checks while waiting, but do not finalize or publish with unresolved scope choices.
+A written deferral alone does not satisfy this requirement. Once a candidate is
+approved for inclusion, routine execution and merges do not need repeated approval.
+
 1. Complete the Webflow MCP compatibility review and review eligible Dependabot PRs using the procedures below, then use `npm version patch --no-git-tag-version` (or minor/major) to update package.json and package-lock.json. Add the matching version entry to CHANGELOG.md.
 2. Merge the version and application changes into main after checks pass.
 3. Open Actions → Release → Run workflow, select main, confirm **Stable/Beta MCP changes reviewed** for the selected commit, and leave **Create a draft release** off for a build-only validation, or enable it to prepare a release. Enable **Sign and notarize Mac apps** for Developer ID releases after configuring the signing environment below.
@@ -162,8 +171,9 @@ GitHub signing secrets are only needed for signing within Actions.
 ## Dependency review before each release
 
 The agent preparing a requested release should inspect open Dependabot PRs before
-bumping the app version. The release request includes authorization to merge
-routine updates that pass this procedure; separate per-PR approval is unnecessary.
+bumping the app version. After the user includes a newly discovered candidate in
+release scope, the release request authorizes merging routine updates that pass
+this procedure; separate per-PR merge approval is unnecessary.
 This review does not publish a release or authorize bypassing branch protections.
 
 1. List open Dependabot PRs (`gh pr list --author app/dependabot`) and inspect the
@@ -204,3 +214,31 @@ This review does not publish a release or authorize bypassing branch protections
 A failed or deferred dependency update should not force an unrelated release to
 wait unless it is required for that release's correctness or security. Do not
 silently ignore a relevant unresolved security advisory.
+
+For the reviewed compatibility refresh, run
+`python3 scripts/build-catalog.py --refresh-compatible STABLE.json BETA.json`.
+This updates only explicitly reviewed shared actions and the five Analyze
+actions shared by Stable and Beta, preserving permission classifications. Shared schemas must match between
+channels. Extend the reviewed set only after reviewing effects and ownership;
+new families and site-branch actions are not automatically imported.
+
+The CMS creation refresh includes a narrow correction for the upstream output-
+schema export: only the name/slug object inside the two fieldData intersections
+is reopened to custom field slugs. The generator checks the expected shape and
+stops if it changes. Catalog comparison intentionally still reports this schema
+difference; review it rather than suppressing unexpected upstream changes.
+
+Refresh the explicitly reviewed Beta site-branch operations separately with
+`python3 scripts/build-catalog.py --refresh-site-branches STABLE.json BETA.json`.
+This preserves Stable page creation and stores the Beta page-creation schema
+separately. Runtime schema validation and comparison select the project's channel.
+The four lifecycle actions use Pages read/write/publish/delete permissions, with
+project ownership checks before staging, discarding or creating a branch page.
+
+Refresh the reviewed site-scoped analytics reads with
+`python3 scripts/build-catalog.py --refresh-site-reads STABLE.json BETA.json`.
+The explicit allowlist includes AEO reads on both channels and recommendation
+reads on Beta, under Analytics read. Recommendation settings writes and unreviewed
+families are excluded. Schema/channel/targeting changes stop the generator for
+review. Optimize resource discovery is account-wide; do not expose it or trust a
+caller-supplied resource ID without a verified project mapping.

@@ -313,3 +313,38 @@ Set up or Reconnect action. An exclamation mark indicates a configuration that
 needs reconnecting; unconfigured apps have no status icon. The Not installed
 submenu lists supported apps absent from this computer. Setup status describes the saved configuration,
 not whether the app is running.
+
+Reviewed Beta-only operations are hidden and rejected on Stable projects. On both
+Stable and Beta, the five additional Analyze reports (goals, goal performance, scroll depth, browser window
+height and page flow) use the existing **Analytics → Read** permission. Page-flow
+page and collection targets are checked against the selected project.
+
+AEO reports and prompt history on Stable and Beta, plus recommendation reads on
+Beta, also use **Analytics → Read**. The router fixes the site to the selected
+project and checks page/collection references. Webflow entitlement and AI-feature
+gates still apply; availability in the router does not grant an upstream plan
+feature. Recommendation settings writes are not exposed. Optimize reports remain
+unavailable until their account-level resource IDs can be mapped reliably to a
+project.
+
+CMS creation preserves custom collection fields inside `fieldData` for both the
+legacy array and per-item locale format. A targeted correction removes an
+upstream schema-export restriction on those maps only; required name/slug fields,
+outer request validation, permissions and collection ownership remain enforced.
+
+### Beta site branches (Releases)
+
+Experimental: these operations require Webflow Releases beta access in addition
+to selecting the Beta MCP channel. They have automated synthetic coverage, but
+live lifecycle validation is still pending access to an eligible project.
+Selecting Beta in MCP Router does not enable Webflow's feature entitlement.
+
+On Beta, `list_site_branches` uses Pages → Read, `create_site_branch` and
+`create_page` with `site_branch_id` use Pages → Write, `stage_site_branch` uses
+Pages → Publish, and `discard_site_branch` uses Pages → Delete. Staging targets
+only the Release preview; it does not merge or publish the production site.
+Discard hard-deletes a Release and requires explicit user intent. All writes
+require project preparation. The router verifies branch membership in the
+selected site's in-progress Releases and verifies an optional origin page.
+These actions and the `create_page.site_branch_id` parameter are unavailable on
+Stable. Page branches remain separate operations.

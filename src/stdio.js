@@ -61,7 +61,7 @@ server.registerTool('prepare_project', {
 },handler('prepare_project'));
 for(const mode of ['read','write']) server.registerTool(mode+'_webflow',{
   description: mode==='read'?'Read Webflow website data such as pages, CMS content, SEO settings, assets and Designer structure using a permitted action from get_project_operations. Load project rules with prepare_project and retrieve the exact operation schema first. The router fixes the project and verifies resource ownership.':'Create or edit Webflow pages, CMS content, Designer elements, styles and other website settings, or delete/publish when authorized, using a permitted action from get_project_operations. Discover its exact schema first. Read prepare_project instructions, then provide preparationId. Do not retry ambiguous write failures automatically; inspect the site first.',
-  inputSchema:{projectId:z.string(),operationId:z.string(),params:z.record(z.unknown()),pageId:z.string().optional(),...(mode==='write'?{preparationId:z.string()}: {})},
+  inputSchema:{projectId:z.string(),operationId:z.string(),params:z.record(z.string(),z.unknown()),pageId:z.string().optional(),...(mode==='write'?{preparationId:z.string()}: {})},
   annotations:{readOnlyHint:mode==='read',destructiveHint:mode==='write',idempotentHint:false}
 },handler(mode+'_webflow'));
 server.registerResource('webflow-project-guidance', new ResourceTemplate('webflow-router://projects/{projectId}/guidance', {
