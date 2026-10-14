@@ -6,15 +6,74 @@ Dependabot opens grouped patch/minor updates weekly, separating routine dependen
 
 ## Prepare a release
 
-1. Review and clear eligible Dependabot PRs using the procedure below, then use `npm version patch --no-git-tag-version` (or minor/major) to update package.json and package-lock.json. Add the matching version entry to CHANGELOG.md.
+Whenever a new candidate for the release is discovered, flag it to the user before
+including or deferring it. Summarize what changed, its benefit, risk, required
+validation and recommended scope. This applies to dependencies, upstream MCP
+tools and schemas, bug fixes and security updates. Ask for a scope decision unless
+the user has already explicitly decided on that candidate. Continue independent
+checks while waiting, but do not finalize or publish with unresolved scope choices.
+A written deferral alone does not satisfy this requirement. Once a candidate is
+approved for inclusion, routine execution and merges do not need repeated approval.
+
+1. Complete the Webflow MCP compatibility review and review eligible Dependabot PRs using the procedures below, then use `npm version patch --no-git-tag-version` (or minor/major) to update package.json and package-lock.json. Add the matching version entry to CHANGELOG.md.
 2. Merge the version and application changes into main after checks pass.
-3. Open Actions → Release → Run workflow, select main, and leave **Create a draft release** off for a build-only validation, or enable it to prepare a release. Enable **Sign and notarize Mac apps** for Developer ID releases after configuring the signing environment below.
+3. Open Actions → Release → Run workflow, select main, confirm **Stable/Beta MCP changes reviewed** for the selected commit, and leave **Create a draft release** off for a build-only validation, or enable it to prepare a release. Enable **Sign and notarize Mac apps** for Developer ID releases after configuring the signing environment below.
 4. The workflow tests and builds on Apple Silicon, Intel Mac, and Windows x64, starts each packaged runtime to test IPC, verifies bundle contents and versions, checks Mac signatures before and after ZIP extraction, and prepares three ZIPs, combined SHA-256 checksums, and changelog-based notes. Build artifacts expire after one day.
 5. Download each app and check installation, startup, OAuth, and AI client registration on its target OS. For a draft release, review its notes and assets, then publish it from Releases. Publication makes the version eligible for the app's update checker.
 
 The workflow never overwrites an existing release. Choose a new version for subsequent releases. A failed build-only run creates no release or tag. Draft publication uses a separate job with write access; build jobs have read-only repository access. Only explicitly selected signed Mac builds receive signing credentials from the `mac-signing` environment.
 
 Standard GitHub-hosted runners are used throughout. Release publication runs only when this workflow is manually started; there are no scheduled builds. Dependency, build, and workflow PRs also run credential-free packaging checks. Windows builds remain unsigned. The release workflow defaults to Developer ID signing. Local builds without signing settings, or workflow runs with signing disabled, use ad-hoc signing for credential-free validation. Developer ID mode signs with hardened runtime after all bundle resources are written, notarizes with Apple, and staples the ticket. Missing credentials or failed notarization stop that build; it never falls back to ad-hoc signing. Signing and strict recursive verification failures stop the build; release packaging also verifies the extracted ZIP. Ad-hoc verification checks bundle integrity, not Gatekeeper approval. Developer ID mode additionally verifies the expected signing identity, stapled ticket, and Gatekeeper acceptance after ZIP extraction. Test a browser-downloaded ZIP on a separate Mac before publication, including the Privacy & Security approval flow. Windows distributes a portable app folder rather than an installer.
+
+## Webflow MCP compatibility review before each release
+
+Aim for parity with upstream Webflow workflows while preserving router permissions
+and project isolation. Perform this review on the final release commit, separately
+for Stable and Beta. This is required for local releases too; ordinary local
+development builds do not need a release review.
+
+1. Using an authorized connection for each channel, collect every page of Webflow
+   `tools/list` into a complete JSON array. Keep these snapshots in ignored local
+   storage, for example `.private-release/webflow-stable.json` and
+   `.private-release/webflow-beta.json`. Do not include OAuth grants, session
+   identifiers, site content or customer data. Do not switch grants to work around
+   a failure. Record capture date, channel and the commit reviewed.
+2. Run the read-only comparison for each snapshot:
+
+   ```sh
+   node scripts/check-webflow-catalog.mjs stable .private-release/webflow-stable.json
+   node scripts/check-webflow-catalog.mjs beta .private-release/webflow-beta.json
+   ```
+
+   Exit 0 means no detected action-schema differences, 1 means review is needed,
+   and 2 means invalid/incomplete input or a failed check. The report lists added,
+   changed and removed actions and unclassified tools. It does not update policy.
+   Also inspect the current upstream guide, tool descriptions and top-level schema
+   constraints: these are not fully represented in the pinned action catalog, so
+   a clean comparison alone is not proof of compatibility. Snapshots must include
+   all pages; the checker cannot detect omitted pages in a plain array.
+3. Review each difference for actual effects, project targeting, resource ownership,
+   embedded code, publishing and deletion. Names such as `get_*` are not proof of
+   read-only behavior. New tools/actions may reuse existing permissions after this
+   review; users need not approve each tool individually. New permission categories
+   or expanded effects require explicit permission-design review and must not be
+   silently added to existing saved grants. Review changed optional parameters too.
+4. Refresh `src/catalog.json` only with `scripts/build-catalog.py` from a reviewed
+   snapshot, updating the generator's classifications and `src/permissions.js`
+   ownership checks as needed. The generator's name-based classifications are
+   candidates, not approval. Never blindly overwrite the shared catalog with the
+   other channel's snapshot: reconcile channel differences explicitly or defer
+   incompatible operations. Unclassified runtime tools remain unavailable.
+5. Add synthetic regression coverage for changed schemas, permission denial,
+   cross-project targeting and Stable/Beta isolation. Run `npm test` and
+   `npm run build:ui`. Record supported changes and each deferral with its reason
+   in the release PR or release notes. If a channel could not be checked, record
+   that limitation explicitly rather than claiming parity.
+6. Confirm the workflow's **Stable/Beta MCP changes reviewed** input only after
+   completing and documenting the review, including any accepted deferrals or
+   unavailable channel checks. The workflow checks this attestation before build
+   or signing; it does not contact Webflow or validate the review's conclusions.
+   Webflow credentials must not be added to release or PR jobs.
 
 ## Local builds
 
@@ -112,8 +171,9 @@ GitHub signing secrets are only needed for signing within Actions.
 ## Dependency review before each release
 
 The agent preparing a requested release should inspect open Dependabot PRs before
-bumping the app version. The release request includes authorization to merge
-routine updates that pass this procedure; separate per-PR approval is unnecessary.
+bumping the app version. After the user includes a newly discovered candidate in
+release scope, the release request authorizes merging routine updates that pass
+this procedure; separate per-PR merge approval is unnecessary.
 This review does not publish a release or authorize bypassing branch protections.
 
 1. List open Dependabot PRs (`gh pr list --author app/dependabot`) and inspect the
@@ -154,3 +214,31 @@ This review does not publish a release or authorize bypassing branch protections
 A failed or deferred dependency update should not force an unrelated release to
 wait unless it is required for that release's correctness or security. Do not
 silently ignore a relevant unresolved security advisory.
+
+For the reviewed compatibility refresh, run
+`python3 scripts/build-catalog.py --refresh-compatible STABLE.json BETA.json`.
+This updates only explicitly reviewed shared actions and the five Analyze
+actions shared by Stable and Beta, preserving permission classifications. Shared schemas must match between
+channels. Extend the reviewed set only after reviewing effects and ownership;
+new families and site-branch actions are not automatically imported.
+
+The CMS creation refresh includes a narrow correction for the upstream output-
+schema export: only the name/slug object inside the two fieldData intersections
+is reopened to custom field slugs. The generator checks the expected shape and
+stops if it changes. Catalog comparison intentionally still reports this schema
+difference; review it rather than suppressing unexpected upstream changes.
+
+Refresh the explicitly reviewed Beta site-branch operations separately with
+`python3 scripts/build-catalog.py --refresh-site-branches STABLE.json BETA.json`.
+This preserves Stable page creation and stores the Beta page-creation schema
+separately. Runtime schema validation and comparison select the project's channel.
+The four lifecycle actions use Pages read/write/publish/delete permissions, with
+project ownership checks before staging, discarding or creating a branch page.
+
+Refresh the reviewed site-scoped analytics reads with
+`python3 scripts/build-catalog.py --refresh-site-reads STABLE.json BETA.json`.
+The explicit allowlist includes AEO reads on both channels and recommendation
+reads on Beta, under Analytics read. Recommendation settings writes and unreviewed
+families are excluded. Schema/channel/targeting changes stop the generator for
+review. Optimize resource discovery is account-wide; do not expose it or trust a
+caller-supplied resource ID without a verified project mapping.

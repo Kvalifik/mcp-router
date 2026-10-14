@@ -75,10 +75,14 @@
 !/package.json
 !/packaging.mjs
 !/scripts/build-catalog.py
+!/scripts/check-webflow-catalog.mjs
+!/test/webflow-catalog.test.js
 !/scripts/build-icons.cjs
 !/scripts/generate-notices.py
 !/src/catalog.json
 !/src/desktop.cjs
+!/src/mac-install.cjs
+!/test/mac-install.test.js
 !/src/discovery.js
 !/src/grant-comparison.js
 !/src/integrations.cjs
@@ -212,3 +216,10 @@ public/
 !/test/mac-updates.test.js
 
 !/scripts/test-mac-update.mjs
+
+!/scripts/preview-tray-status.cjs
+
+!/scripts/build-tray-update.cjs
+!/assets/icons/menubar/MCPRouterUpdateTemplate.png
+!/assets/icons/menubar/MCPRouterUpdateTemplate@2x.png
+!/assets/icons/menubar/MCPRouterUpdateTemplate@3x.png

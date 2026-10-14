@@ -1295,25 +1295,78 @@
         "request": {
           "type": "object",
           "properties": {
-            "cmsLocaleIds": {
-              "default": [],
-              "description": "Locale IDs of the CMS item.",
+            "items": {
+              "description": "The items to create. A request can create up to 100 locale variants total across all entries, including every current CMS locale for each allCmsLocales entry.",
+              "minItems": 1,
               "type": "array",
               "items": {
-                "type": "string"
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "description": "The ID of an existing item to attach locale variants to. Use list_collection_items to discover item IDs. Omit to create a new item. Requires cmsLocaleIds, cannot accompany allCmsLocales, and the item must not already have a variant in those locales.",
+                    "type": "string"
+                  },
+                  "cmsLocaleIds": {
+                    "description": "CMS locale IDs to create this entry in, each at most once. Cannot accompany allCmsLocales. Omitting both selectors creates a new item in the site's primary locale only. Use the cmsLocaleId values (not the locale id values) from a site's locales, via data_sites_tool > get_site.",
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "allCmsLocales": {
+                    "description": "Set to true to create a new item in every current CMS locale, with linked variants sharing one item ID and fieldData. Only true is accepted; cannot accompany id or cmsLocaleIds (even an empty array).",
+                    "type": "boolean",
+                    "const": true
+                  },
+                  "isArchived": {
+                    "default": false,
+                    "description": "Whether the item is archived.",
+                    "type": "boolean"
+                  },
+                  "isDraft": {
+                    "default": true,
+                    "description": "Whether the item is a draft.",
+                    "type": "boolean"
+                  },
+                  "fieldData": {
+                    "allOf": [
+                      {
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string"
+                        },
+                        "additionalProperties": {}
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "description": "Display name for the CMS item."
+                          },
+                          "slug": {
+                            "type": "string",
+                            "description": "URL slug, unique within the collection. Changing it breaks all links referencing the old slug."
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "slug"
+                        ]
+                      }
+                    ],
+                    "description": "Item field data keyed by collection field slug (use get_collection_details to discover fields); 'name' and 'slug' are always required."
+                  }
+                },
+                "required": [
+                  "fieldData"
+                ],
+                "additionalProperties": false
               }
             },
-            "isArchived": {
-              "default": false,
-              "description": "Whether the item is archived.",
-              "type": "boolean"
-            },
-            "isDraft": {
-              "default": true,
-              "description": "Whether the item is a draft.",
-              "type": "boolean"
-            },
             "fieldData": {
+              "description": "Deprecated earlier shape: one fieldData object per new item. Use items instead. Cannot accompany items.",
+              "minItems": 1,
               "type": "array",
               "items": {
                 "allOf": [
@@ -1342,14 +1395,26 @@
                     ]
                   }
                 ]
-              },
-              "description": "Item field data objects keyed by collection field slug (use get_collection to discover fields); 'name' and 'slug' are always required."
+              }
+            },
+            "cmsLocaleIds": {
+              "description": "Deprecated: locales for every entry in fieldData. Use items[].cmsLocaleIds instead.",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "isDraft": {
+              "description": "Deprecated: draft flag for every entry in fieldData. Use items[].isDraft instead.",
+              "type": "boolean"
+            },
+            "isArchived": {
+              "description": "Deprecated: archived flag for every entry in fieldData. Use items[].isArchived instead.",
+              "type": "boolean"
             }
           },
-          "required": [
-            "fieldData"
-          ],
-          "additionalProperties": false
+          "additionalProperties": false,
+          "description": "The staged items to create."
         }
       },
       "required": [
@@ -1357,7 +1422,7 @@
         "request"
       ],
       "additionalProperties": false,
-      "description": "Create CMS collection items as drafts."
+      "description": "Create staged CMS collection items in one or more locales. Each entry in items creates one item: omit id to create a new item (in cmsLocaleIds or every current CMS locale with allCmsLocales: true, sharing one item ID); set id to an existing item's ID to add locale variants to it; send several entries sharing an id (one locale each) to give each locale different content."
     }
   },
   {
@@ -1871,8 +1936,13 @@
           "type": "object",
           "properties": {
             "cmsLocaleId": {
-              "description": "CMS locale ID of the items to return. Accepts a single ID or a comma-separated list of IDs; with a list, each locale's variant of an item is returned as its own entry carrying its own cmsLocaleId, and pagination.total counts those variants rather than distinct items. Omit to use the site's primary locale. Use the cmsLocaleId values (not the locale id values) from a site's locales, via data_sites_tool > get_site.",
+              "description": "CMS locale ID of the items to return. Accepts a single ID or a comma-separated list of IDs; with a list, each locale's variant of an item is returned as its own entry carrying its own cmsLocaleId, and pagination.total counts those variants rather than distinct items. Omit both cmsLocaleId and allCmsLocales to use the site's primary locale. Cannot accompany allCmsLocales. Use the cmsLocaleId values (not the locale id values) from a site's locales, via data_sites_tool > get_site.",
               "type": "string"
+            },
+            "allCmsLocales": {
+              "description": "Return items across every current CMS locale without providing locale IDs. Only true is accepted; cannot accompany cmsLocaleId, including an empty string. Each locale variant is a separate row with its own cmsLocaleId; pagination.total counts variants. limit and offset still apply; this does not fetch every page. Supports request.filter.id.eq to read one item's variants.",
+              "type": "boolean",
+              "const": true
             },
             "limit": {
               "description": "Maximum records returned (max 100).",
@@ -2064,18 +2134,41 @@
         "request": {
           "type": "object",
           "properties": {
+            "items": {
+              "description": "Items to publish, each with an ID and optional CMS locale IDs.",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "description": "The item ID. Use list_collection_items to discover item IDs."
+                  },
+                  "cmsLocaleIds": {
+                    "description": "CMS locale IDs where this item will be published. Use get_site to discover CMS locale IDs.",
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "id"
+                ],
+                "additionalProperties": false
+              }
+            },
             "itemIds": {
+              "description": "Deprecated earlier shape: IDs of the items to publish in their primary locale. Use items instead. Cannot accompany items.",
+              "minItems": 1,
               "type": "array",
               "items": {
                 "type": "string"
-              },
-              "description": "IDs of the items to publish."
+              }
             }
           },
-          "required": [
-            "itemIds"
-          ],
-          "additionalProperties": false
+          "additionalProperties": false,
+          "description": "Items and locale selections to publish."
         }
       },
       "required": [
@@ -2083,7 +2176,7 @@
         "request"
       ],
       "additionalProperties": false,
-      "description": "Publish CMS collection items to the live site."
+      "description": "Publish CMS collection items to the live site in one or more CMS locales per item."
     }
   },
   {
@@ -3167,6 +3260,109 @@
       ],
       "additionalProperties": false,
       "description": "Create a new page in a site. title and slug are required; optionally nest it under a folder (parentFolderId), mark it as a draft, duplicate an existing page (duplicateOf), and set seo and openGraph metadata."
+    },
+    "channelSchemas": {
+      "beta": {
+        "type": "object",
+        "properties": {
+          "site_id": {
+            "type": "string",
+            "description": "Webflow site ID. Use list_sites to discover site IDs."
+          },
+          "title": {
+            "type": "string",
+            "description": "Page title."
+          },
+          "slug": {
+            "type": "string",
+            "description": "URL slug for the page (the path segment)."
+          },
+          "parentFolderId": {
+            "description": "ID of the folder to nest the page under. Omit to create the page at the site root. When site_branch_id is set, the folder must be in that branch's working tree.",
+            "type": "string"
+          },
+          "draft": {
+            "description": "Whether the page is a draft (excluded from publishing). Defaults to false when omitted.",
+            "type": "boolean"
+          },
+          "duplicateOf": {
+            "description": "ID of an existing page in the same site to duplicate.",
+            "type": "string"
+          },
+          "seo": {
+            "description": "SEO metadata for the page.",
+            "type": "object",
+            "properties": {
+              "title": {
+                "description": "SEO title (page <title> / meta title).",
+                "type": "string"
+              },
+              "description": {
+                "description": "SEO meta description.",
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          },
+          "openGraph": {
+            "description": "Open Graph metadata for the page.",
+            "type": "object",
+            "properties": {
+              "title": {
+                "description": "Open Graph title (og:title).",
+                "type": "string"
+              },
+              "titleCopied": {
+                "description": "Whether the Open Graph title is copied from the SEO/page title.",
+                "type": "boolean"
+              },
+              "description": {
+                "description": "Open Graph description (og:description).",
+                "type": "string"
+              },
+              "descriptionCopied": {
+                "description": "Whether the Open Graph description is copied from the SEO/page description.",
+                "type": "boolean"
+              },
+              "imageUrl": {
+                "description": "Open Graph image URL (og:image); null unsets it. Mutually exclusive with imageAssetId.",
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "imageAssetId": {
+                "description": "Site asset ID for the Open Graph image; null unsets it. Mutually exclusive with imageUrl.",
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "additionalProperties": false
+          },
+          "site_branch_id": {
+            "description": "Releases only. Site-branch id from list_site_branches. Creates the page as a working page in that site branch. Omit for main-site create (POST /beta/sites/:site_id/page).",
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "site_id",
+          "title",
+          "slug"
+        ],
+        "additionalProperties": false,
+        "description": "Create a new page in a site. title and slug are required; optionally nest it under a folder (parentFolderId), mark it as a draft, duplicate an existing page (duplicateOf), and set seo and openGraph metadata."
+      }
     }
   },
   {
@@ -4704,7 +4900,7 @@
           "type": "boolean"
         },
         "pageId": {
-          "description": "Optional page ID for Single Page Publishing (e.g., '63c720f9347c2139b248e552'). Use list_pages to discover available page IDs. When provided, only that page is published (CMS items are not published via single-page publishing). When omitted, the entire site is published. Requires an Enterprise site with single-page publishing enabled and at least one prior full-site publish on the main branch.",
+          "description": "Optional page ID for Single Page Publishing (e.g., '63c720f9347c2139b248e552'). Use list_pages to discover available page IDs. When provided, only that page is published (CMS items are not published via single-page publishing). When omitted, the entire site is published. Requires an Enterprise site with single-page publishing enabled and at least one prior full-site publish on the main branch. Site-branch pages (working/base) cannot be published to production \u2014 merge into main first, or stage the site branch for preview.",
           "type": "string",
           "pattern": "^[0-9a-f]{24}$"
         }
@@ -4713,7 +4909,7 @@
         "site_id"
       ],
       "additionalProperties": false,
-      "description": "Publish a site. By default this publishes the entire site, making the latest changes live on the specified domains. To publish only a single page (Single Page Publishing), pass the optional pageId; in that case only that page is published and CMS items are not published."
+      "description": "Publish a site to production. By default this publishes the entire site, making the latest changes live on the specified domains. To publish only a single page (Single Page Publishing), pass the optional pageId; in that case only that page is published and CMS items are not published. Site-branch pages cannot be published here \u2014 merge into main first, or stage the site branch for preview. Publishing is limited to one publish per site per minute, and a single-page publish counts toward the same limit; a full-site publish includes every pending page change."
     }
   },
   {
@@ -8175,7 +8371,7 @@
         }
       },
       "additionalProperties": false,
-      "description": "Get all components in the site."
+      "description": "Get the site's components. Library components may be absent until an instance is placed on a page; MCP cannot check library install state, so an empty or partial list is not evidence a library is uninstalled."
     }
   },
   {
@@ -8468,7 +8664,7 @@
               },
               "isLibrary": {
                 "type": "boolean",
-                "description": "True: only library components (imported from an installed library); false: exclude them."
+                "description": "True: only library components; false: exclude them. Does not indicate whether a library is installed."
               },
               "isCodeComponent": {
                 "type": "boolean",
@@ -8494,7 +8690,7 @@
         "queries"
       ],
       "additionalProperties": false,
-      "description": "Query components by keywords, prop characteristics, and more."
+      "description": "Query components by keywords, prop characteristics, and more. Library components may be absent until an instance is placed on a page; MCP cannot check library install state, so zero matches is not evidence a library is uninstalled."
     }
   },
   {
@@ -8918,7 +9114,7 @@
                   },
                   "rich_text_inner_text": {
                     "type": "string",
-                    "description": "Default rich-text inner content."
+                    "description": "Default rich-text content as plain text: a blank line starts a new paragraph, a single newline is a line break."
                   },
                   "multiline": {
                     "type": "boolean",
@@ -9010,8 +9206,10 @@
                     "enum": [
                       "url",
                       "email",
-                      "phone"
-                    ]
+                      "phone",
+                      "popover"
+                    ],
+                    "description": "Link mode (url / email / phone / popover). A popover default is targetless \u2014 set the Popover target on each component instance."
                   },
                   "to": {
                     "type": "string",
@@ -9027,6 +9225,15 @@
                   "rel": {
                     "type": "string",
                     "description": "Anchor rel attribute."
+                  },
+                  "popover_action": {
+                    "type": "string",
+                    "enum": [
+                      "toggle",
+                      "show",
+                      "hide"
+                    ],
+                    "description": "What the link does to its target Popover. Only used when mode is \"popover\". Defaults to \"toggle\" when omitted."
                   }
                 },
                 "additionalProperties": false
@@ -9131,7 +9338,7 @@
                   },
                   "rich_text_inner_text": {
                     "type": "string",
-                    "description": "Default rich-text inner content."
+                    "description": "Default rich-text content as plain text: a blank line starts a new paragraph, a single newline is a line break."
                   },
                   "multiline": {
                     "type": "boolean",
@@ -9223,8 +9430,10 @@
                     "enum": [
                       "url",
                       "email",
-                      "phone"
-                    ]
+                      "phone",
+                      "popover"
+                    ],
+                    "description": "Link mode (url / email / phone / popover). A popover default is targetless \u2014 set the Popover target on each component instance."
                   },
                   "to": {
                     "type": "string",
@@ -9240,6 +9449,15 @@
                   "rel": {
                     "type": "string",
                     "description": "Anchor rel attribute."
+                  },
+                  "popover_action": {
+                    "type": "string",
+                    "enum": [
+                      "toggle",
+                      "show",
+                      "hide"
+                    ],
+                    "description": "What the link does to its target Popover. Only used when mode is \"popover\". Defaults to \"toggle\" when omitted."
                   }
                 },
                 "additionalProperties": false
@@ -9441,7 +9659,8 @@
                   "email",
                   "phone",
                   "file",
-                  "collectionPage"
+                  "collectionPage",
+                  "popover"
                 ]
               },
               "link_to": {
@@ -9461,6 +9680,34 @@
               },
               "link_rel": {
                 "type": "string"
+              },
+              "link_to_element_id": {
+                "description": "The Popover element (or a component instance whose root is a Popover) this instance's link opens or closes. Only used when link_mode is \"popover\"; omit it for a targetless popover link.",
+                "type": "object",
+                "properties": {
+                  "component": {
+                    "type": "string",
+                    "description": "Pass element.id.component verbatim \u2014 do not invent or shorten it."
+                  },
+                  "element": {
+                    "type": "string",
+                    "description": "Pass element.id.element verbatim \u2014 do not invent or shorten it."
+                  }
+                },
+                "required": [
+                  "component",
+                  "element"
+                ],
+                "additionalProperties": false
+              },
+              "link_popover_action": {
+                "description": "What the link does to its target Popover. Only used when link_mode is \"popover\". Defaults to \"toggle\" when omitted.",
+                "type": "string",
+                "enum": [
+                  "toggle",
+                  "show",
+                  "hide"
+                ]
               },
               "video_src": {
                 "description": "Source URL. Required when type is \"video\".",
@@ -9497,7 +9744,7 @@
                 "type": "string"
               },
               "rich_text_inner_text": {
-                "description": "Rich-text inner content. Required when type is \"richText\".",
+                "description": "Required when type is \"richText\". Plain text: a blank line starts a new paragraph, a single newline is a line break. Headings, lists and inline formatting are not parsed; data_element_builder can create them inside the prop.",
                 "type": "string"
               }
             },
@@ -11903,7 +12150,8 @@
                   "booleanFilter",
                   "id",
                   "altText",
-                  "code"
+                  "code",
+                  "popover"
                 ]
               }
             },
@@ -12104,6 +12352,7 @@
                           "type": "string"
                         },
                         "rich_text_inner_text": {
+                          "description": "For richText keys. Plain text: a blank line starts a new paragraph, a single newline is a line break.",
                           "type": "string"
                         }
                       },
@@ -12146,15 +12395,16 @@
                             "email",
                             "phone",
                             "file",
-                            "collectionPage"
+                            "collectionPage",
+                            "popover"
                           ]
                         },
                         "to": {
-                          "description": "Link target. url/email/phone: literal value; page: pageId; file: assetId; collectionPage: pageSlug; pageSection: unused \u2014 use to_element_id.",
+                          "description": "Link target. url/email/phone: literal value; page: pageId; file: assetId; collectionPage: pageSlug; pageSection/popover: unused \u2014 use to_element_id.",
                           "type": "string"
                         },
                         "to_element_id": {
-                          "description": "Link target element. Only used when mode is \"pageSection\".",
+                          "description": "Target element id (component + element). For \"pageSection\", the target section. For \"popover\", the Popover element (or a component instance whose root is a Popover) to open or close; omit it for a targetless popover link. Only used when mode is \"pageSection\" or \"popover\".",
                           "type": "object",
                           "properties": {
                             "component": {
@@ -12181,6 +12431,15 @@
                         },
                         "rel": {
                           "type": "string"
+                        },
+                        "popover_action": {
+                          "description": "What the link does to its target Popover. Only used when mode is \"popover\". Defaults to \"toggle\" when omitted.",
+                          "type": "string",
+                          "enum": [
+                            "toggle",
+                            "show",
+                            "hide"
+                          ]
                         }
                       },
                       "additionalProperties": false
@@ -12557,7 +12816,8 @@
                   "booleanFilter",
                   "id",
                   "altText",
-                  "code"
+                  "code",
+                  "popover"
                 ],
                 "description": "Filter to entries that produce a specific value type (e.g., \"string\", \"imageAsset\", \"code\")."
               },
@@ -13140,6 +13400,7 @@
                 "Container",
                 "Section",
                 "DivBlock",
+                "Box",
                 "Heading",
                 "TextBlock",
                 "Paragraph",
@@ -13169,10 +13430,11 @@
                 "PageSlot",
                 "ComponentSlot",
                 "Dropdown",
+                "Popover",
                 "DOM",
                 "BY_CUSTOM_TAG"
               ],
-              "description": "The type of element to create. Use DOM for a generic DOM element (requires set_dom_config). Use BY_CUSTOM_TAG to create any element by arbitrary HTML tag with optional atomic settings (requires custom_tag)."
+              "description": "The type of element to create. Use Box for generic containers such as a div. When Box elements are enabled for the site, Container also creates a Box, so set its max-width and centering styles explicitly. Use DOM for a generic DOM element (requires set_dom_config). Use BY_CUSTOM_TAG to create any element by arbitrary HTML tag with optional atomic settings (requires custom_tag)."
             },
             "set_style": {
               "description": "Set style on the element. it will remove all other styles on the element. and set only the styles passed in style_names.",
@@ -13448,6 +13710,7 @@
                         "type": "string"
                       },
                       "rich_text_inner_text": {
+                        "description": "For richText keys. Plain text: a blank line starts a new paragraph, a single newline is a line break.",
                         "type": "string"
                       }
                     },
@@ -13490,15 +13753,16 @@
                           "email",
                           "phone",
                           "file",
-                          "collectionPage"
+                          "collectionPage",
+                          "popover"
                         ]
                       },
                       "to": {
-                        "description": "Link target. url/email/phone: literal value; page: pageId; file: assetId; collectionPage: pageSlug; pageSection: unused \u2014 use to_element_id.",
+                        "description": "Link target. url/email/phone: literal value; page: pageId; file: assetId; collectionPage: pageSlug; pageSection/popover: unused \u2014 use to_element_id.",
                         "type": "string"
                       },
                       "to_element_id": {
-                        "description": "Link target element. Only used when mode is \"pageSection\".",
+                        "description": "Target element id (component + element). For \"pageSection\", the target section. For \"popover\", the Popover element (or a component instance whose root is a Popover) to open or close; omit it for a targetless popover link. Only used when mode is \"pageSection\" or \"popover\".",
                         "type": "object",
                         "properties": {
                           "component": {
@@ -13525,6 +13789,15 @@
                       },
                       "rel": {
                         "type": "string"
+                      },
+                      "popover_action": {
+                        "description": "What the link does to its target Popover. Only used when mode is \"popover\". Defaults to \"toggle\" when omitted.",
+                        "type": "string",
+                        "enum": [
+                          "toggle",
+                          "show",
+                          "hide"
+                        ]
                       }
                     },
                     "additionalProperties": false
@@ -14508,5 +14781,1960 @@
       "additionalProperties": false,
       "description": "Switch to a page on webflow designer"
     }
+  },
+  {
+    "id": "data_pages_tool.list_site_branches",
+    "tool": "data_pages_tool",
+    "action": "list_site_branches",
+    "area": "pages",
+    "title": "Pages",
+    "mode": "read",
+    "permission": "pages:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Webflow site ID. Use list_sites to discover site IDs."
+        },
+        "statusGroup": {
+          "description": "Filter by status group. Omit for the default in-progress group. Use merged to page through merged history.",
+          "type": "string",
+          "enum": [
+            "inProgress",
+            "merged"
+          ]
+        },
+        "limit": {
+          "description": "Page size for merged history only (1-100). Requires statusGroup=merged; do not pass for in-progress.",
+          "type": "number",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "cursor": {
+          "description": "Opaque cursor from pagination.nextCursor. Requires statusGroup=merged.",
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "site_id"
+      ],
+      "additionalProperties": false,
+      "description": "List Releases (site-scope branches) for a site. Use when the user asks to list Releases or site branches. Each row's id is the site_branch_id for discard_site_branch and later lifecycle actions. Supports statusGroup filtering; limit and cursor require statusGroup=merged (in-progress is returned in full). Distinct from list_branches, which returns page branches."
+    }
+  },
+  {
+    "id": "data_pages_tool.create_site_branch",
+    "tool": "data_pages_tool",
+    "action": "create_site_branch",
+    "area": "pages",
+    "title": "Pages",
+    "mode": "write",
+    "permission": "pages:write",
+    "extraPermissions": [
+      "agent_instructions:read"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Webflow site ID. Use list_sites to discover site IDs."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "User-facing name for the new site branch."
+        },
+        "description": {
+          "description": "Optional description for the site branch (max 300 chars).",
+          "type": "string",
+          "maxLength": 300
+        },
+        "origin_page_id": {
+          "description": "Optional main-site page id (from list_pages) the user was viewing; used to choose the destination working page after create. Omit to use the site index page.",
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "site_id",
+        "name"
+      ],
+      "additionalProperties": false,
+      "description": "Create a site-scope branch (Releases) for a site. Sync \u2014 returns the new site-branch id and destinationPageId for create-and-enter. Distinct from create_branch, which enqueues an async page-branch create."
+    }
+  },
+  {
+    "id": "data_pages_tool.stage_site_branch",
+    "tool": "data_pages_tool",
+    "action": "stage_site_branch",
+    "area": "pages",
+    "title": "Pages",
+    "mode": "publish",
+    "permission": "pages:publish",
+    "extraPermissions": [
+      "agent_instructions:read"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Webflow site ID. Use list_sites to discover site IDs."
+        },
+        "site_branch_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Releases / site-branch id from list_site_branches. Stages that live Release to its staging domain."
+        }
+      },
+      "required": [
+        "site_id",
+        "site_branch_id"
+      ],
+      "additionalProperties": false,
+      "description": "Stage (publish to staging) a Releases site-scope branch. Returns { taskId, stagingDomain } \u2014 poll get_branch_task_status (taskType \"branch_publish\") for completion; stagingDomain is the preview host once it succeeds. Distinct from publish_branch (page branch staging) and publish_site (production). 409 conflict when another publish is already in progress for the site \u2014 tell the user and try again later."
+    }
+  },
+  {
+    "id": "data_pages_tool.discard_site_branch",
+    "tool": "data_pages_tool",
+    "action": "discard_site_branch",
+    "area": "pages",
+    "title": "Pages",
+    "mode": "delete",
+    "permission": "pages:delete",
+    "extraPermissions": [
+      "agent_instructions:read"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Webflow site ID. Use list_sites to discover site IDs."
+        },
+        "site_branch_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Releases / site-branch id from list_site_branches. Hard-deletes that live Release."
+        }
+      },
+      "required": [
+        "site_id",
+        "site_branch_id"
+      ],
+      "additionalProperties": false,
+      "description": "Discard (hard-delete) a live Releases branch (site-scope). Use this when the user asks to delete, remove, discard, or cancel a Release \u2014 there is no separate delete_release action. Sync \u2014 succeeds with an empty body. Merged Releases cannot be discarded (409). Distinct from delete_branch, which deletes a page branch asynchronously."
+    }
+  },
+  {
+    "id": "data_analyze_tool.get_browser_window_height_report",
+    "tool": "data_analyze_tool",
+    "action": "get_browser_window_height_report",
+    "area": "analyze",
+    "title": "Analytics",
+    "mode": "read",
+    "permission": "analyze:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Unique identifier for the Webflow site. Use list_sites to discover available site IDs."
+        },
+        "startTime": {
+          "type": "string",
+          "description": "UTC ISO 8601 ending in Z (e.g. 2026-04-01T00:00:00Z); no numeric offsets. On/after 2025-04-09. Window \u2264 100 days."
+        },
+        "endTime": {
+          "type": "string",
+          "description": "UTC ISO 8601 ending in Z; must be > startTime. Window \u2264 100 days."
+        },
+        "deviceType": {
+          "description": "Filter to one device type.",
+          "type": "string",
+          "enum": [
+            "desktop",
+            "mobile",
+            "tablet"
+          ]
+        },
+        "country": {
+          "description": "ISO 3166-1 alpha-2 country code.",
+          "type": "string"
+        },
+        "pagePath": {
+          "description": "Filter to one page path.",
+          "type": "string"
+        },
+        "trafficSource": {
+          "description": "Filter to one traffic source.",
+          "type": "string"
+        },
+        "browser": {
+          "description": "Filter to one browser.",
+          "type": "string"
+        },
+        "utmCampaign": {
+          "description": "Filter to one utm_campaign.",
+          "type": "string"
+        },
+        "utmMedium": {
+          "description": "Filter to one utm_medium.",
+          "type": "string"
+        },
+        "utmSource": {
+          "description": "Filter to one utm_source.",
+          "type": "string"
+        },
+        "referrer": {
+          "description": "Filter to one referrer.",
+          "type": "string"
+        },
+        "filter": {
+          "description": "Optional dimension filter (eq/ne/in/nin). Same allowed dimensions as get_traffic_report.",
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "eq": {
+                "type": "string"
+              },
+              "ne": {
+                "type": "string"
+              },
+              "in": {
+                "minItems": 1,
+                "maxItems": 50,
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "nin": {
+                "minItems": 1,
+                "maxItems": 50,
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "site_id",
+        "startTime",
+        "endTime"
+      ],
+      "additionalProperties": false,
+      "description": "Average browser window height (CSS px) for a site/window. One-row snapshot; no metricScope or timeseries. Same optional scalars/filter as get_traffic_report."
+    }
+  },
+  {
+    "id": "data_analyze_tool.get_goal_performance",
+    "tool": "data_analyze_tool",
+    "action": "get_goal_performance",
+    "area": "analyze",
+    "title": "Analytics",
+    "mode": "read",
+    "permission": "analyze:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Unique identifier for the Webflow site. Use list_sites to discover available site IDs."
+        },
+        "goal_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Goal id from list_goals (numeric string, not a Mongo ObjectId)."
+        },
+        "startTime": {
+          "type": "string",
+          "description": "UTC ISO 8601 ending in Z (e.g. 2026-04-01T00:00:00Z); no numeric offsets. On/after 2025-04-09. Window \u2264 100 days."
+        },
+        "endTime": {
+          "type": "string",
+          "description": "UTC ISO 8601 ending in Z; must be > startTime. Window \u2264 100 days."
+        },
+        "bucketTimeZone": {
+          "type": "string",
+          "description": "Valid IANA time zone used to align time bucket boundaries, such as UTC or America/New_York. Bucket timestamps are returned as UTC instants for local bucket starts in this time zone."
+        },
+        "deviceType": {
+          "description": "Filter to one device type.",
+          "type": "string",
+          "enum": [
+            "desktop",
+            "mobile",
+            "tablet"
+          ]
+        },
+        "country": {
+          "description": "ISO 3166-1 alpha-2 country code.",
+          "type": "string"
+        },
+        "pagePath": {
+          "description": "Filter to one page path.",
+          "type": "string"
+        },
+        "trafficSource": {
+          "description": "Filter to one traffic source.",
+          "type": "string"
+        },
+        "browser": {
+          "description": "Filter to one browser.",
+          "type": "string"
+        },
+        "utmCampaign": {
+          "description": "Filter to one utm_campaign.",
+          "type": "string"
+        },
+        "utmMedium": {
+          "description": "Filter to one utm_medium.",
+          "type": "string"
+        },
+        "utmSource": {
+          "description": "Filter to one utm_source.",
+          "type": "string"
+        },
+        "referrer": {
+          "description": "Filter to one referrer.",
+          "type": "string"
+        },
+        "filter": {
+          "description": "Optional dimension filter (eq/ne/in/nin). Same allowed dimensions as get_traffic_report.",
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "eq": {
+                "type": "string"
+              },
+              "ne": {
+                "type": "string"
+              },
+              "in": {
+                "minItems": 1,
+                "maxItems": 50,
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "nin": {
+                "minItems": 1,
+                "maxItems": 50,
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "site_id",
+        "goal_id",
+        "startTime",
+        "endTime"
+      ],
+      "additionalProperties": false,
+      "description": "Daily conversion counts for one Analyze goal, bucketed in bucketTimeZone (default UTC). Returns goal config (as list_goals) plus {timestamp, count} series. Unknown goal_id \u2192 404; zero conversions \u2192 empty data. Use list_goals for goal_id. Same optional scalars/filter as get_scroll_depth_report."
+    }
+  },
+  {
+    "id": "data_analyze_tool.get_page_flow_report",
+    "tool": "data_analyze_tool",
+    "action": "get_page_flow_report",
+    "area": "analyze",
+    "title": "Analytics",
+    "mode": "read",
+    "permission": "analyze:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Unique identifier for the Webflow site. Use list_sites to discover available site IDs."
+        },
+        "startTime": {
+          "type": "string",
+          "description": "UTC ISO 8601 ending in Z (e.g. 2026-04-01T00:00:00Z); no numeric offsets. On/after 2025-04-09. Window \u2264 100 days."
+        },
+        "endTime": {
+          "type": "string",
+          "description": "UTC ISO 8601 ending in Z; must be > startTime. Window \u2264 100 days."
+        },
+        "direction": {
+          "type": "string",
+          "enum": [
+            "previous",
+            "next"
+          ],
+          "description": "Pages before (previous) or after (next) the anchor."
+        },
+        "metricScope": {
+          "type": "string",
+          "enum": [
+            "session",
+            "user",
+            "pageview"
+          ],
+          "description": "Rank by session, unique user, or pageview count."
+        },
+        "pageId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Anchor Webflow page id from list_pages (not a URL or path)."
+        },
+        "collectionId": {
+          "description": "CMS collection id for a template-page anchor (with itemSlug).",
+          "type": "string",
+          "minLength": 1
+        },
+        "itemSlug": {
+          "description": "CMS item slug for a template-page anchor (with collectionId).",
+          "type": "string",
+          "minLength": 1
+        },
+        "limit": {
+          "description": "Max rows to return (default 10, max 100).",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "deviceType": {
+          "description": "Filter to one device type.",
+          "type": "string",
+          "enum": [
+            "desktop",
+            "mobile",
+            "tablet"
+          ]
+        },
+        "country": {
+          "description": "ISO 3166-1 alpha-2 country code.",
+          "type": "string"
+        },
+        "pagePath": {
+          "description": "Filter to one page path.",
+          "type": "string"
+        },
+        "trafficSource": {
+          "description": "Filter to one traffic source.",
+          "type": "string"
+        },
+        "browser": {
+          "description": "Filter to one browser.",
+          "type": "string"
+        },
+        "utmCampaign": {
+          "description": "Filter to one utm_campaign.",
+          "type": "string"
+        },
+        "utmMedium": {
+          "description": "Filter to one utm_medium.",
+          "type": "string"
+        },
+        "utmSource": {
+          "description": "Filter to one utm_source.",
+          "type": "string"
+        },
+        "referrer": {
+          "description": "Filter to one referrer.",
+          "type": "string"
+        },
+        "filter": {
+          "description": "Optional dimension filter (eq/ne/in/nin). Same allowed dimensions as get_traffic_report.",
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "eq": {
+                "type": "string"
+              },
+              "ne": {
+                "type": "string"
+              },
+              "in": {
+                "minItems": 1,
+                "maxItems": 50,
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "nin": {
+                "minItems": 1,
+                "maxItems": 50,
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "site_id",
+        "startTime",
+        "endTime",
+        "direction",
+        "metricScope",
+        "pageId"
+      ],
+      "additionalProperties": false,
+      "description": "Pages viewed immediately before or after an anchor page, ranked by session/user/pageview. Same optional scalars/filter as get_traffic_report. collectionId and itemSlug must both be set or both omitted."
+    }
+  },
+  {
+    "id": "data_analyze_tool.get_scroll_depth_report",
+    "tool": "data_analyze_tool",
+    "action": "get_scroll_depth_report",
+    "area": "analyze",
+    "title": "Analytics",
+    "mode": "read",
+    "permission": "analyze:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Unique identifier for the Webflow site. Use list_sites to discover available site IDs."
+        },
+        "startTime": {
+          "type": "string",
+          "description": "UTC ISO 8601 ending in Z (e.g. 2026-04-01T00:00:00Z); no numeric offsets. On/after 2025-04-09. Window \u2264 100 days."
+        },
+        "endTime": {
+          "type": "string",
+          "description": "UTC ISO 8601 ending in Z; must be > startTime. Window \u2264 100 days."
+        },
+        "deviceType": {
+          "description": "Filter to one device type.",
+          "type": "string",
+          "enum": [
+            "desktop",
+            "mobile",
+            "tablet"
+          ]
+        },
+        "country": {
+          "description": "ISO 3166-1 alpha-2 country code.",
+          "type": "string"
+        },
+        "pagePath": {
+          "description": "Filter to one page path.",
+          "type": "string"
+        },
+        "trafficSource": {
+          "description": "Filter to one traffic source.",
+          "type": "string"
+        },
+        "browser": {
+          "description": "Filter to one browser.",
+          "type": "string"
+        },
+        "utmCampaign": {
+          "description": "Filter to one utm_campaign.",
+          "type": "string"
+        },
+        "utmMedium": {
+          "description": "Filter to one utm_medium.",
+          "type": "string"
+        },
+        "utmSource": {
+          "description": "Filter to one utm_source.",
+          "type": "string"
+        },
+        "referrer": {
+          "description": "Filter to one referrer.",
+          "type": "string"
+        },
+        "filter": {
+          "description": "Optional dimension filter (eq/ne/in/nin). Same allowed dimensions as get_traffic_report.",
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "eq": {
+                "type": "string"
+              },
+              "ne": {
+                "type": "string"
+              },
+              "in": {
+                "minItems": 1,
+                "maxItems": 50,
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "nin": {
+                "minItems": 1,
+                "maxItems": 50,
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "site_id",
+        "startTime",
+        "endTime"
+      ],
+      "additionalProperties": false,
+      "description": "Scroll-depth distribution (CSS px) at 75%/50%/25% pageview-share breakpoints. Snapshot only; no metricScope or timeseries. Same optional scalars/filter as get_traffic_report."
+    }
+  },
+  {
+    "id": "data_analyze_tool.list_goals",
+    "tool": "data_analyze_tool",
+    "action": "list_goals",
+    "area": "analyze",
+    "title": "Analytics",
+    "mode": "read",
+    "permission": "analyze:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Unique identifier for the Webflow site. Use list_sites to discover available site IDs."
+        }
+      },
+      "required": [
+        "site_id"
+      ],
+      "additionalProperties": false,
+      "description": "List all goals on a site: name, isSiteGoal (Site Goals), goalType (click/view/integration/custom), integrationSource (hubspot/marketo/shopify), formId (HubSpot/Marketo), scope, type, eventIds, value. Catalog only; no time window or filters."
+    }
+  },
+  {
+    "id": "data_aeo_tool.get_bot_traffic",
+    "tool": "data_aeo_tool",
+    "action": "get_bot_traffic",
+    "area": "analyze",
+    "title": "Analytics",
+    "mode": "read",
+    "permission": "analyze:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Webflow site ID from data_sites_tool (list_sites)."
+        },
+        "startTime": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "description": "ISO 8601 UTC timestamp ending in Z. Windows must be ordered and at most 100 days."
+        },
+        "endTime": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "description": "ISO 8601 datetime as a UTC timestamp ending in Z, for example 2026-04-07T00:00:00.000Z. Numeric offsets such as -04:00 or +00:00 are not accepted. Must be greater than startTime. The range from startTime to endTime must not exceed 100 days. Must not be later than 00:00:00.000Z today UTC; today's crawler data is not yet available (end_time_too_recent)."
+        },
+        "botProviders": {
+          "description": "Optional LLM crawler operators to include. Pass an array of slugs; the tool serializes them as repeated query keys (?botProviders=openai&botProviders=anthropic). A comma-joined string is one slug and the API rejects it as unsupported_bot_provider.",
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "ai2",
+              "amazon",
+              "anthropic",
+              "apple",
+              "bytedance",
+              "common-crawl",
+              "duckduckgo",
+              "google",
+              "meta",
+              "microsoft",
+              "mistral",
+              "openai",
+              "perplexity"
+            ]
+          }
+        },
+        "botCategory": {
+          "description": "Optional crawler category: 'agent', 'indexer', 'multiple', or 'training'.",
+          "type": "string",
+          "enum": [
+            "agent",
+            "indexer",
+            "multiple",
+            "training"
+          ]
+        }
+      },
+      "required": [
+        "site_id",
+        "startTime",
+        "endTime"
+      ],
+      "additionalProperties": false,
+      "description": "Get total LLM crawler request count for a site over a window. Optional botProviders (repeated slugs) and botCategory filter the total. This is crawler analytics, not prompt-pipeline data \u2014 it does not require the workspace AI/copilot gate. Named API errors include invalid_time_range, time_range_too_wide, end_time_too_recent, and unsupported_bot_provider."
+    }
+  },
+  {
+    "id": "data_aeo_tool.get_bot_traffic_pages",
+    "tool": "data_aeo_tool",
+    "action": "get_bot_traffic_pages",
+    "area": "analyze",
+    "title": "Analytics",
+    "mode": "read",
+    "permission": "analyze:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Webflow site ID from data_sites_tool (list_sites)."
+        },
+        "startTime": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "description": "ISO 8601 UTC timestamp ending in Z. Windows must be ordered and at most 100 days."
+        },
+        "endTime": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "description": "ISO 8601 datetime as a UTC timestamp ending in Z, for example 2026-04-07T00:00:00.000Z. Numeric offsets such as -04:00 or +00:00 are not accepted. Must be greater than startTime. The range from startTime to endTime must not exceed 100 days. Must not be later than 00:00:00.000Z today UTC; today's crawler data is not yet available (end_time_too_recent)."
+        },
+        "botProviders": {
+          "description": "Optional LLM crawler operators to include. Pass an array of slugs; the tool serializes them as repeated query keys (?botProviders=openai&botProviders=anthropic). A comma-joined string is one slug and the API rejects it as unsupported_bot_provider.",
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "ai2",
+              "amazon",
+              "anthropic",
+              "apple",
+              "bytedance",
+              "common-crawl",
+              "duckduckgo",
+              "google",
+              "meta",
+              "microsoft",
+              "mistral",
+              "openai",
+              "perplexity"
+            ]
+          }
+        },
+        "botCategory": {
+          "description": "Optional crawler category: 'agent', 'indexer', 'multiple', or 'training'.",
+          "type": "string",
+          "enum": [
+            "agent",
+            "indexer",
+            "multiple",
+            "training"
+          ]
+        },
+        "limit": {
+          "description": "Maximum number of page rows to return (1-100). Matches the API max; omitted limit defaults to 100 on the API.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        }
+      },
+      "required": [
+        "site_id",
+        "startTime",
+        "endTime"
+      ],
+      "additionalProperties": false,
+      "description": "Get the pages LLM crawlers requested most, ranked by request count. Optional botProviders (repeated slugs), botCategory, and limit (1-100). endTime must not be later than 00:00:00.000Z today UTC. This is crawler analytics, not prompt-pipeline data \u2014 it does not require the workspace AI/copilot gate. Named API errors include invalid_time_range, time_range_too_wide, end_time_too_recent, and unsupported_bot_provider."
+    }
+  },
+  {
+    "id": "data_aeo_tool.get_citation_rate",
+    "tool": "data_aeo_tool",
+    "action": "get_citation_rate",
+    "area": "analyze",
+    "title": "Analytics",
+    "mode": "read",
+    "permission": "analyze:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Webflow site ID from data_sites_tool (list_sites)."
+        },
+        "startTime": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "description": "ISO 8601 UTC timestamp ending in Z. Windows must be ordered and at most 100 days."
+        },
+        "endTime": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "description": "ISO 8601 UTC timestamp ending in Z, after startTime and at most 100 days later."
+        },
+        "breakdown": {
+          "type": "string",
+          "enum": [
+            "topic",
+            "prompt"
+          ],
+          "description": "Group citation rate by topic or by prompt."
+        },
+        "topicIds": {
+          "description": "Topic ObjectIds (1-50); repeated keys. AND with promptIds.",
+          "minItems": 1,
+          "maxItems": 50,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{24}$",
+            "description": "24-character hex Mongo ObjectId."
+          }
+        },
+        "promptIds": {
+          "description": "Prompt ObjectIds (1-50); repeated keys. AND with topicIds.",
+          "minItems": 1,
+          "maxItems": 50,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{24}$",
+            "description": "24-character hex Mongo ObjectId."
+          }
+        },
+        "answerEngines": {
+          "description": "Answer engines, serialized as repeated query keys.",
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "chat-gpt",
+              "gemini",
+              "claude",
+              "perplexity"
+            ]
+          }
+        }
+      },
+      "required": [
+        "site_id",
+        "startTime",
+        "endTime",
+        "breakdown"
+      ],
+      "additionalProperties": false,
+      "description": "Get citation rate grouped by topic or prompt. Uses the workspace AI/copilot gate. Owned domains are server-resolved; callers must not send domains. Those hosts are Optimize allowed domains, every custom domain, and the webflow.io subdomain, not published hosts only. An empty host list returns 200 with data: [], not 400."
+    }
+  },
+  {
+    "id": "data_aeo_tool.get_citations",
+    "tool": "data_aeo_tool",
+    "action": "get_citations",
+    "area": "analyze",
+    "title": "Analytics",
+    "mode": "read",
+    "permission": "analyze:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Webflow site ID from data_sites_tool (list_sites)."
+        },
+        "startTime": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "description": "ISO 8601 UTC timestamp ending in Z. Windows must be ordered and at most 100 days."
+        },
+        "endTime": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "description": "ISO 8601 UTC timestamp ending in Z, after startTime and at most 100 days later."
+        },
+        "topicIds": {
+          "description": "Topic ObjectIds (1-50); repeated keys. AND with promptIds.",
+          "minItems": 1,
+          "maxItems": 50,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{24}$",
+            "description": "24-character hex Mongo ObjectId."
+          }
+        },
+        "promptIds": {
+          "description": "Prompt ObjectIds (1-50); repeated keys. AND with topicIds.",
+          "minItems": 1,
+          "maxItems": 50,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{24}$",
+            "description": "24-character hex Mongo ObjectId."
+          }
+        },
+        "answerEngines": {
+          "description": "Answer engines, serialized as repeated query keys.",
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "chat-gpt",
+              "gemini",
+              "claude",
+              "perplexity"
+            ]
+          }
+        },
+        "limit": {
+          "default": 100,
+          "description": "Maximum citation rows to return (1-1000). Defaults to 100.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "offset": {
+          "description": "Number of rows to skip. Defaults to 0. No maximum.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "site_id",
+        "startTime",
+        "endTime"
+      ],
+      "additionalProperties": false,
+      "description": "Get individual citations (limit 1-1000, default 100) with uncapped non-negative offset. Uses the workspace AI/copilot gate. This feed is not limited to the site's owned hosts, and domains is not a parameter. hasMore can be true at limit=1000 even when the next page is empty because Polar clamps the lookahead. The response does not include totalRows."
+    }
+  },
+  {
+    "id": "data_aeo_tool.get_cited_domain_paths",
+    "tool": "data_aeo_tool",
+    "action": "get_cited_domain_paths",
+    "area": "analyze",
+    "title": "Analytics",
+    "mode": "read",
+    "permission": "analyze:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Webflow site ID from data_sites_tool (list_sites)."
+        },
+        "startTime": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "description": "ISO 8601 UTC timestamp ending in Z. Windows must be ordered and at most 100 days."
+        },
+        "endTime": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "description": "ISO 8601 UTC timestamp ending in Z, after startTime and at most 100 days later."
+        },
+        "domain": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 253,
+          "pattern": "^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$",
+          "description": "Bare ASCII hostname such as example.com or its punycode form, with no scheme, path, or port."
+        },
+        "topicIds": {
+          "description": "Topic ObjectIds (1-50); repeated keys. AND with promptIds.",
+          "minItems": 1,
+          "maxItems": 50,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{24}$",
+            "description": "24-character hex Mongo ObjectId."
+          }
+        },
+        "answerEngines": {
+          "description": "Answer engines, serialized as repeated query keys.",
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "chat-gpt",
+              "gemini",
+              "claude",
+              "perplexity"
+            ]
+          }
+        }
+      },
+      "required": [
+        "site_id",
+        "startTime",
+        "endTime",
+        "domain"
+      ],
+      "additionalProperties": false,
+      "description": "Get cited paths for one caller-supplied bare domain (no scheme, path, or port). Uses the workspace AI/copilot gate. The domain is the caller-supplied hostname, not the site's owned-host list."
+    }
+  },
+  {
+    "id": "data_aeo_tool.get_competitor_citations",
+    "tool": "data_aeo_tool",
+    "action": "get_competitor_citations",
+    "area": "analyze",
+    "title": "Analytics",
+    "mode": "read",
+    "permission": "analyze:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Webflow site ID from data_sites_tool (list_sites)."
+        },
+        "startTime": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "description": "ISO 8601 UTC timestamp ending in Z. Windows must be ordered and at most 100 days."
+        },
+        "endTime": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "description": "ISO 8601 UTC timestamp ending in Z, after startTime and at most 100 days later."
+        },
+        "topicIds": {
+          "description": "Topic ObjectIds (1-50); repeated keys. AND with promptIds.",
+          "minItems": 1,
+          "maxItems": 50,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{24}$",
+            "description": "24-character hex Mongo ObjectId."
+          }
+        },
+        "answerEngines": {
+          "description": "Answer engines, serialized as repeated query keys.",
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "chat-gpt",
+              "gemini",
+              "claude",
+              "perplexity"
+            ]
+          }
+        },
+        "limit": {
+          "default": 10,
+          "description": "Maximum citation rows to return (1-1000). Defaults to 10.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        }
+      },
+      "required": [
+        "site_id",
+        "startTime",
+        "endTime"
+      ],
+      "additionalProperties": false,
+      "description": "Get citation rows for server-resolved competitor hosts (limit 1-1000, default 10): timestamp, topic, prompt, answer engine, and cited URLs. Uses the workspace AI/copilot gate. Brand, owned domains, and competitor hosts are server-resolved; callers must not send them. Returns brand_not_configured or competitors_not_configured. The response includes competitorDomains and does not include hasMore."
+    }
+  },
+  {
+    "id": "data_aeo_tool.get_page_citation_share",
+    "tool": "data_aeo_tool",
+    "action": "get_page_citation_share",
+    "area": "analyze",
+    "title": "Analytics",
+    "mode": "read",
+    "permission": "analyze:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Webflow site ID from data_sites_tool (list_sites)."
+        },
+        "startTime": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "description": "ISO 8601 UTC timestamp ending in Z. Windows must be ordered and at most 100 days."
+        },
+        "endTime": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "description": "ISO 8601 UTC timestamp ending in Z, after startTime and at most 100 days later."
+        },
+        "pageId": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{24}$",
+          "description": "24-character hex Mongo ObjectId."
+        },
+        "collectionId": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{24}$",
+          "description": "24-character hex Mongo ObjectId."
+        },
+        "itemSlug": {
+          "description": "CMS item slug. Send with collectionId, or omit both for a static page.",
+          "type": "string",
+          "minLength": 1
+        },
+        "breakdown": {
+          "description": "Pass \"prompt\" to split the page share by prompt. Omit for the page total.",
+          "type": "string",
+          "const": "prompt"
+        },
+        "answerEngines": {
+          "description": "Answer engines, serialized as repeated query keys.",
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "chat-gpt",
+              "gemini",
+              "claude",
+              "perplexity"
+            ]
+          }
+        }
+      },
+      "required": [
+        "site_id",
+        "startTime",
+        "endTime",
+        "pageId"
+      ],
+      "additionalProperties": false,
+      "description": "Get citation share for a page, optionally scoped to one CMS item and broken down by prompt. Uses the workspace AI/copilot gate. collectionId and itemSlug must be sent together. Owned domains are server-resolved; callers must not send them. title may be omitted. An empty owned-host list still returns 200. Owned hosts are Optimize allowed domains, every custom domain, and the webflow.io subdomain, not published hosts only."
+    }
+  },
+  {
+    "id": "data_aeo_tool.get_prompt_execution",
+    "tool": "data_aeo_tool",
+    "action": "get_prompt_execution",
+    "area": "analyze",
+    "title": "Analytics",
+    "mode": "read",
+    "permission": "analyze:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Webflow site ID from data_sites_tool (list_sites)."
+        },
+        "executionId": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{24}$",
+          "description": "Prompt execution id from list_prompt_executions. Must be a 24-character hex Mongo ObjectId. Mapped to the REST path param execution_id."
+        }
+      },
+      "required": [
+        "site_id",
+        "executionId"
+      ],
+      "additionalProperties": false,
+      "description": "Get one prompt execution by id, including the full rawResponse when it is still stored. list_prompt_executions with includeRawResponse=true returns full text on each list row. Unknown ids return 404 from the API. A malformed executionId is rejected by this tool's schema (24-character hex ObjectId) and the API is not called. Archived ids still return 200; rawResponse is omitted if the archive job already purged it. The list never includes archived rows. The REST path still uses execution_id; pass executionId here."
+    }
+  },
+  {
+    "id": "data_aeo_tool.get_query_guide",
+    "tool": "data_aeo_tool",
+    "action": "get_query_guide",
+    "area": "analyze",
+    "title": "Analytics",
+    "mode": "read",
+    "permission": "analyze:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "schema": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false,
+      "description": "Returns static guidance for constructing data_aeo_tool queries \u2014 how to resolve site IDs, date windows, prompt/topic IDs, botProviders repeats, and when to use includeRawResponse on the execution list. Takes no arguments and makes no API calls."
+    }
+  },
+  {
+    "id": "data_aeo_tool.get_top_cited_domains",
+    "tool": "data_aeo_tool",
+    "action": "get_top_cited_domains",
+    "area": "analyze",
+    "title": "Analytics",
+    "mode": "read",
+    "permission": "analyze:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Webflow site ID from data_sites_tool (list_sites)."
+        },
+        "startTime": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "description": "ISO 8601 UTC timestamp ending in Z. Windows must be ordered and at most 100 days."
+        },
+        "endTime": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "description": "ISO 8601 UTC timestamp ending in Z, after startTime and at most 100 days later."
+        },
+        "topicIds": {
+          "description": "Topic ObjectIds (1-50); repeated keys. AND with promptIds.",
+          "minItems": 1,
+          "maxItems": 50,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{24}$",
+            "description": "24-character hex Mongo ObjectId."
+          }
+        },
+        "answerEngines": {
+          "description": "Answer engines, serialized as repeated query keys.",
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "chat-gpt",
+              "gemini",
+              "claude",
+              "perplexity"
+            ]
+          }
+        },
+        "limit": {
+          "default": 5,
+          "description": "Maximum domains to return (1-100). Defaults to 5.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        }
+      },
+      "required": [
+        "site_id",
+        "startTime",
+        "endTime"
+      ],
+      "additionalProperties": false,
+      "description": "Get the most-cited domains for a site (limit 1-100, default 5). Uses the workspace AI/copilot gate. Owned domains are server-resolved. Those hosts are Optimize allowed domains, every custom domain, and the webflow.io subdomain, not published hosts only. An empty host list returns 200 with data: []."
+    }
+  },
+  {
+    "id": "data_aeo_tool.get_visibility",
+    "tool": "data_aeo_tool",
+    "action": "get_visibility",
+    "area": "analyze",
+    "title": "Analytics",
+    "mode": "read",
+    "permission": "analyze:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Webflow site ID from data_sites_tool (list_sites)."
+        },
+        "startTime": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "description": "ISO 8601 UTC timestamp ending in Z. Windows must be ordered and at most 100 days."
+        },
+        "endTime": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "description": "ISO 8601 UTC timestamp ending in Z, after startTime and at most 100 days later."
+        },
+        "topicIds": {
+          "description": "Topic ObjectIds (1-50); repeated keys. AND with promptIds.",
+          "minItems": 1,
+          "maxItems": 50,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{24}$",
+            "description": "24-character hex Mongo ObjectId."
+          }
+        },
+        "promptIds": {
+          "description": "Prompt ObjectIds (1-50); repeated keys. AND with topicIds.",
+          "minItems": 1,
+          "maxItems": 50,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{24}$",
+            "description": "24-character hex Mongo ObjectId."
+          }
+        },
+        "answerEngine": {
+          "description": "One answer engine; visibility reports use this singular field.",
+          "type": "string",
+          "enum": [
+            "chat-gpt",
+            "gemini",
+            "claude",
+            "perplexity"
+          ]
+        },
+        "timeseries": {
+          "description": "Optional series. When set, granularityPeriod and bucketTimeZone are both required. Omit for one aggregate score.",
+          "type": "object",
+          "properties": {
+            "granularityPeriod": {
+              "type": "string",
+              "enum": [
+                "day",
+                "week"
+              ],
+              "description": "Bucket size. day or week."
+            },
+            "bucketTimeZone": {
+              "type": "string",
+              "description": "IANA time zone that cuts the buckets, such as UTC or America/New_York."
+            }
+          },
+          "required": [
+            "granularityPeriod",
+            "bucketTimeZone"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "site_id",
+        "startTime",
+        "endTime"
+      ],
+      "additionalProperties": false,
+      "description": "Get aggregate brand visibility for a site. Optional timeseries is {granularityPeriod: day|week, bucketTimeZone: IANA zone}; omit it for one score. Uses the workspace AI/copilot gate. Brand and owned domains are resolved by the server; callers must not send brandNames or domains. Returns brand_not_configured when the site has no configured brand."
+    }
+  },
+  {
+    "id": "data_aeo_tool.get_visibility_breakdown",
+    "tool": "data_aeo_tool",
+    "action": "get_visibility_breakdown",
+    "area": "analyze",
+    "title": "Analytics",
+    "mode": "read",
+    "permission": "analyze:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Webflow site ID from data_sites_tool (list_sites)."
+        },
+        "startTime": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "description": "ISO 8601 UTC timestamp ending in Z. Windows must be ordered and at most 100 days."
+        },
+        "endTime": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+          "description": "ISO 8601 UTC timestamp ending in Z, after startTime and at most 100 days later."
+        },
+        "breakdown": {
+          "type": "string",
+          "enum": [
+            "topic",
+            "prompt"
+          ],
+          "description": "Group visibility by topic or by prompt."
+        },
+        "limit": {
+          "description": "Maximum grouped rows (1-100). Omit to return every group.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "topicIds": {
+          "description": "Topic ObjectIds (1-50); repeated keys. AND with promptIds.",
+          "minItems": 1,
+          "maxItems": 50,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{24}$",
+            "description": "24-character hex Mongo ObjectId."
+          }
+        },
+        "promptIds": {
+          "description": "Prompt ObjectIds (1-50); repeated keys. AND with topicIds.",
+          "minItems": 1,
+          "maxItems": 50,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{24}$",
+            "description": "24-character hex Mongo ObjectId."
+          }
+        },
+        "answerEngine": {
+          "description": "One answer engine; visibility reports use this singular field.",
+          "type": "string",
+          "enum": [
+            "chat-gpt",
+            "gemini",
+            "claude",
+            "perplexity"
+          ]
+        }
+      },
+      "required": [
+        "site_id",
+        "startTime",
+        "endTime",
+        "breakdown"
+      ],
+      "additionalProperties": false,
+      "description": "Get brand visibility grouped by topic or prompt. Omitted limit returns every grouped row. Uses the workspace AI/copilot gate. Brand and owned domains are server-resolved; callers must not send them. Returns brand_not_configured when no brand is configured."
+    }
+  },
+  {
+    "id": "data_aeo_tool.list_prompt_executions",
+    "tool": "data_aeo_tool",
+    "action": "list_prompt_executions",
+    "area": "analyze",
+    "title": "Analytics",
+    "mode": "read",
+    "permission": "analyze:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Webflow site ID from data_sites_tool (list_sites)."
+        },
+        "promptId": {
+          "description": "Optional. Restrict to one tracked prompt. Omit for site-wide history. Do not send with topicId. Must be a 24-character lowercase hex Mongo ObjectId. Discover prompt IDs with list_prompts.",
+          "type": "string",
+          "pattern": "^[a-f0-9]{24}$"
+        },
+        "topicId": {
+          "description": "Optional. Restrict to executions under this topic. Do not send with promptId. Must be a 24-character lowercase hex Mongo ObjectId. Discover topic IDs with list_prompts.",
+          "type": "string",
+          "pattern": "^[a-f0-9]{24}$"
+        },
+        "answerEngine": {
+          "description": "Optional answer engine: 'chat-gpt', 'gemini', 'claude', or 'perplexity'.",
+          "type": "string",
+          "enum": [
+            "chat-gpt",
+            "gemini",
+            "claude",
+            "perplexity"
+          ]
+        },
+        "startTime": {
+          "description": "Optional window start. ISO 8601 datetime as a UTC timestamp ending in Z, for example 2026-04-01T00:00:00.000Z. Numeric offsets such as -04:00 or +00:00 are not accepted. When omitted, the API fills endTime minus 90 days. The resolved span must be ordered and at most 90 days.",
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+        },
+        "endTime": {
+          "description": "Optional window end. ISO 8601 datetime as a UTC timestamp ending in Z, for example 2026-04-08T00:00:00.000Z. Numeric offsets such as -04:00 or +00:00 are not accepted. When omitted, the API fills now. Must be greater than startTime when both are set. The resolved span must be at most 90 days.",
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+        },
+        "includeRawResponse": {
+          "description": "When true, each row includes the full rawResponse text. Default false (preview only). Limit is 1-25 either way.",
+          "type": "boolean"
+        },
+        "limit": {
+          "description": "Maximum rows to return (1-25). Matches the API max for this list, with or without includeRawResponse.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 25
+        },
+        "cursor": {
+          "description": "Pagination cursor from a previous nextCursor. A malformed cursor returns 400 aeo_input_validation.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "site_id"
+      ],
+      "additionalProperties": false,
+      "description": "List prompt execution history for a site. promptId is optional \u2014 omit it for site-wide history. topicId and answerEngine (chat-gpt|gemini|claude|perplexity) are extra filters. Do not send promptId and topicId together. Default rows include preview text and omit rawResponse. includeRawResponse=true adds the full answer text on each list row. Limit is 1-25 always. Optional window is at most 90 days; omitted endTime is now and omitted startTime is end minus 90 days. Archived rows are omitted; get_prompt_execution still returns them by id. Named API errors include invalid_time_range, time_range_too_wide, conflicting_scope_filters, and aeo_input_validation."
+    }
+  },
+  {
+    "id": "data_aeo_tool.list_prompts",
+    "tool": "data_aeo_tool",
+    "action": "list_prompts",
+    "area": "analyze",
+    "title": "Analytics",
+    "mode": "read",
+    "permission": "analyze:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Webflow site ID from data_sites_tool (list_sites)."
+        },
+        "topicId": {
+          "description": "Restrict to prompts in this topic. Must be a 24-character lowercase hex Mongo ObjectId. Discover topic IDs with list_prompts.",
+          "type": "string",
+          "pattern": "^[a-f0-9]{24}$"
+        },
+        "status": {
+          "description": "Prompt status filter. Omit to get the API default (non-archived). Pass 'all' to include archived prompts.",
+          "type": "string",
+          "enum": [
+            "active",
+            "paused",
+            "pending",
+            "archived",
+            "all"
+          ]
+        },
+        "limit": {
+          "description": "Maximum number of prompts to return (1-100).",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "cursor": {
+          "description": "Pagination cursor from a previous nextCursor. A malformed cursor returns 400 aeo_input_validation.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "site_id"
+      ],
+      "additionalProperties": false,
+      "description": "List tracked AEO prompts for a site. Each row includes id, text, status, and topic: {id, name}, so this one action covers prompt and topic lookup. Use the returned IDs as promptId or topicId on list_prompt_executions \u2014 never both. Optional filters: topicId, status (active|paused|pending|archived|all), limit (1-100), cursor."
+    }
+  },
+  {
+    "id": "data_recommendations_tool.get_recommendation",
+    "tool": "data_recommendations_tool",
+    "action": "get_recommendation",
+    "area": "analyze",
+    "title": "Analytics",
+    "mode": "read",
+    "permission": "analyze:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Unique identifier for the Webflow site. Use data_sites_tool (list_sites) to discover available site IDs."
+        },
+        "recommendationId": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{24}$",
+          "description": "Recommendation id from list_recommendations. Must be a 24-character hex Mongo ObjectId. Mapped to the REST path param recommendation_id."
+        }
+      },
+      "required": [
+        "site_id",
+        "recommendationId"
+      ],
+      "additionalProperties": false,
+      "description": "Get one AEO recommendation by id. Missing, cross-site, and malformed ids return 404 aeo_recommendation_not_found from the API so existence is not revealed across sites. A malformed recommendationId is also rejected by this tool's schema (24-character hex Mongo ObjectId) and the API is not called. The REST path uses recommendation_id; pass recommendationId here."
+    },
+    "channels": [
+      "beta"
+    ]
+  },
+  {
+    "id": "data_recommendations_tool.get_recommendation_settings",
+    "tool": "data_recommendations_tool",
+    "action": "get_recommendation_settings",
+    "area": "analyze",
+    "title": "Analytics",
+    "mode": "read",
+    "permission": "analyze:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Unique identifier for the Webflow site. Use data_sites_tool (list_sites) to discover available site IDs."
+        }
+      },
+      "required": [
+        "site_id"
+      ],
+      "additionalProperties": false,
+      "description": "Get a site's AEO recommendation settings: the fully resolved per-rule toggle map and whether recurring audits are enabled. A never-configured site still returns 200 with catalog defaults and recurringAuditsEnabled false; createdOn and updatedOn are omitted until a settings document is persisted. This read does not create or mutate a document."
+    },
+    "channels": [
+      "beta"
+    ]
+  },
+  {
+    "id": "data_recommendations_tool.get_recommendations_guide",
+    "tool": "data_recommendations_tool",
+    "action": "get_recommendations_guide",
+    "area": "analyze",
+    "title": "Analytics",
+    "mode": "read",
+    "permission": "analyze:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "schema": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false,
+      "description": "Returns static guidance for data_recommendations_tool: what a recommendation and a proposal are, which actions to call, how filters and settings writes work, and that apply, dismiss, restore, and audit are not in this tool. Takes no arguments and makes no API calls."
+    },
+    "channels": [
+      "beta"
+    ]
+  },
+  {
+    "id": "data_recommendations_tool.get_recommendations_summary",
+    "tool": "data_recommendations_tool",
+    "action": "get_recommendations_summary",
+    "area": "analyze",
+    "title": "Analytics",
+    "mode": "read",
+    "permission": "analyze:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Unique identifier for the Webflow site. Use data_sites_tool (list_sites) to discover available site IDs."
+        }
+      },
+      "required": [
+        "site_id"
+      ],
+      "additionalProperties": false,
+      "description": "Get site-level AEO recommendation counts for active, applied, and dismissed, each broken down by priority. Takes only site_id. Unexpected query keys return 400 validation_error from the API."
+    },
+    "channels": [
+      "beta"
+    ]
+  },
+  {
+    "id": "data_recommendations_tool.list_recommendations",
+    "tool": "data_recommendations_tool",
+    "action": "list_recommendations",
+    "area": "analyze",
+    "title": "Analytics",
+    "mode": "read",
+    "permission": "analyze:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Unique identifier for the Webflow site. Use data_sites_tool (list_sites) to discover available site IDs."
+        },
+        "status": {
+          "description": "Filter by public status. Pass an array; the tool sends repeated status query keys.",
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "generating",
+              "active",
+              "applied",
+              "dismissed",
+              "stale",
+              "failed"
+            ]
+          }
+        },
+        "rule": {
+          "description": "Filter by recommendation rule. Pass an array; the tool sends repeated rule query keys.",
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "asset_alt_text_required",
+              "page_title_required",
+              "page_title_length_invalid",
+              "page_title_stale",
+              "page_description_required",
+              "page_description_length_invalid",
+              "page_description_stale",
+              "page_schema_required",
+              "page_schema_stale",
+              "broken_link",
+              "item_recommendation"
+            ]
+          }
+        },
+        "priority": {
+          "description": "Filter by priority. Pass an array; the tool sends repeated priority query keys.",
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ]
+          }
+        },
+        "topic": {
+          "description": "Filter by topic. Pass an array; the tool sends repeated topic query keys.",
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "metadata",
+              "schema",
+              "page",
+              "component",
+              "cms",
+              "asset"
+            ]
+          }
+        },
+        "pageId": {
+          "description": "Filter to recommendations that target this page. 24-character hex Mongo ObjectId.",
+          "type": "string",
+          "pattern": "^[a-f0-9]{24}$"
+        },
+        "localeId": {
+          "description": "Filter to recommendations for this locale. When the id is the site's primary locale, rows with no localeId are included as well.",
+          "type": "string",
+          "pattern": "^[a-f0-9]{24}$"
+        },
+        "limit": {
+          "description": "Maximum number of recommendations to return (1-100). API default is 50.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "cursor": {
+          "description": "Opaque pagination cursor from a previous nextCursor.",
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "site_id"
+      ],
+      "additionalProperties": false,
+      "description": "List a site's AEO recommendations, newest first, with cursor pagination. Repeatable filters (status, rule, priority, topic) are sent as repeated query keys. Unsupported query keys return 400 validation_error from the API."
+    },
+    "channels": [
+      "beta"
+    ]
   }
 ]

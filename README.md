@@ -31,7 +31,10 @@ Choose **mac-arm64** for Apple Silicon (M1 or later), or **mac-x64** for Intel M
 
 1. Open the [GitHub Releases page](https://github.com/Kvalifik/mcp-router/releases) and download the latest
    `MCP-Router-…-mac-arm64.zip` or `MCP-Router-…-mac-x64.zip`. Choose the app ZIP, not GitHub’s “Source code” ZIP.
-2. Extract the ZIP and drag **MCP Router.app** into **Applications**.
+2. Extract the ZIP and open **MCP Router.app**. Choose **Move to Applications**
+   when prompted; the app moves and restarts before setup. You can also drag it
+   into **Applications** yourself. **Not Now** continues from its current location
+   and asks again on the next launch, unless you check **Don’t ask again**.
 3. Open MCP Router. Check the release notes for signing status. Developer ID releases are signed and notarized.
    For older or ad-hoc builds, if macOS blocks it, first attempt to open it, then go to
    **System Settings → Privacy & Security → Open Anyway** and confirm opening

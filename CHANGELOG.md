@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.8.10 — Reliable preparation and clearer Mac setup
+
+- Load enabled project rules and a skill index during preparation; fetch relevant skill bodies on demand instead of downloading every skill.
+- Retry explicitly transient preparation reads once and report safe failure stages without exposing provider payloads. Writes remain non-retrying.
+- Offer to move downloaded Mac apps into Applications before setup, with an option to remember the user's preference.
+- Show a menu-bar indicator when a signed update is ready to install, while preserving access-warning priority.
+- Require a documented Stable/Beta Webflow MCP compatibility review before releases and provide a read-only catalog comparison command.
+- Update Lucide and Vite and refresh third-party notices.
+- Update the pinned GitHub checkout action to 7.0.1.
+- Migrate to Zod 4 with explicit string keys for Webflow operation parameters.
+- Update Electron, the MCP SDK, AJV, TOML parsing and the Mac signing helper with security hardening and compatibility fixes.
+
+Compatibility review: refresh shared CMS, component, popover and element schemas;
+add five Analyze reports on Stable and Beta under Analytics → Read, with channel and
+project ownership checks. Correct the CMS creation schema export so custom fields
+remain accepted inside fieldData. Live Stable verification confirmed custom-field
+roundtrip and cleanup using the legacy creation format; the new format has
+synthetic coverage. Include experimental Beta Releases support for accounts with
+Webflow beta access, using separate Pages read/write/publish/delete permissions
+and project ownership checks. Releases have synthetic coverage only; live
+validation remains pending access to an eligible project.
+
+Add site-scoped AEO reports and prompt history on Stable and Beta, and read-only
+AEO recommendations on Beta, under Analytics → Read. Upstream entitlement gates
+still apply. Optimize, Cloud Apps, Campaigns, Interactions, Members, workspace
+operations and recommendation settings writes remain outside this release.
+
 ## 0.8.9 — OAuth security and dependency maintenance
 
 - Update the MCP SDK to bind saved OAuth credentials to their authorization server, while preserving Webflow-only requests and separate Stable/Beta grants.

@@ -38,6 +38,11 @@ guaranteed support period.
   They are guidance, not permission grants: executable schemas and ownership
   checks remain pinned and reviewed. Project guidance resources use the same
   checks as preparation; arbitrary upstream resource URIs are not proxied.
+- Preparation loads enabled rule bodies and a skill metadata index. Agents must
+  fetch relevant skills through the existing permission-checked instruction read
+  operation; the preparation ID does not attest that the agent read those skills.
+  Unknown instruction kinds remain eagerly loaded. Rule references are not
+  automatically expanded; agents must read references required by those rules.
 
 This is a single-user convenience and policy tool, not a security boundary
 against the OS account owner, privileged software, or an agent able to edit local
@@ -74,6 +79,12 @@ Errors crossing MCP use safe router-authored codes and recovery guidance, never
 raw provider errors or request payloads. Unknown failures do not imply that
 reauthorization is necessary.
 
+Operation diagnostics use router-defined stages and error codes, numeric HTTP
+statuses and allowlisted failure categories, never provider messages or payloads.
+Preparation/guidance reads may retry once on an explicit transient failure after
+rechecking project policy, on the same grant. Authorization failures and project
+operations are not retried; incomplete preparation cannot authorize a write.
+
 ### Release signing
 
 Developer ID releases sign nested Mac code with Electron's per-binary entitlements
@@ -93,3 +104,13 @@ repository, detected stable release tag, and native architecture; renderer IPC
 accepts no update URLs or file paths. Ad-hoc and Windows builds use manual downloads.
 Release metadata also supplies ZIP SHA-256 and size. A compromised signing key or
 approved release workflow can still produce trusted malicious releases.
+
+Beta Releases are channel-gated and use separate Pages read, write, publish and
+delete grants. The router checks site-branch membership before dispatching an
+operation targeting an existing Release, and checks origin-page ownership on
+creation. Stable cannot accept the Beta-only branch target in page creation.
+
+Site-scoped AEO and recommendation reads use Analytics read. The router injects
+the selected site and rejects site overrides; page and collection filters require
+project ownership. Account-wide Optimize discovery and recommendation settings
+writes are not exposed. Upstream feature entitlements remain required.

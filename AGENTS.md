@@ -73,9 +73,25 @@ demonstrate a distinct feature and the user requests or agrees to the addition.
 
 ## Dependency review before releases
 
+Whenever release work discovers anything new that could go into the release,
+flag it to the user before deciding to include or defer it. Explain the benefit,
+risk, validation needed and recommendation, then obtain the user's scope decision
+unless that specific candidate is already covered by an explicit decision.
+This includes dependencies, upstream MCP capabilities and schema changes, bugs,
+and security fixes. Continue independent checks while awaiting the decision;
+do not finalize or publish a release with unresolved scope choices. Documenting
+a deferral is not a substitute for flagging the candidate to the user.
+
+Before every release, also perform the Webflow MCP compatibility review in
+`docs/RELEASING.md` for Stable and Beta separately. New operations may reuse
+existing permissions only after reviewing effects, project scope and ownership
+checks. New permission categories require explicit review. Never grant unseen
+upstream tools access automatically. Document deferred changes and unavailable
+channel checks; do not claim parity from an incomplete snapshot.
+
 Before preparing a release, review open Dependabot PRs using the dependency
-review procedure in `docs/RELEASING.md`. Routine patch/minor updates may be merged
-within the requested release work after diff review, refreshed license notices,
+review procedure in `docs/RELEASING.md`. Once the user includes a candidate in scope,
+routine patch/minor updates may be merged after diff review, refreshed license notices,
 and all required checks pass; do not ask for a separate routine merge approval.
 Do not treat semver or a green test suite alone as evidence that an update is low
 risk. Keep major upgrades and runtime/security-sensitive changes separate, run

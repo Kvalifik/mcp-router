@@ -1,4 +1,4 @@
-import { AgentError, authorizationRequired, upstreamError, checkUpstreamResponse } from './agent-errors.js';
+import { AgentError, authorizationRequired, upstreamError, checkUpstreamResponse, upstreamDiagnostics, transientUpstreamRead } from './agent-errors.js';
 import { initializeInventory, syncProjects, setDefaults, purgeConnection } from './discovery.js';
 import { CATALOG, permissions, validatePermissions, operation, allowed, requirePermissions, prepareArguments, checkOwnership, resultOf } from './permissions.js';
 import { randomUUID } from 'node:crypto';
@@ -291,43 +291,67 @@ export class Router {
     const signature=()=>JSON.stringify([this.project(p.id,null),this.channel(p)]);
     const initial=signature();
     const recheck=()=>{if(signature()!==initial)throw new Error('Project policy changed during request');};
+    const available=op=>!op.channels || op.channels.includes(this.channel(p));
+    const selectedOperation=id=>{const op=operation(id,this.channel(p));if(!available(op))throw new Error('Operation unavailable on the selected MCP channel');return op;};
     if(name==='get_project_operations') {
-      const operations=CATALOG.filter(op=>allowed(p,op));
-      if(args.operationId){const op=operation(args.operationId);requirePermissions(p,[op.permission,...op.extraPermissions]);return {...op,notes:'Site IDs are selected by the router. Supply pageId separately for page tools. Read project instructions with prepare_project before writes.'};}
+      const operations=CATALOG.filter(op=>available(op)&&allowed(p,op));
+      if(args.operationId){const op=selectedOperation(args.operationId);requirePermissions(p,[op.permission,...op.extraPermissions]);return {...op,notes:'Site IDs are selected by the router. Supply pageId separately for page tools. Read project instructions with prepare_project before writes.'};}
       return operations.map(({id,title,mode,permission,extraPermissions,page})=>({id,area:title,mode,permission,extraPermissions,requiresPageId:page}));
     }
     if(['prepare_project','get_project_guidance'].includes(name))requirePermissions(p,['agent_instructions:read']);
-    const op=['prepare_project','get_project_guidance'].includes(name)?null:operation(args.operationId);
+    const op=['prepare_project','get_project_guidance'].includes(name)?null:selectedOperation(args.operationId);
     if(op) {
       requirePermissions(p,[op.permission,...op.extraPermissions]);
       if((name==='read_webflow' && op.mode!=='read') || (name==='write_webflow' && op.mode==='read'))throw new Error(`Wrong execution tool. Use ${op.mode==='read'?'read_webflow':'write_webflow'} for this operation.`);
     }
     const prepared=op?prepareArguments(op,args.params||{},p.siteId,args.pageId):null;
     return this.serial(p.connectionId,async()=>{
-      recheck();let client;
+      recheck();let client, stage='upstream_connect';
+      // Only preparation/guidance reads are retried, never project operations.
+      const read = async (nextStage, fn) => {
+        stage=nextStage;
+        try { return await fn(); } catch(error) {
+          if(op || !transientUpstreamRead(error))throw error;
+          this.store.audit('preparation_read_retry',{projectId:p.id,operationId:name,stage,...upstreamDiagnostics(error)});
+          await new Promise(resolve=>setTimeout(resolve,250));
+          recheck();
+          return fn();
+        }
+      };
       try {
         const channel=this.channel(p);
         if(!session(this.store,p.connectionId,channel).tokens)throw authorizationRequired();
-        client=await this.open(this.oauth.provider(p.connectionId,false,channel));
+        client=await read('upstream_connect',()=>this.open(this.oauth.provider(p.connectionId,false,channel)));
+        stage='project_authorization';
         if(channel==='beta' && !(await client.listSites()).some(s=>s.id===p.siteId))throw authorizationRequired('Project is not authorized on Beta. Reconnect and include this project.');
         let guidance;
         if(name==='get_project_guidance' || name==='prepare_project') {
-          const permitted = CATALOG.filter(candidate=>allowed(p,candidate));
-          const tools = (await client.listTools?.() || []).filter(tool=>permitted.some(candidate=>candidate.tool===tool.name))
+          const permitted = CATALOG.filter(candidate=>available(candidate)&&allowed(p,candidate));
+          const tools = (await read('tool_discovery',()=>client.listTools?.()) || []).filter(tool=>permitted.some(candidate=>candidate.tool===tool.name))
             .map(({name,title,description})=>({name,title,description,operationIds:permitted.filter(candidate=>candidate.tool===name).map(candidate=>candidate.id)}));
           recheck();
           guidance={projectId:p.id,channel,instructions:client.instructions || '',tools};
           if(name==='get_project_guidance') return {...guidance,guide:client.guide};
         }
         if(name==='prepare_project') {
-          const instructions=[];let offset=0;
+          const instructions=[],skills=[];let offset=0;
           for(let page=0;page<100;page++) {
-            const result=resultOf(await client.call('data_agent_instructions_tool',{actions:[{label:'Read project instructions',search_instructions:{site_id:p.siteId,limit:100,offset}}]}),'search_instructions');
+            const result=await read('instruction_search',async()=>resultOf(await client.call('data_agent_instructions_tool',{actions:[{label:'Read project instructions',search_instructions:{site_id:p.siteId,limit:100,offset}}]}),'search_instructions'));
             if(!Array.isArray(result.instructions))throw new Error('Instruction discovery failed');
             for(const rule of result.instructions.filter(x=>!x.isDraft && x.enabled!==false)) {
               if(typeof rule.path!=='string')throw new Error('Instruction path unavailable');
-              instructions.push({path:rule.path,content:await client.call('data_agent_instructions_tool',{actions:[{label:'Read enabled instruction',read_instruction:{site_id:p.siteId,path:rule.path,resolve_references:true}}]})});
-              resultOf(instructions.at(-1).content,'read_instruction');
+              // Only explicitly identified skills are deferred. Legacy/unknown kinds
+              // and anything under rules/ remain mandatory to avoid hiding a rule.
+              if(rule.kind==='skill' && !rule.path.startsWith('rules/')) {
+                skills.push({path:rule.path,name:typeof rule.name==='string'?rule.name:rule.path,
+                  description:typeof rule.description==='string'?rule.description:''});
+                continue;
+              }
+              const content=await read('instruction_read',async()=>{
+                const response=await client.call('data_agent_instructions_tool',{actions:[{label:'Read enabled instruction',read_instruction:{site_id:p.siteId,path:rule.path,resolve_references:false}}]});
+                resultOf(response,'read_instruction');return response;
+              });
+              instructions.push({path:rule.path,content});
             }
             offset+=result.instructions.length;
             if(offset>=(result.pagination?.total??offset) && result.pagination?.hasMore!==true)break;
@@ -336,25 +360,28 @@ export class Router {
           recheck();const preparationId=randomUUID();
           for(const [id,v] of this.preparations)if(v.expires<Date.now())this.preparations.delete(id);
           this.preparations.set(preparationId,{projectId:p.id,policy:initial,expires:Date.now()+600000});
-          return {preparationId,expiresInSeconds:600,upstream:guidance,guide:client.guide,instructions,notice:'Read and follow all enabled rules and relevant skills before calling write_webflow. Webflow tool names and descriptions are upstream guidance; execute only permitted operation IDs through read_webflow/write_webflow using the router schema. This preparation is bound to the current project policy.'};
+          return {preparationId,expiresInSeconds:600,upstream:guidance,guide:client.guide,instructions,skills,notice:'Read and follow all returned rules. Skills are an index, not loaded bodies. Before acting, select relevant skills (including references required by the rules), discover the data_agent_instructions_tool.read_instruction schema with get_project_operations, then fetch each selected path with read_webflow. Preparation does not verify that skills have been read. Webflow tool names and descriptions are upstream guidance; execute only permitted operation IDs through read_webflow/write_webflow using the router schema. This preparation is bound to the current project policy.'};
         }
         if(op.mode!=='read') {
           const proof=this.preparations.get(args.preparationId);
           if(!proof||proof.projectId!==p.id||proof.policy!==initial||proof.expires<Date.now())throw new Error('Run prepare_project and read its instructions before writing');
         }
+        stage='resource_ownership';
         await checkOwnership(client,op,prepared.value,p.siteId,args.pageId);
         recheck();
         this.store.audit('operation_started',{projectId:p.id,operationId:op.id,mode:op.mode});
+        stage='operation_call';
         const response=await client.call(op.tool,prepared.args);
         recheck();
         checkUpstreamResponse(response);
         this.store.audit('operation_completed',{projectId:p.id,operationId:op.id,mode:op.mode});
         return response;
       } catch(error) {
-        this.store.audit('operation_failed',{projectId:p.id,operationId:op?.id||'prepare_project'});
+        const safe=upstreamError(error);
+        this.store.audit('operation_failed',{projectId:p.id,operationId:op?.id||name,stage,errorCode:safe.feedback.code,...upstreamDiagnostics(safe)});
         // Do not log or expose provider error payloads; they can include request content.
         if(['Operation permission denied','Resource does not belong to this project','Project policy changed during request','Run prepare_project and read its instructions before writing'].includes(error.message))throw error;
-        throw upstreamError(error);
+        throw new AgentError(safe.feedback.code,safe.message,{...safe.feedback,stage});
       } finally {await client?.close().catch(()=>{});}
     });
   }

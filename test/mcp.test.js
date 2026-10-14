@@ -30,7 +30,7 @@ test('real MCP stdio client enforces live policy through the daemon', async t =>
       const action=args.actions[0].read_instruction?'read_instruction':'search_instructions';
       if(action==='read_instruction')assert.equal(args.actions[0].read_instruction.path,'rules/site.md');
       return {content:[{type:'text',text:JSON.stringify({action,result:action==='read_instruction' ? {markdown:`Site rule revision ${revision}`} : {
-        instructions:[{path:'rules/site.md',enabled:true},{path:'rules/disabled.md',enabled:false},{path:'rules/draft.md',isDraft:true}],pagination:{total:3}
+        instructions:[{path:'rules/site.md',enabled:true},{path:'rules/disabled.md',enabled:false},{path:'rules/draft.md',isDraft:true},{path:'example/SKILL.md',kind:'skill',name:'Example',description:'Synthetic skill'}],pagination:{total:4}
       }})}]};
     },
     listSites: async () => [{ id: p.id, name: p.c.name }], close: async () => {}
@@ -73,6 +73,7 @@ test('real MCP stdio client enforces live policy through the daemon', async t =>
   assert.equal(guidance.upstream.instructions,'Webflow server guidance revision 2');
   assert.equal(guidance.guide.content[0].text,'Webflow guide revision 2');
   assert.equal(guidance.instructions.length,1);
+  assert.deepEqual(guidance.skills,[{path:'example/SKILL.md',name:'Example',description:'Synthetic skill'}]);
   assert.match(JSON.stringify(guidance.instructions[0]),/Site rule revision 2/);
   assert.ok(guidance.preparationId);
   assert.equal((await client.listResourceTemplates()).resourceTemplates.length,1);
@@ -138,3 +139,38 @@ for (const daemon of ['stalled', 'absent']) {
     }
   });
 }
+
+// Exercise record validation through the actual SDK schema conversion and stdio
+// transport, including nonempty payloads that the old one-argument record broke.
+test('MCP operation records preserve JSON values and reject nonobjects before IPC', async t => {
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'wfr-record-')),socket=path.join(dir,'ipc.sock');
+  const received=[];
+  const ipc=http.createServer((req,res)=>{
+    let body='';req.on('data',chunk=>body+=chunk);req.on('end',()=>{
+      const message=JSON.parse(body);received.push(message);
+      res.setHeader('Content-Type','application/json');res.end(JSON.stringify({result:message.arguments}));
+    });
+  });
+  if(process.platform==='win32')fs.writeFileSync(path.join(dir,'ipc-token'),'synthetic-token');
+  ipc.listen(paths.ipcEndpoint(socket));await once(ipc,'listening');
+  const client=new Client({name:'record-validation',version:'1.0.0'});
+  t.after(async()=>{await client.close();await new Promise(resolve=>ipc.close(resolve));fs.rmSync(dir,{recursive:true,force:true});});
+  await client.connect(new StdioClientTransport({command:process.execPath,args:[fileURLToPath(new URL('../src/stdio.js',import.meta.url))],env:{...process.env,ROUTER_SOCKET:socket}}));
+  const {tools}=await client.listTools();
+  for(const mode of ['read','write']){
+    const name=mode+'_webflow',tool=tools.find(tool=>tool.name===name);
+    assert.equal(tool.inputSchema.properties.params.type,'object');
+    const base={projectId:'synthetic',operationId:'synthetic.action',...(mode==='write'?{preparationId:'synthetic-preparation'}:{})};
+    for(const params of [{},{title:'Demo',count:2,enabled:false,empty:null,nested:{items:[1,'two',null]}}]){
+      const result=await client.callTool({name,arguments:{...base,params}});
+      assert.notEqual(result.isError,true);
+      assert.deepEqual(JSON.parse(result.content[0].text),{...base,params});
+      assert.deepEqual(received.at(-1),{name,arguments:{...base,params}});
+    }
+    for(const params of [null,[], 'invalid',42]){
+      const before=received.length;
+      assert.equal((await client.callTool({name,arguments:{...base,params}})).isError,true);
+      assert.equal(received.length,before);
+    }
+  }
+});

@@ -116,11 +116,26 @@ upstream descriptions do not grant access to additional actions.
 
 `get_project_guidance` fetches the current server instructions, guide and tool
 descriptions. `prepare_project` also returns this metadata along with enabled site
-rules and skills. Clients supporting MCP resources can discover and read
+rules and a skill index (names, descriptions and paths). Agents fetch relevant skill
+bodies using `read_webflow` with `data_agent_instructions_tool.read_instruction`,
+after discovering its schema with `get_project_operations`. References required by
+rules must also be read; preparation does not expand references automatically.
+Instructions with an unknown or missing kind are loaded conservatively as rules.
+Clients supporting MCP resources can discover and read
 `webflow-router://projects/{projectId}/guidance` to load the same preparation.
 The router does not expose arbitrary upstream resources: project rules are read
 through the existing site-scoped instruction checks. Guidance is not persisted or
 reused from a failed grant, and metadata failures never switch Stable/Beta grants.
+
+Preparation and guidance reads retry once after an explicit temporary HTTP or
+transport failure. Authorization failures, unknown errors and invalid instruction
+responses fail immediately. Project operations (including writes) are never
+automatically retried. A failed preparation never issues a preparation ID.
+Failures report the stage (connection, tool discovery, instruction search/read,
+project authorization, resource ownership or operation call). The local audit
+records the stage, safe error code and, when available, numeric HTTP status or
+an allowlisted timeout/transport category. Provider messages, instruction paths,
+request/response content and credentials are excluded from these diagnostics.
 
 Webflow guidance updates take effect on the next preparation or guidance request;
 router workflow instructions refresh on reconnect. An AI app may cache tool lists and may
@@ -141,7 +156,7 @@ OAuth grants does not make missing client tools appear.
 - `read_project_site`: compatible site-metadata read.
 - `get_project_operations`: permitted action IDs; pass `operationId` to retrieve its exact JSON parameter schema.
 - `get_project_guidance`: live Webflow server instructions, guide and original descriptions of tools with permitted operations.
-- `prepare_project`: Webflow guide plus enabled project rules/skills and a ten-minute preparation ID. Agents must read and follow the returned instructions before writing.
+- `prepare_project`: Webflow guide, enabled project rule bodies, a skill index and a ten-minute preparation ID. Agents must read the rules and fetch relevant skills before acting. The ID does not prove the agent has read skill bodies.
 - `read_webflow`: execute one permitted read operation.
 - `write_webflow`: execute one permitted write/delete/publish operation with its preparation ID.
 
@@ -213,6 +228,15 @@ Microsoft Store installations of ChatGPT/Codex are detected for the current Wind
 
 ### Checking for updates
 
+On macOS, launching a packaged app outside Applications offers **Move to
+Applications** before setup starts. Accepting moves and restarts the app;
+**Not Now** continues and asks again next launch. Check **Don’t ask again** to
+save your preference and suppress future installation prompts, even after an
+app update. You can still move the app manually using Finder. Development runs and apps
+already in Applications do not prompt. If another copy is installed, it is
+never replaced automatically: quit the app and use Finder to replace it manually.
+If moving fails or authorization is cancelled, you can continue using the current copy.
+
 Use **Settings → Check for updates** to check the latest public GitHub release.
 The desktop app also checks on startup and every six hours while it is open.
 
@@ -253,6 +277,11 @@ names the affected projects or connections, and explains the next action. The
 normal tooltip uses plain connection and project counts. Pending checks are
 informational, with no warning triangle or “X of X” count.
 
+When a downloaded update is verified and ready to install, the menu bar icon
+shows a circled upward arrow. Access warnings take priority over this badge.
+If both apply, the tooltip reports both; once access recovers, the update badge
+appears. Checking or downloading an update does not show the update badge.
+
 A small circular warning badge appears on the affected connection, including when
 collapsed. In its project row, the warning replaces the normal access badge; row
 height stays the same and the Beta badge continues to identify the selected version.
@@ -284,3 +313,38 @@ Set up or Reconnect action. An exclamation mark indicates a configuration that
 needs reconnecting; unconfigured apps have no status icon. The Not installed
 submenu lists supported apps absent from this computer. Setup status describes the saved configuration,
 not whether the app is running.
+
+Reviewed Beta-only operations are hidden and rejected on Stable projects. On both
+Stable and Beta, the five additional Analyze reports (goals, goal performance, scroll depth, browser window
+height and page flow) use the existing **Analytics → Read** permission. Page-flow
+page and collection targets are checked against the selected project.
+
+AEO reports and prompt history on Stable and Beta, plus recommendation reads on
+Beta, also use **Analytics → Read**. The router fixes the site to the selected
+project and checks page/collection references. Webflow entitlement and AI-feature
+gates still apply; availability in the router does not grant an upstream plan
+feature. Recommendation settings writes are not exposed. Optimize reports remain
+unavailable until their account-level resource IDs can be mapped reliably to a
+project.
+
+CMS creation preserves custom collection fields inside `fieldData` for both the
+legacy array and per-item locale format. A targeted correction removes an
+upstream schema-export restriction on those maps only; required name/slug fields,
+outer request validation, permissions and collection ownership remain enforced.
+
+### Beta site branches (Releases)
+
+Experimental: these operations require Webflow Releases beta access in addition
+to selecting the Beta MCP channel. They have automated synthetic coverage, but
+live lifecycle validation is still pending access to an eligible project.
+Selecting Beta in MCP Router does not enable Webflow's feature entitlement.
+
+On Beta, `list_site_branches` uses Pages → Read, `create_site_branch` and
+`create_page` with `site_branch_id` use Pages → Write, `stage_site_branch` uses
+Pages → Publish, and `discard_site_branch` uses Pages → Delete. Staging targets
+only the Release preview; it does not merge or publish the production site.
+Discard hard-deletes a Release and requires explicit user intent. All writes
+require project preparation. The router verifies branch membership in the
+selected site's in-progress Releases and verifies an optional origin page.
+These actions and the `create_page.site_branch_id` parameter are unavailable on
+Stable. Page branches remain separate operations.
