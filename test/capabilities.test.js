@@ -392,7 +392,7 @@ for(const channel of ['stable','beta'])test(`${channel} AEO and recommendation r
  setIntercept(async(tool,args)=>{if(args.actions?.[0]?.list_pages)return envelope('list_pages',{pages:[{id:'333333333333333333333333'}],pagination:{total:1}});});
  router.edit('projects','p',{channel});
  store.connection(router.project('p',null).connectionId).beta={tokens:{access_token:'synthetic-beta'},sites:[{id:site}]};
- const ops=CATALOG.filter(op=>['data_aeo_tool','data_recommendations_tool'].includes(op.tool));
+ const ops=CATALOG.filter(op=>['data_aeo_tool','data_recommendations_tool'].includes(op.tool)&&op.mode==='read');
  assert.equal(ops.length,19);
  const sample={startTime:'2026-04-01T00:00:00Z',endTime:'2026-04-02T00:00:00Z',breakdown:'prompt',domain:'example.com',pageId:'333333333333333333333333',executionId:'111111111111111111111111',recommendationId:'222222222222222222222222'};
  for(const op of ops){
@@ -417,6 +417,75 @@ for(const channel of ['stable','beta'])test(`${channel} AEO and recommendation r
   if(op.schema.properties.collectionId)await assert.rejects(router.call('read_webflow',request(op.id,{...params,collectionId:'555555555555555555555555',itemSlug:'demo'})),/does not belong/);
   await assert.rejects(router.call('read_webflow',request(op.id,{...params,actions:[{update_recommendation_settings:{recurringAuditsEnabled:true}}]})),/schema/);
  }
- assert.throws(()=>operation('data_recommendations_tool.update_recommendation_settings'),/Unknown operation/);
- assert.throws(()=>operation('data_optimize_tool.list_optimize_resources'),/Unknown operation/);
+ assert.equal(operation('data_recommendations_tool.update_recommendation_settings').permission,'recommendations:write');
+ assert(!(await router.call('get_project_operations',{projectId:'p'})).some(op=>op.id==='data_optimize_tool.list_optimize_resources'));
+});
+
+test('GSAP operations require explicit grants, preparation on both reviewed channels',async t=>{
+ const {router,store,calls}=fixture(t);
+ const id='data_interactions_tool.guide';
+ grant(router,{});
+ assert(!(await router.call('get_project_operations',{projectId:'p'})).some(op=>op.id===id));
+ await assert.rejects(router.call('read_webflow',request(id,{}, {pageId:'owned-page'})),/Missing project permissions/);
+ grant(router,{'interactions:read':true,'interactions:write':true});
+ await router.call('read_webflow',request(id,{}, {pageId:'owned-page'}));
+ assert.equal(calls.at(-1).args.siteId,site);
+ assert.equal(calls.at(-1).args.pageId,'owned-page');
+ await assert.rejects(router.call('write_webflow',request('data_interactions_tool.update_interaction',{id:'owned-interaction'}, {pageId:'owned-page'})),/Custom code/);
+ grant(router,{'interactions:write':true,'scripts:write':true});
+ await assert.rejects(router.call('write_webflow',request('data_interactions_tool.update_interaction',{id:'owned-interaction'}, {pageId:'owned-page'})),/prepare_project/);
+ await assert.rejects(router.call('write_webflow',request('data_interactions_tool.delete_interaction',{id:'owned-interaction'}, {pageId:'owned-page'})),/Missing project permissions/);
+ const p=store.data.projects.p;p.channel='beta';const c=store.connection(p.connectionId);c.beta={tokens:{access_token:'fake-beta'},sites:[{id:site}]};
+ grant(router,{'interactions:read':true});
+ assert.equal((await router.call('get_project_operations',{projectId:'p',operationId:id})).id,id);
+});
+
+test('GSAP validates interaction IDs, scope pages, filters and nested instance/component targets',async t=>{
+ const {router,calls,setIntercept}=fixture(t);
+ grant(router,{'interactions:read':true,'interactions:write':true,'interactions:delete':true,'scripts:write':true});
+ setIntercept(async(tool,args)=>{
+  if(args.actions[0].list_interactions)return envelope('list_interactions',{interactions:[{id:'owned-interaction'}],pagination:{total:1}});
+  if(args.actions[0].get_all_components)return envelope('get_all_components',{components:[{id:'owned-component'}]});
+ });
+ const {preparationId}=await router.call('prepare_project',{projectId:'p'});
+ const extra={pageId:'owned-page',preparationId};
+ const create={name:'Synthetic fade',scope:{type:'pages',value:['owned-page']},triggers:[{extensionKey:'wf:load'}],timelines:[{actions:[{id:'fade',name:'Fade',targets:[{extensionKey:'wf:inst',value:['owned-page','element']}],timing:{duration:0.4},properties:{'wf:transform':{opacity:['0%','100%']}}}]}]};
+ await router.call('write_webflow',request('data_interactions_tool.create_interaction',create,extra));
+ assert.deepEqual(calls.at(-1).args.actions[0].create_interaction,create);
+ const foreign=structuredClone(create);foreign.timelines[0].actions[0].targets[0].value[0]='foreign-page';
+ await assert.rejects(router.call('write_webflow',request('data_interactions_tool.create_interaction',foreign,extra)));
+ for(const action of ['get_interaction','update_interaction','delete_interaction']) {
+  const mode=action==='get_interaction'?'read_webflow':'write_webflow';
+  await router.call(mode,request('data_interactions_tool.'+action,{id:'owned-interaction'},action==='get_interaction'?{pageId:'owned-page'}:extra));
+  const before=calls.filter(c=>c.args.actions[0][action]).length;
+  await assert.rejects(router.call(mode,request('data_interactions_tool.'+action,{id:'foreign-interaction'},action==='get_interaction'?{pageId:'owned-page'}:extra)));
+  assert.equal(calls.filter(c=>c.args.actions[0][action]).length,before);
+ }
+ await assert.rejects(router.call('read_webflow',request('data_interactions_tool.list_interactions',{visibleOnPageId:'foreign-page'},{pageId:'owned-page'})));
+ const update=params=>router.call('write_webflow',request('data_interactions_tool.update_interaction',{id:'owned-interaction',...params},extra));
+ await update({scope:{type:'pages',value:['owned-page']}});
+ await update({scope:{type:'component',componentId:'owned-component'}});
+ const trigger=id=>({triggers:[{extensionKey:'wf:click',target:{extensionKey:'wf:inst',value:[id,'element']}}]});
+ await update(trigger('owned-page'));await update(trigger('owned-component'));
+ for(const params of [{scope:{type:'pages',value:['foreign-page']}},{scope:{type:'component',componentId:'foreign-component'}},{scope:{type:'site',libraryProfileId:'foreign-library'}},trigger('foreign-page')]) {
+  const before=calls.filter(c=>c.args.actions[0].update_interaction).length;
+  await assert.rejects(update(params));
+  assert.equal(calls.filter(c=>c.args.actions[0].update_interaction).length,before);
+ }
+});
+
+test('GSAP ownership reads every interaction page and rejects incomplete or malformed listings',async t=>{
+ const {router,setIntercept,calls}=fixture(t);grant(router,{'interactions:read':true});
+ setIntercept(async(tool,args)=>{
+  if(args.actions[0].list_interactions){const {offset}=args.actions[0].list_interactions;
+   assert.equal(args.siteId,site);assert.equal(args.pageId,'owned-page');
+   return envelope('list_interactions',{interactions:offset?[{id:'last-interaction'}]:Array.from({length:200},(_,i)=>({id:`interaction-${i}`})),pagination:{total:201}});
+  }
+ });
+ await router.call('read_webflow',request('data_interactions_tool.get_interaction',{id:'last-interaction'},{pageId:'owned-page'}));
+ assert.deepEqual(calls.filter(c=>c.args.actions[0].list_interactions).map(c=>c.args.actions[0].list_interactions.offset),[0,200]);
+ for(const result of [{interactions:[],pagination:{hasMore:true}},{interactions:[{id:'last-interaction'}],pagination:{nextCursor:'more'}},{unknown:[]}]) {
+  setIntercept(async(tool,args)=>args.actions[0].list_interactions?envelope('list_interactions',result):undefined);
+  await assert.rejects(router.call('read_webflow',request('data_interactions_tool.get_interaction',{id:'last-interaction'},{pageId:'owned-page'})));
+ }
 });

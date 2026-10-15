@@ -48,3 +48,13 @@ test('demo connection tests do not enable disabled projects',()=>{
   assert.equal(demo.mutate('/read-project',{projectId:'project'}).simulated,true);
   assert.equal(demo.state.projects[0].enabled,false);
 });
+
+test('demo workspace permissions are explicit, persist in memory and never become project grants',()=>{
+ const data=structuredClone(seed);data.connections[0].sites=[{id:'site',workspaceId:'workspace'}];
+ const demo=createDemoState(data);
+ demo.mutate('/connections/demo/edit',{workspacePermissions:{workspace:{'workspace_members:read':true}}});
+ assert.deepEqual(demo.state.connections[0].workspacePermissions,{workspace:{'workspace_members:read':true}});
+ assert.deepEqual(demo.state.projects[0].permissions,seed.projects[0].permissions);
+ assert.throws(()=>demo.mutate('/projects/project/edit',{workspacePermissions:{workspace:{'workspace_members:write':true}}}));
+ assert.throws(()=>demo.mutate('/connections/demo/edit',{workspacePermissions:{foreign:{'workspace_members:write':true}}}));
+});

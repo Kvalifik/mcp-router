@@ -1,6 +1,6 @@
 import { AgentError, authorizationRequired, upstreamError, checkUpstreamResponse, upstreamDiagnostics, transientUpstreamRead } from './agent-errors.js';
 import { initializeInventory, syncProjects, setDefaults, purgeConnection } from './discovery.js';
-import { CATALOG, permissions, validatePermissions, operation, allowed, requirePermissions, prepareArguments, checkOwnership, resultOf } from './permissions.js';
+import { CATALOG, permissions, validatePermissions, validateWorkspacePermissions, validateConnectionPermissions, operation, allowed, requirePermissions, prepareArguments, checkOwnership, resultOf } from './permissions.js';
 import { randomUUID } from 'node:crypto';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
@@ -155,7 +155,7 @@ export class Router {
     if (!['connections', 'projects'].includes(kind) || !Object.hasOwn(this.store.data[kind], id)) throw new Error('Unknown item');
     const item = this.store.data[kind][id];
     if (item.deletedAt) throw new Error('Item is deleted');
-    const allowed = kind === 'projects' ? ['name', 'enabled', 'read', 'permissions', 'useDefaultName', 'favourite', 'channel'] : ['name', 'useDefaultName', 'dismissNaming'];
+    const allowed = kind === 'projects' ? ['name', 'enabled', 'read', 'permissions', 'useDefaultName', 'favourite', 'channel'] : ['name', 'useDefaultName', 'dismissNaming', 'workspacePermissions', 'connectionPermissions'];
     if (!updates || Object.keys(updates).some(k => !allowed.includes(k))) throw new Error('Unsupported permission or field');
     if ('channel' in updates && !(kind==='projects'?['inherit','stable','beta']:['stable','beta']).includes(updates.channel)) throw new Error('Invalid MCP channel');
     if ('name' in updates && (typeof updates.name !== 'string' || !updates.name.trim() || updates.name.length > 80)) throw new Error('Invalid name');
@@ -165,6 +165,8 @@ export class Router {
     for (const key of ['enabled', 'read', 'favourite']) if (key in updates && typeof updates[key] !== 'boolean') throw new Error('Invalid permission');
     if ('permissions' in updates) { updates.permissions = validatePermissions(updates.permissions); updates.read = !!updates.permissions['site:read']; }
     else if ('read' in updates && item.permissions) updates.permissions = { ...item.permissions, 'site:read': updates.read };
+    if ('connectionPermissions' in updates) updates.connectionPermissions=validateConnectionPermissions(updates.connectionPermissions);
+    if ('workspacePermissions' in updates) updates.workspacePermissions=validateWorkspacePermissions(updates.workspacePermissions,item.sites||[]);
     if (kind === 'projects' && ('permissions' in updates || 'read' in updates || updates.enabled === true)) item.usesDefaultPermissions = false;
     if ('name' in updates) { item.nameOverride = updates.name.trim(); if (kind === 'projects') item.sourceName ||= item.name; }
     if (updates.useDefaultName && kind === 'connections' && !item.sourceName) throw new Error('Webflow has not provided a workspace name');
@@ -288,23 +290,39 @@ export class Router {
     const fields={get_project_guidance:['projectId'],get_project_operations:['projectId','operationId'],prepare_project:['projectId'],read_webflow:['projectId','operationId','params','pageId'],write_webflow:['projectId','operationId','params','pageId','preparationId']}[name];
     if(Object.keys(args).some(k=>!fields.includes(k)) || typeof args.projectId!=='string')throw new Error('Invalid arguments');
     const p=structuredClone(this.project(args.projectId,null));
-    const signature=()=>JSON.stringify([this.project(p.id,null),this.channel(p)]);
+    const workspacePolicy=()=>{
+      const c=this.store.connection(p.connectionId),channel=this.channel(p);
+      const sites=channel==='beta'?c.beta?.sites:(c.stableSites||c.sites);
+      const workspaceId=sites?.find(site=>site.id===p.siteId)?.workspaceId;
+      return {connectionPermissions:c.connectionPermissions||{},workspaceId,permissions:workspaceId&&Object.hasOwn(c.workspacePermissions||{},workspaceId)?c.workspacePermissions[workspaceId]:{}};
+    };
+    const signature=()=>JSON.stringify([this.project(p.id,null),this.channel(p),workspacePolicy()]);
     const initial=signature();
     const recheck=()=>{if(signature()!==initial)throw new Error('Project policy changed during request');};
     const available=op=>!op.channels || op.channels.includes(this.channel(p));
     const selectedOperation=id=>{const op=operation(id,this.channel(p));if(!available(op))throw new Error('Operation unavailable on the selected MCP channel');return op;};
+    const requireOperation=op=>{
+      if(op.scope==='connection') {
+        if(workspacePolicy().connectionPermissions[op.permission]!==true)throw new AgentError('router_permission_denied','Enable the required account-wide connection permission in Workspace permissions. Project grants do not authorize this action.');
+        requirePermissions(p,op.extraPermissions);
+      }else if(op.scope==='workspace') {
+        if(workspacePolicy().permissions[op.permission]!==true)throw new AgentError('router_permission_denied','Enable the required Workspace Members permission in the connection’s Workspace permissions settings. Project permissions do not grant workspace access.');
+        requirePermissions(p,op.extraPermissions);
+      }else requirePermissions(p,[op.permission,...op.extraPermissions]);
+    };
     if(name==='get_project_operations') {
-      const operations=CATALOG.filter(op=>available(op)&&allowed(p,op));
-      if(args.operationId){const op=selectedOperation(args.operationId);requirePermissions(p,[op.permission,...op.extraPermissions]);return {...op,notes:'Site IDs are selected by the router. Supply pageId separately for page tools. Read project instructions with prepare_project before writes.'};}
-      return operations.map(({id,title,mode,permission,extraPermissions,page})=>({id,area:title,mode,permission,extraPermissions,requiresPageId:page}));
+      const operations=CATALOG.filter(op=>available(op)&&allowed(p,op,workspacePolicy().permissions,workspacePolicy().connectionPermissions));
+      if(args.operationId){const op=selectedOperation(args.operationId);requireOperation(op);return {...op,notes:'Site IDs are selected by the router. Supply pageId separately for page tools. Workspace operations require separately saved workspace permissions and can affect all sites in that workspace. Connection operations require account-wide grants; standalone app creation does not inject a site ID and Webflow chooses the workspace. Read project instructions with prepare_project before writes.'};}
+      return operations.map(({id,title,mode,permission,extraPermissions,page,scope})=>({id,area:title,mode,permission,extraPermissions,requiresPageId:page,...(scope?{scope,...(scope==='workspace'?{workspaceId:workspacePolicy().workspaceId}:{})}:{})}));
     }
     if(['prepare_project','get_project_guidance'].includes(name))requirePermissions(p,['agent_instructions:read']);
     const op=['prepare_project','get_project_guidance'].includes(name)?null:selectedOperation(args.operationId);
     if(op) {
-      requirePermissions(p,[op.permission,...op.extraPermissions]);
+      requireOperation(op);
       if((name==='read_webflow' && op.mode!=='read') || (name==='write_webflow' && op.mode==='read'))throw new Error(`Wrong execution tool. Use ${op.mode==='read'?'read_webflow':'write_webflow'} for this operation.`);
     }
     const prepared=op?prepareArguments(op,args.params||{},p.siteId,args.pageId):null;
+    if(op?.scope==='workspace'&&prepared.value.workspace_id!==workspacePolicy().workspaceId)throw new Error('Resource does not belong to this project');
     return this.serial(p.connectionId,async()=>{
       recheck();let client, stage='upstream_connect';
       // Only preparation/guidance reads are retried, never project operations.
@@ -326,7 +344,7 @@ export class Router {
         if(channel==='beta' && !(await client.listSites()).some(s=>s.id===p.siteId))throw authorizationRequired('Project is not authorized on Beta. Reconnect and include this project.');
         let guidance;
         if(name==='get_project_guidance' || name==='prepare_project') {
-          const permitted = CATALOG.filter(candidate=>available(candidate)&&allowed(p,candidate));
+          const permitted = CATALOG.filter(candidate=>available(candidate)&&allowed(p,candidate,workspacePolicy().permissions,workspacePolicy().connectionPermissions));
           const tools = (await read('tool_discovery',()=>client.listTools?.()) || []).filter(tool=>permitted.some(candidate=>candidate.tool===tool.name))
             .map(({name,title,description})=>({name,title,description,operationIds:permitted.filter(candidate=>candidate.tool===name).map(candidate=>candidate.id)}));
           recheck();
@@ -367,15 +385,16 @@ export class Router {
           if(!proof||proof.projectId!==p.id||proof.policy!==initial||proof.expires<Date.now())throw new Error('Run prepare_project and read its instructions before writing');
         }
         stage='resource_ownership';
-        await checkOwnership(client,op,prepared.value,p.siteId,args.pageId);
+        const filterResponse=await checkOwnership(client,op,prepared.value,p.siteId,args.pageId);
         recheck();
         this.store.audit('operation_started',{projectId:p.id,operationId:op.id,mode:op.mode});
         stage='operation_call';
         const response=await client.call(op.tool,prepared.args);
         recheck();
         checkUpstreamResponse(response);
+        const scopedResponse=filterResponse?filterResponse(response):response;
         this.store.audit('operation_completed',{projectId:p.id,operationId:op.id,mode:op.mode});
-        return response;
+        return scopedResponse;
       } catch(error) {
         const safe=upstreamError(error);
         this.store.audit('operation_failed',{projectId:p.id,operationId:op?.id||name,stage,errorCode:safe.feedback.code,...upstreamDiagnostics(safe)});

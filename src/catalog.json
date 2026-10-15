@@ -9207,9 +9207,10 @@
                       "url",
                       "email",
                       "phone",
-                      "popover"
+                      "popover",
+                      "modal"
                     ],
-                    "description": "Link mode (url / email / phone / popover). A popover default is targetless \u2014 set the Popover target on each component instance."
+                    "description": "Link mode (url / email / phone / popover / modal). A popover or modal default is targetless \u2014 set the Popover or Modal target on each component instance."
                   },
                   "to": {
                     "type": "string",
@@ -9234,6 +9235,14 @@
                       "hide"
                     ],
                     "description": "What the link does to its target Popover. Only used when mode is \"popover\". Defaults to \"toggle\" when omitted."
+                  },
+                  "modal_action": {
+                    "type": "string",
+                    "enum": [
+                      "show",
+                      "hide"
+                    ],
+                    "description": "What the link does to its target Modal. Only used when mode is \"modal\". Defaults to \"show\" when omitted."
                   }
                 },
                 "additionalProperties": false
@@ -9431,9 +9440,10 @@
                       "url",
                       "email",
                       "phone",
-                      "popover"
+                      "popover",
+                      "modal"
                     ],
-                    "description": "Link mode (url / email / phone / popover). A popover default is targetless \u2014 set the Popover target on each component instance."
+                    "description": "Link mode (url / email / phone / popover / modal). A popover or modal default is targetless \u2014 set the Popover or Modal target on each component instance."
                   },
                   "to": {
                     "type": "string",
@@ -9458,6 +9468,14 @@
                       "hide"
                     ],
                     "description": "What the link does to its target Popover. Only used when mode is \"popover\". Defaults to \"toggle\" when omitted."
+                  },
+                  "modal_action": {
+                    "type": "string",
+                    "enum": [
+                      "show",
+                      "hide"
+                    ],
+                    "description": "What the link does to its target Modal. Only used when mode is \"modal\". Defaults to \"show\" when omitted."
                   }
                 },
                 "additionalProperties": false
@@ -9660,7 +9678,8 @@
                   "phone",
                   "file",
                   "collectionPage",
-                  "popover"
+                  "popover",
+                  "modal"
                 ]
               },
               "link_to": {
@@ -9682,7 +9701,7 @@
                 "type": "string"
               },
               "link_to_element_id": {
-                "description": "The Popover element (or a component instance whose root is a Popover) this instance's link opens or closes. Only used when link_mode is \"popover\"; omit it for a targetless popover link.",
+                "description": "The Popover or Modal element (or a component instance whose root is one) this instance's link opens or closes. Only used when link_mode is \"popover\" or \"modal\"; omit it for a targetless link.",
                 "type": "object",
                 "properties": {
                   "component": {
@@ -9705,6 +9724,14 @@
                 "type": "string",
                 "enum": [
                   "toggle",
+                  "show",
+                  "hide"
+                ]
+              },
+              "link_modal_action": {
+                "description": "What the link does to its target Modal. Only used when link_mode is \"modal\". Defaults to \"show\" when omitted.",
+                "type": "string",
+                "enum": [
                   "show",
                   "hide"
                 ]
@@ -12396,15 +12423,16 @@
                             "phone",
                             "file",
                             "collectionPage",
-                            "popover"
+                            "popover",
+                            "modal"
                           ]
                         },
                         "to": {
-                          "description": "Link target. url/email/phone: literal value; page: pageId; file: assetId; collectionPage: pageSlug; pageSection/popover: unused \u2014 use to_element_id.",
+                          "description": "Link target. url/email/phone: literal value; page: pageId; file: assetId; collectionPage: pageSlug; pageSection/popover/modal: unused \u2014 use to_element_id.",
                           "type": "string"
                         },
                         "to_element_id": {
-                          "description": "Target element id (component + element). For \"pageSection\", the target section. For \"popover\", the Popover element (or a component instance whose root is a Popover) to open or close; omit it for a targetless popover link. Only used when mode is \"pageSection\" or \"popover\".",
+                          "description": "Target element id (component + element). For \"pageSection\", the target section. For \"popover\", the Popover element (or a component instance whose root is a Popover) to open or close; For \"modal\", the Modal element (or a component instance whose root is a Modal) to open or close. Omit it for a targetless popover or modal link. Only used when mode is \"pageSection\", \"popover\" or \"modal\".",
                           "type": "object",
                           "properties": {
                             "component": {
@@ -12437,6 +12465,14 @@
                           "type": "string",
                           "enum": [
                             "toggle",
+                            "show",
+                            "hide"
+                          ]
+                        },
+                        "modal_action": {
+                          "description": "What the link does to its target Modal. Only used when mode is \"modal\". Defaults to \"show\" when omitted.",
+                          "type": "string",
+                          "enum": [
                             "show",
                             "hide"
                           ]
@@ -13431,6 +13467,7 @@
                 "ComponentSlot",
                 "Dropdown",
                 "Popover",
+                "Modal",
                 "DOM",
                 "BY_CUSTOM_TAG"
               ],
@@ -13754,15 +13791,16 @@
                           "phone",
                           "file",
                           "collectionPage",
-                          "popover"
+                          "popover",
+                          "modal"
                         ]
                       },
                       "to": {
-                        "description": "Link target. url/email/phone: literal value; page: pageId; file: assetId; collectionPage: pageSlug; pageSection/popover: unused \u2014 use to_element_id.",
+                        "description": "Link target. url/email/phone: literal value; page: pageId; file: assetId; collectionPage: pageSlug; pageSection/popover/modal: unused \u2014 use to_element_id.",
                         "type": "string"
                       },
                       "to_element_id": {
-                        "description": "Target element id (component + element). For \"pageSection\", the target section. For \"popover\", the Popover element (or a component instance whose root is a Popover) to open or close; omit it for a targetless popover link. Only used when mode is \"pageSection\" or \"popover\".",
+                        "description": "Target element id (component + element). For \"pageSection\", the target section. For \"popover\", the Popover element (or a component instance whose root is a Popover) to open or close; For \"modal\", the Modal element (or a component instance whose root is a Modal) to open or close. Omit it for a targetless popover or modal link. Only used when mode is \"pageSection\", \"popover\" or \"modal\".",
                         "type": "object",
                         "properties": {
                           "component": {
@@ -13795,6 +13833,14 @@
                         "type": "string",
                         "enum": [
                           "toggle",
+                          "show",
+                          "hide"
+                        ]
+                      },
+                      "modal_action": {
+                        "description": "What the link does to its target Modal. Only used when mode is \"modal\". Defaults to \"show\" when omitted.",
+                        "type": "string",
+                        "enum": [
                           "show",
                           "hide"
                         ]
@@ -16736,5 +16782,4240 @@
     "channels": [
       "beta"
     ]
+  },
+  {
+    "id": "data_interactions_tool.guide",
+    "tool": "data_interactions_tool",
+    "action": "guide",
+    "area": "interactions",
+    "title": "Interactions (GSAP)",
+    "mode": "read",
+    "permission": "interactions:read",
+    "extraPermissions": [],
+    "topSite": "siteId",
+    "page": true,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false,
+      "description": "Returns the IX3 authoring guide (legal payload shapes for create/update). Same content as MCP resource webflow://guides/interactions."
+    }
+  },
+  {
+    "id": "data_interactions_tool.list_interactions",
+    "tool": "data_interactions_tool",
+    "action": "list_interactions",
+    "area": "interactions",
+    "title": "Interactions (GSAP)",
+    "mode": "read",
+    "permission": "interactions:read",
+    "extraPermissions": [],
+    "topSite": "siteId",
+    "page": true,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "visibleOnPageId": {
+          "description": "Optional page-visibility filter \u2014 interactions that apply to this page",
+          "type": "string",
+          "minLength": 1
+        },
+        "limit": {
+          "description": "Page size (1\u2013200, default 50)",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
+        },
+        "offset": {
+          "description": "Items to skip before this page",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "additionalProperties": false,
+      "description": "List IX3 interactions on the site (paginated summaries). Use get_interaction for full timelines."
+    }
+  },
+  {
+    "id": "data_interactions_tool.get_interaction",
+    "tool": "data_interactions_tool",
+    "action": "get_interaction",
+    "area": "interactions",
+    "title": "Interactions (GSAP)",
+    "mode": "read",
+    "permission": "interactions:read",
+    "extraPermissions": [],
+    "topSite": "siteId",
+    "page": true,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Interaction id to fetch"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false,
+      "description": "Get one IX3 interaction by id with timelines resolved inline."
+    }
+  },
+  {
+    "id": "data_interactions_tool.create_interaction",
+    "tool": "data_interactions_tool",
+    "action": "create_interaction",
+    "area": "interactions",
+    "title": "Interactions (GSAP)",
+    "mode": "write",
+    "permission": "interactions:write",
+    "extraPermissions": [
+      "scripts:write",
+      "agent_instructions:read"
+    ],
+    "topSite": "siteId",
+    "page": true,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Interaction name"
+        },
+        "scope": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {},
+          "description": "Where the interaction applies: {type:\"site\"} (default), {type:\"pages\", value:[...pageIds]}, or {type:\"component\", componentId, variants?}. variants are variant option ids from data_component_variants_tool; omit for every variant. libraryProfileId is unsupported. Under component scope wf:inst targets are [componentId, elementId]; site/pages require [pageId, elementId]."
+        },
+        "triggers": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "extensionKey": {
+                "type": "string",
+                "minLength": 1,
+                "description": "IX3 extension key, e.g. \"wf:click\" for a click trigger."
+              },
+              "config": {
+                "description": "Extension-specific config, e.g. {control: \"play\"} for wf:click. controlType is stamped by the host automatically \u2014 don't set it explicitly; a value that doesn't match the trigger type is rejected outright.",
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {}
+              },
+              "target": {
+                "description": "Element(s) this trigger/action applies to. Required for click, hover, focus, blur, and change triggers; FORBIDDEN for wf:load \u2014 page load fires once for the page, not on an element, so omit target entirely for it rather than passing null. Custom triggers use a hidden wf:body target the host manages.",
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "extensionKey": {
+                        "type": "string",
+                        "const": "wf:inst",
+                        "description": "Always \"wf:inst\" for an element-instance target."
+                      },
+                      "value": {
+                        "minItems": 2,
+                        "maxItems": 2,
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "description": "[id.component, id.element] \u2014 exactly 2 strings, targets this ONE specific element instance. id.element is the element's own id (its id object's `element` field); id.component equals the pageId for a page-level element, or the componentId for an element inside a component definition. Both come from data_element_tool > get_all_elements/query_elements or a builder's return_element_info \u2014 NOT a style/class id."
+                      }
+                    },
+                    "required": [
+                      "extensionKey",
+                      "value"
+                    ],
+                    "additionalProperties": {},
+                    "description": "Targets one specific element instance; extra fields (e.g. filterContext) are passed through unmodified. e.g. {extensionKey: \"wf:inst\", value: [pageId, elementId]}"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "extensionKey": {
+                        "type": "string",
+                        "const": "wf:class",
+                        "description": "Always \"wf:class\" for a class/style-block target."
+                      },
+                      "value": {
+                        "anyOf": [
+                          {
+                            "minItems": 1,
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "minLength": 1
+                            }
+                          },
+                          {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        ],
+                        "description": "Style block id(s) (GUIDs) to target every element carrying this class \u2014 prefer resolving the class to its style block id first with data_style_tool > get_styles or query_styles. A bare class name string is also accepted (the host resolves it to a style block id) \u2014 but a class only ever applied as a raw HTML/attribute class (e.g. via data_whtml_builder's html string, not a real Webflow style) is rejected outright."
+                      }
+                    },
+                    "required": [
+                      "extensionKey",
+                      "value"
+                    ],
+                    "additionalProperties": {},
+                    "description": "Class/style-block target \u2014 every element carrying this class; extra fields (e.g. filterContext) are passed through unmodified. e.g. {extensionKey: \"wf:class\", value: [\"STYLE_BLOCK_ID\"]} or {extensionKey: \"wf:class\", value: \"my-class\"}"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "extensionKey": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": [
+                      "extensionKey"
+                    ],
+                    "additionalProperties": {},
+                    "description": "Other IX3 target shape for an extensionKey besides \"wf:inst\" (e.g. a page target, or a wf:class scoped-target variant this schema doesn't model). Passed through as-is to the page-automation validator."
+                  }
+                ]
+              }
+            },
+            "required": [
+              "extensionKey"
+            ],
+            "additionalProperties": {},
+            "description": "Object-format IX3 node, e.g. {extensionKey: \"wf:click\", config: {control: \"play\"}, target: {extensionKey: \"wf:inst\", value: [pageId, elementId]}}. Extra fields are passed through unmodified."
+          },
+          "description": "Object-format triggers. Example click: {extensionKey:\"wf:click\", config:{control:\"play\"}, target:{extensionKey:\"wf:inst\", value:[pageId, elementId]}}. target is required for click/hover/focus/blur/change, forbidden for wf:load (see target field docs)."
+        },
+        "timelines": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "actions": {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "Unique id for this action WITHIN the timeline (e.g. \"fade-opacity-1\"). Required \u2014 omitting it is the most common create/update failure."
+                    },
+                    "name": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "Human-readable action name, e.g. \"Fade opacity\". Required."
+                    },
+                    "targets": {
+                      "type": "array",
+                      "items": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "extensionKey": {
+                                "type": "string",
+                                "const": "wf:inst",
+                                "description": "Always \"wf:inst\" for an element-instance target."
+                              },
+                              "value": {
+                                "minItems": 2,
+                                "maxItems": 2,
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "description": "[id.component, id.element] \u2014 exactly 2 strings, targets this ONE specific element instance. id.element is the element's own id (its id object's `element` field); id.component equals the pageId for a page-level element, or the componentId for an element inside a component definition. Both come from data_element_tool > get_all_elements/query_elements or a builder's return_element_info \u2014 NOT a style/class id."
+                              }
+                            },
+                            "required": [
+                              "extensionKey",
+                              "value"
+                            ],
+                            "additionalProperties": {},
+                            "description": "Targets one specific element instance; extra fields (e.g. filterContext) are passed through unmodified. e.g. {extensionKey: \"wf:inst\", value: [pageId, elementId]}"
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "extensionKey": {
+                                "type": "string",
+                                "const": "wf:class",
+                                "description": "Always \"wf:class\" for a class/style-block target."
+                              },
+                              "value": {
+                                "anyOf": [
+                                  {
+                                    "minItems": 1,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    }
+                                  },
+                                  {
+                                    "type": "string",
+                                    "minLength": 1
+                                  }
+                                ],
+                                "description": "Style block id(s) (GUIDs) to target every element carrying this class \u2014 prefer resolving the class to its style block id first with data_style_tool > get_styles or query_styles. A bare class name string is also accepted (the host resolves it to a style block id) \u2014 but a class only ever applied as a raw HTML/attribute class (e.g. via data_whtml_builder's html string, not a real Webflow style) is rejected outright."
+                              }
+                            },
+                            "required": [
+                              "extensionKey",
+                              "value"
+                            ],
+                            "additionalProperties": {},
+                            "description": "Class/style-block target \u2014 every element carrying this class; extra fields (e.g. filterContext) are passed through unmodified. e.g. {extensionKey: \"wf:class\", value: [\"STYLE_BLOCK_ID\"]} or {extensionKey: \"wf:class\", value: \"my-class\"}"
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "extensionKey": {
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            },
+                            "required": [
+                              "extensionKey"
+                            ],
+                            "additionalProperties": {},
+                            "description": "Other IX3 target shape for an extensionKey besides \"wf:inst\" (e.g. a page target, or a wf:class scoped-target variant this schema doesn't model). Passed through as-is to the page-automation validator."
+                          }
+                        ],
+                        "description": "Trigger/timeline-action target. wf:inst targets one specific element instance; wf:class targets every element with that class; other IX3 target shapes pass through as opaque objects. See each target schema's field docs for its value shape."
+                      },
+                      "description": "Action targets (required array). Empty [] only for a sole wf:variable action (page scope); otherwise \u22651 target."
+                    },
+                    "timing": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {},
+                      "description": "Timing for this action, e.g. { duration: \"400ms\" } or { duration: 0.4 } (seconds) \u2014 a bare number is SECONDS, not ms; only a \"<n>ms\" string divides by 1000. Also accepts easing/delay per IX3 timing config. Required \u2014 at minimum pass duration."
+                    },
+                    "properties": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {},
+                      "description": "Properties to animate, keyed by extension. Fade-in example: {\"wf:transform\": {\"opacity\": [\"0%\", \"100%\"]}} \u2014 animate opacity under wf:transform, never wf:style. Prefer percentage-based properties (opacity, xPercent, yPercent) over raw pixel values for move/slide effects \u2014 percentages stay correct across breakpoints and element resizes, pixels don't."
+                    },
+                    "tt": {
+                      "description": "Action-type discriminator for how the runtime executes this action on trigger. Optional \u2014 omitting it is usually the safest default: the host infers it from the properties value shapes you sent (a [from, to] pair \u2192 2; a [from]-only value \u2192 1; a bare scalar or [null, to] infers nothing and is read as 0). Set it explicitly only when the shapes can't express what you mean \u2014 most often 3 for a Set. Sending 0, 1, or 3 alongside a real [from, to] pair is rejected \u2014 use 2, or omit tt and let inference stamp it. Enum (source: TweenType in the IX3 runtime): 0=To (animate current value \u2192 the given target \u2014 the common case, e.g. a click-triggered fade or move into a resting state), 1=From (jump to the given value, then animate back to the element's native/current value \u2014 reveal-style presets like preset-drop-in/preset-pop-in), 2=FromTo (explicit start AND end, e.g. preset-slide-in-left/preset-scale-in), 3=Set (instant, non-tweened assignment, no duration \u2014 e.g. setting display:none after a fade completes). See presetId's field docs for a table of known tt/properties combinations if you want a starting point.",
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 3
+                    },
+                    "presetId": {
+                      "description": "Which built-in IX3 preset this action was authored from \u2014 optional, with no runtime effect (it's only copied into the action's GSAP tween metadata; tt above is what the runtime actually branches on). Its table is a convenient starting point for picking a tt/properties combination:\n  preset-fade-in         tt=0  wf:transform.opacity: [null,'100%']  \u2014 no-op on an element already at opacity 1; a real fade from any lower resting opacity\n  preset-fade-out        tt=0  wf:transform.opacity: [null,'0%']\n  preset-slide-in-left   tt=2  opacity:['0%','100%'], xPercent:[-100,0]\n  preset-slide-out-right tt=0  opacity:[null,'0%'], xPercent:[null,100]\n  preset-slide-in-up     tt=1  opacity:['0%',null], yPercent:[100,null]\n  preset-slide-out-down  tt=0  opacity:[null,'0%'], yPercent:[null,100]\n  preset-scale-in        tt=2  scale:[0,1]\n  preset-pop-in          tt=1  scale:[0,null]\n  preset-drop-in         tt=1  y:[-300,null], opacity:['0%',null]  \u2014 prefer a yPercent preset instead of raw pixel y (see properties field)\n  preset-set-action      tt=3  instant/non-tweened, e.g. {display:'none'}\nA To action animates from whatever value the element already has, so the reveal shapes that carry a start value are tt=2 with opacity:['0%','100%'] and tt=1 with opacity:['0%',null] (action guide, Resting state).\nThere is no preset-grow/preset-shrink. Staggered variants are preset-staggered-fade-in (tt=1), -fade-out (tt=0), -fade-drop-in (tt=1), -fade-fall-out (tt=0), all with stagger:{each:0.05}. staggered-fade-in is tt=1 where fade-in is tt=0, so it carries a start value. Omit this field for a hand-built action that doesn't correspond to one of these \u2014 a Designer-authored or legacy action retrieved via get_interaction may have none, and it's safe to write it back through update_interaction as-is.",
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "targets",
+                    "timing",
+                    "properties"
+                  ],
+                  "additionalProperties": {},
+                  "description": "One timeline action. id, name, targets, timing, properties, and tt are required; a partial action will be rejected with a 'Required' error per missing field. presetId is optional (see its field docs). Extra fields (e.g. color) are passed through unmodified \u2014 Designer-authored actions include fields this thin schema doesn't enumerate."
+                },
+                "description": "Actions that play together in this timeline."
+              }
+            },
+            "required": [
+              "actions"
+            ],
+            "additionalProperties": {},
+            "description": "One inline timeline: a set of actions that play together. Extra fields (e.g. id, groupId, settings, canvasDuration, playInReverse, actionPresetIds on a Designer-authored timeline) are passed through unmodified \u2014 read one back via get_interaction before writing it through update_interaction to avoid dropping them."
+          },
+          "description": "Inline timelines. Each timeline action needs id, name, targets, timing, and properties \u2014 e.g. one action: {id:\"fade-1\", name:\"Fade opacity\", targets:[{extensionKey:\"wf:inst\", value:[pageId, revealElementId]}], timing:{duration:\"400ms\"}, properties:{\"wf:transform\":{\"opacity\":[\"0%\",\"100%\"]}}, tt:2}. The pair carries both ends, which is what makes it a reveal a person can see. A reveal target sits at its from-value while the timeline waits, so revealElementId is a different element from the one carrying a click or hover trigger \u2014 an element at opacity 0 is not something a visitor can find. presetId is optional (see its field docs); tt is also optional \u2014 the host infers it from the properties value shapes when omitted (see tt's field docs for the inference rules and enum, and presetId's for example pairings)."
+        },
+        "timelineDefaults": {
+          "description": "Not used. The host rejects timelineDefaults on create.",
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {}
+        },
+        "conditionalPlayback": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          },
+          "description": "Must be an array of conditional playback rules. Each item is `{type:\"prefers-reduced-motion\", behavior:\"dont-animate\"|\"skip-to-end\"}` or `{type:\"breakpoint\", breakpoints:[\"main\"|\"medium\"|\"small\"|\"tiny\"], behavior:\"dont-animate\"|\"skip-to-end\"}`. Omit when unused."
+        }
+      },
+      "required": [
+        "name",
+        "triggers",
+        "timelines"
+      ],
+      "additionalProperties": false,
+      "description": "Create an IX3 interaction in one call (triggers + inline timelines). Use Designer-legal shapes: object-format triggers/targets; animate opacity via wf:transform (e.g. [\"0%\",\"100%\"]), not wf:style. For legal payload shapes, call action guide or read MCP resource webflow://guides/interactions."
+    }
+  },
+  {
+    "id": "data_interactions_tool.update_interaction",
+    "tool": "data_interactions_tool",
+    "action": "update_interaction",
+    "area": "interactions",
+    "title": "Interactions (GSAP)",
+    "mode": "write",
+    "permission": "interactions:write",
+    "extraPermissions": [
+      "scripts:write",
+      "agent_instructions:read"
+    ],
+    "topSite": "siteId",
+    "page": true,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Interaction id to update"
+        },
+        "name": {
+          "description": "New interaction name; omit to leave unchanged",
+          "type": "string",
+          "minLength": 1
+        },
+        "scope": {
+          "description": "Replacement scope object; omit to leave unchanged. Same shapes as create: {type:\"site\"|\"pages\"|\"component\", ...}",
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {}
+        },
+        "triggers": {
+          "description": "Replacement object-format trigger list; omit to leave unchanged",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "extensionKey": {
+                "type": "string",
+                "minLength": 1,
+                "description": "IX3 extension key, e.g. \"wf:click\" for a click trigger."
+              },
+              "config": {
+                "description": "Extension-specific config, e.g. {control: \"play\"} for wf:click. controlType is stamped by the host automatically \u2014 don't set it explicitly; a value that doesn't match the trigger type is rejected outright.",
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {}
+              },
+              "target": {
+                "description": "Element(s) this trigger/action applies to. Required for click, hover, focus, blur, and change triggers; FORBIDDEN for wf:load \u2014 page load fires once for the page, not on an element, so omit target entirely for it rather than passing null. Custom triggers use a hidden wf:body target the host manages.",
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "extensionKey": {
+                        "type": "string",
+                        "const": "wf:inst",
+                        "description": "Always \"wf:inst\" for an element-instance target."
+                      },
+                      "value": {
+                        "minItems": 2,
+                        "maxItems": 2,
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "description": "[id.component, id.element] \u2014 exactly 2 strings, targets this ONE specific element instance. id.element is the element's own id (its id object's `element` field); id.component equals the pageId for a page-level element, or the componentId for an element inside a component definition. Both come from data_element_tool > get_all_elements/query_elements or a builder's return_element_info \u2014 NOT a style/class id."
+                      }
+                    },
+                    "required": [
+                      "extensionKey",
+                      "value"
+                    ],
+                    "additionalProperties": {},
+                    "description": "Targets one specific element instance; extra fields (e.g. filterContext) are passed through unmodified. e.g. {extensionKey: \"wf:inst\", value: [pageId, elementId]}"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "extensionKey": {
+                        "type": "string",
+                        "const": "wf:class",
+                        "description": "Always \"wf:class\" for a class/style-block target."
+                      },
+                      "value": {
+                        "anyOf": [
+                          {
+                            "minItems": 1,
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "minLength": 1
+                            }
+                          },
+                          {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        ],
+                        "description": "Style block id(s) (GUIDs) to target every element carrying this class \u2014 prefer resolving the class to its style block id first with data_style_tool > get_styles or query_styles. A bare class name string is also accepted (the host resolves it to a style block id) \u2014 but a class only ever applied as a raw HTML/attribute class (e.g. via data_whtml_builder's html string, not a real Webflow style) is rejected outright."
+                      }
+                    },
+                    "required": [
+                      "extensionKey",
+                      "value"
+                    ],
+                    "additionalProperties": {},
+                    "description": "Class/style-block target \u2014 every element carrying this class; extra fields (e.g. filterContext) are passed through unmodified. e.g. {extensionKey: \"wf:class\", value: [\"STYLE_BLOCK_ID\"]} or {extensionKey: \"wf:class\", value: \"my-class\"}"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "extensionKey": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": [
+                      "extensionKey"
+                    ],
+                    "additionalProperties": {},
+                    "description": "Other IX3 target shape for an extensionKey besides \"wf:inst\" (e.g. a page target, or a wf:class scoped-target variant this schema doesn't model). Passed through as-is to the page-automation validator."
+                  }
+                ]
+              }
+            },
+            "required": [
+              "extensionKey"
+            ],
+            "additionalProperties": {},
+            "description": "Object-format IX3 node, e.g. {extensionKey: \"wf:click\", config: {control: \"play\"}, target: {extensionKey: \"wf:inst\", value: [pageId, elementId]}}. Extra fields are passed through unmodified."
+          }
+        },
+        "timelines": {
+          "description": "Full timeline replace when provided (each action needs id, name, targets, timing, properties, AND tt \u2014 presetId optional \u2014 see create_interaction); omit to leave unchanged.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "actions": {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "Unique id for this action WITHIN the timeline (e.g. \"fade-opacity-1\"). Required \u2014 omitting it is the most common create/update failure."
+                    },
+                    "name": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "Human-readable action name, e.g. \"Fade opacity\". Required."
+                    },
+                    "targets": {
+                      "type": "array",
+                      "items": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "extensionKey": {
+                                "type": "string",
+                                "const": "wf:inst",
+                                "description": "Always \"wf:inst\" for an element-instance target."
+                              },
+                              "value": {
+                                "minItems": 2,
+                                "maxItems": 2,
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "description": "[id.component, id.element] \u2014 exactly 2 strings, targets this ONE specific element instance. id.element is the element's own id (its id object's `element` field); id.component equals the pageId for a page-level element, or the componentId for an element inside a component definition. Both come from data_element_tool > get_all_elements/query_elements or a builder's return_element_info \u2014 NOT a style/class id."
+                              }
+                            },
+                            "required": [
+                              "extensionKey",
+                              "value"
+                            ],
+                            "additionalProperties": {},
+                            "description": "Targets one specific element instance; extra fields (e.g. filterContext) are passed through unmodified. e.g. {extensionKey: \"wf:inst\", value: [pageId, elementId]}"
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "extensionKey": {
+                                "type": "string",
+                                "const": "wf:class",
+                                "description": "Always \"wf:class\" for a class/style-block target."
+                              },
+                              "value": {
+                                "anyOf": [
+                                  {
+                                    "minItems": 1,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    }
+                                  },
+                                  {
+                                    "type": "string",
+                                    "minLength": 1
+                                  }
+                                ],
+                                "description": "Style block id(s) (GUIDs) to target every element carrying this class \u2014 prefer resolving the class to its style block id first with data_style_tool > get_styles or query_styles. A bare class name string is also accepted (the host resolves it to a style block id) \u2014 but a class only ever applied as a raw HTML/attribute class (e.g. via data_whtml_builder's html string, not a real Webflow style) is rejected outright."
+                              }
+                            },
+                            "required": [
+                              "extensionKey",
+                              "value"
+                            ],
+                            "additionalProperties": {},
+                            "description": "Class/style-block target \u2014 every element carrying this class; extra fields (e.g. filterContext) are passed through unmodified. e.g. {extensionKey: \"wf:class\", value: [\"STYLE_BLOCK_ID\"]} or {extensionKey: \"wf:class\", value: \"my-class\"}"
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "extensionKey": {
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            },
+                            "required": [
+                              "extensionKey"
+                            ],
+                            "additionalProperties": {},
+                            "description": "Other IX3 target shape for an extensionKey besides \"wf:inst\" (e.g. a page target, or a wf:class scoped-target variant this schema doesn't model). Passed through as-is to the page-automation validator."
+                          }
+                        ],
+                        "description": "Trigger/timeline-action target. wf:inst targets one specific element instance; wf:class targets every element with that class; other IX3 target shapes pass through as opaque objects. See each target schema's field docs for its value shape."
+                      },
+                      "description": "Action targets (required array). Empty [] only for a sole wf:variable action (page scope); otherwise \u22651 target."
+                    },
+                    "timing": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {},
+                      "description": "Timing for this action, e.g. { duration: \"400ms\" } or { duration: 0.4 } (seconds) \u2014 a bare number is SECONDS, not ms; only a \"<n>ms\" string divides by 1000. Also accepts easing/delay per IX3 timing config. Required \u2014 at minimum pass duration."
+                    },
+                    "properties": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {},
+                      "description": "Properties to animate, keyed by extension. Fade-in example: {\"wf:transform\": {\"opacity\": [\"0%\", \"100%\"]}} \u2014 animate opacity under wf:transform, never wf:style. Prefer percentage-based properties (opacity, xPercent, yPercent) over raw pixel values for move/slide effects \u2014 percentages stay correct across breakpoints and element resizes, pixels don't."
+                    },
+                    "tt": {
+                      "description": "Action-type discriminator for how the runtime executes this action on trigger. Optional \u2014 omitting it is usually the safest default: the host infers it from the properties value shapes you sent (a [from, to] pair \u2192 2; a [from]-only value \u2192 1; a bare scalar or [null, to] infers nothing and is read as 0). Set it explicitly only when the shapes can't express what you mean \u2014 most often 3 for a Set. Sending 0, 1, or 3 alongside a real [from, to] pair is rejected \u2014 use 2, or omit tt and let inference stamp it. Enum (source: TweenType in the IX3 runtime): 0=To (animate current value \u2192 the given target \u2014 the common case, e.g. a click-triggered fade or move into a resting state), 1=From (jump to the given value, then animate back to the element's native/current value \u2014 reveal-style presets like preset-drop-in/preset-pop-in), 2=FromTo (explicit start AND end, e.g. preset-slide-in-left/preset-scale-in), 3=Set (instant, non-tweened assignment, no duration \u2014 e.g. setting display:none after a fade completes). See presetId's field docs for a table of known tt/properties combinations if you want a starting point.",
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 3
+                    },
+                    "presetId": {
+                      "description": "Which built-in IX3 preset this action was authored from \u2014 optional, with no runtime effect (it's only copied into the action's GSAP tween metadata; tt above is what the runtime actually branches on). Its table is a convenient starting point for picking a tt/properties combination:\n  preset-fade-in         tt=0  wf:transform.opacity: [null,'100%']  \u2014 no-op on an element already at opacity 1; a real fade from any lower resting opacity\n  preset-fade-out        tt=0  wf:transform.opacity: [null,'0%']\n  preset-slide-in-left   tt=2  opacity:['0%','100%'], xPercent:[-100,0]\n  preset-slide-out-right tt=0  opacity:[null,'0%'], xPercent:[null,100]\n  preset-slide-in-up     tt=1  opacity:['0%',null], yPercent:[100,null]\n  preset-slide-out-down  tt=0  opacity:[null,'0%'], yPercent:[null,100]\n  preset-scale-in        tt=2  scale:[0,1]\n  preset-pop-in          tt=1  scale:[0,null]\n  preset-drop-in         tt=1  y:[-300,null], opacity:['0%',null]  \u2014 prefer a yPercent preset instead of raw pixel y (see properties field)\n  preset-set-action      tt=3  instant/non-tweened, e.g. {display:'none'}\nA To action animates from whatever value the element already has, so the reveal shapes that carry a start value are tt=2 with opacity:['0%','100%'] and tt=1 with opacity:['0%',null] (action guide, Resting state).\nThere is no preset-grow/preset-shrink. Staggered variants are preset-staggered-fade-in (tt=1), -fade-out (tt=0), -fade-drop-in (tt=1), -fade-fall-out (tt=0), all with stagger:{each:0.05}. staggered-fade-in is tt=1 where fade-in is tt=0, so it carries a start value. Omit this field for a hand-built action that doesn't correspond to one of these \u2014 a Designer-authored or legacy action retrieved via get_interaction may have none, and it's safe to write it back through update_interaction as-is.",
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "targets",
+                    "timing",
+                    "properties"
+                  ],
+                  "additionalProperties": {},
+                  "description": "One timeline action. id, name, targets, timing, properties, and tt are required; a partial action will be rejected with a 'Required' error per missing field. presetId is optional (see its field docs). Extra fields (e.g. color) are passed through unmodified \u2014 Designer-authored actions include fields this thin schema doesn't enumerate."
+                },
+                "description": "Actions that play together in this timeline."
+              }
+            },
+            "required": [
+              "actions"
+            ],
+            "additionalProperties": {},
+            "description": "One inline timeline: a set of actions that play together. Extra fields (e.g. id, groupId, settings, canvasDuration, playInReverse, actionPresetIds on a Designer-authored timeline) are passed through unmodified \u2014 read one back via get_interaction before writing it through update_interaction to avoid dropping them."
+          }
+        },
+        "timelineDefaults": {
+          "description": "The host rejects a non-null value. null clears a stored value; omission leaves it unchanged.",
+          "anyOf": [
+            {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {}
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "conditionalPlayback": {
+          "description": "New conditional playback rules. Pass null to clear; omit to leave unchanged.",
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {}
+              },
+              "description": "Must be an array of conditional playback rules. Each item is `{type:\"prefers-reduced-motion\", behavior:\"dont-animate\"|\"skip-to-end\"}` or `{type:\"breakpoint\", breakpoints:[\"main\"|\"medium\"|\"small\"|\"tiny\"], behavior:\"dont-animate\"|\"skip-to-end\"}`. Omit when unused."
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false,
+      "description": "Update an IX3 interaction by id. Omitted fields unchanged; null clears nullable fields; timelines when provided fully replace. For legal payload shapes, call action guide or read MCP resource webflow://guides/interactions."
+    }
+  },
+  {
+    "id": "data_interactions_tool.delete_interaction",
+    "tool": "data_interactions_tool",
+    "action": "delete_interaction",
+    "area": "interactions",
+    "title": "Interactions (GSAP)",
+    "mode": "delete",
+    "permission": "interactions:delete",
+    "extraPermissions": [
+      "agent_instructions:read"
+    ],
+    "topSite": "siteId",
+    "page": true,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Interaction id to soft-delete"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false,
+      "description": "Soft-delete an IX3 interaction by id (idempotent if already deleted)."
+    }
+  },
+  {
+    "id": "data_apps_tool.get_app",
+    "tool": "data_apps_tool",
+    "action": "get_app",
+    "area": "apps",
+    "title": "Cloud Apps",
+    "mode": "read",
+    "permission": "apps:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "app_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The Webflow Cloud app identifier (project UUID)."
+        }
+      },
+      "required": [
+        "app_id"
+      ],
+      "additionalProperties": false,
+      "description": "Get an app's id, name, description, siteId, appPath, connected GitHub sourceUrl (null for non-GitHub apps), createdAt, deletionMode ('archive' | 'hard_delete'), folderId (the workspace folder it's placed in, or null), and siteAttached (true for site-attached, false for standalone). siteId does not indicate attachment. Site-attached apps also return the parent site's siteName and shortName."
+    }
+  },
+  {
+    "id": "data_apps_tool.get_app_domains",
+    "tool": "data_apps_tool",
+    "action": "get_app_domains",
+    "area": "apps",
+    "title": "Cloud Apps",
+    "mode": "read",
+    "permission": "apps:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "app_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The Webflow Cloud app identifier (project UUID)."
+        },
+        "limit": {
+          "description": "Maximum number of items to return (1-100, default 25).",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "cursor": {
+          "description": "Pagination cursor from the previous page; absent for the first page.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "app_id"
+      ],
+      "additionalProperties": false,
+      "description": "List custom domains for the underlying site. Site-attached apps share the parent site's domains with sibling apps. Excludes *.webflow.io, so this is not every reachable hostname. Returns domains (id, url, lastPublished, fullSiteCompiledAt) and nextCursor; empty is valid."
+    }
+  },
+  {
+    "id": "data_apps_tool.get_deployment",
+    "tool": "data_apps_tool",
+    "action": "get_deployment",
+    "area": "apps",
+    "title": "Cloud Apps",
+    "mode": "read",
+    "permission": "apps:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "app_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The Webflow Cloud app identifier (project UUID)."
+        },
+        "env_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Environment ID (UUID) within the app, from list_environments. The identified environment must contain the deployment specified by deployment_id."
+        },
+        "deployment_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The deployment identifier (from list_deployments)."
+        }
+      },
+      "required": [
+        "app_id",
+        "env_id",
+        "deployment_id"
+      ],
+      "additionalProperties": false,
+      "description": "Returns { deployment }: deployment includes id, status, commitHash, commitMessage, build/deploy timestamps, buildSize, framework, frameworkVersion, and logsAvailable. Failure sets buildFailedAt/deployFailedAt while the matching buildFinishedAt/deployFinishedAt stays null; null alone does not mean running. An unknown or mismatched app, environment, or deployment returns 404."
+    }
+  },
+  {
+    "id": "data_apps_tool.list_apps",
+    "tool": "data_apps_tool",
+    "action": "list_apps",
+    "area": "apps",
+    "title": "Cloud Apps",
+    "mode": "read",
+    "permission": "apps:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "description": "Exact site-ID filter. Together with name, it resolves at most one app.",
+          "type": "string"
+        },
+        "name": {
+          "description": "Exact case-sensitive app-name filter. Together with site_id, it resolves at most one app.",
+          "type": "string"
+        },
+        "q": {
+          "description": "Case-insensitive substring filter on app name, branch, or variable key; IDs and variable values are not searched.",
+          "type": "string"
+        },
+        "limit": {
+          "description": "Maximum number of items to return (1-100, default 25).",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "cursor": {
+          "description": "Pagination cursor from the previous page; absent for the first page.",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "description": "List visible apps. Each returned app matches get_app's app shape. Returns nextCursor; empty is valid. Each app's id is app_id for other actions. Names are unique only within a site; site_id + name resolves at most one app."
+    }
+  },
+  {
+    "id": "data_apps_tool.list_deployments",
+    "tool": "data_apps_tool",
+    "action": "list_deployments",
+    "area": "apps",
+    "title": "Cloud Apps",
+    "mode": "read",
+    "permission": "apps:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "app_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The Webflow Cloud app identifier (project UUID)."
+        },
+        "env_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Environment ID (UUID) within the app, from list_environments."
+        },
+        "status": {
+          "description": "Exact status filter, applied before pagination.",
+          "type": "string",
+          "enum": [
+            "success",
+            "failed",
+            "starting",
+            "building",
+            "deploying",
+            "canceled",
+            "unstaged"
+          ]
+        },
+        "limit": {
+          "description": "Maximum number of items to return (1-100, default 25).",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "cursor": {
+          "description": "Pagination cursor from the previous page; absent for the first page.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "app_id",
+        "env_id"
+      ],
+      "additionalProperties": false,
+      "description": "List deployments newest-first, optionally by status. Returns deployments (id, status, commitHash, commitMessage, build/deploy timeline, buildSize, framework, frameworkVersion, logsAvailable) and nextCursor."
+    }
+  },
+  {
+    "id": "data_apps_tool.list_environments",
+    "tool": "data_apps_tool",
+    "action": "list_environments",
+    "area": "apps",
+    "title": "Cloud Apps",
+    "mode": "read",
+    "permission": "apps:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "app_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The Webflow Cloud app identifier (project UUID)."
+        },
+        "branch": {
+          "description": "Exact case-sensitive branch; resolves to at most one environment.",
+          "type": "string"
+        },
+        "q": {
+          "description": "Case-insensitive substring filter on app name, branch, or variable key; IDs and variable values are not searched.",
+          "type": "string"
+        },
+        "limit": {
+          "description": "Maximum number of items to return (1-100, default 25).",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "cursor": {
+          "description": "Pagination cursor from the previous page; absent for the first page.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "app_id"
+      ],
+      "additionalProperties": false,
+      "description": "List an app's environments. Returns environments (id, branch, mount, publicUrl, latestDeploymentStatus, bindings: [{ id, type, name }]) and nextCursor; empty is valid. Binding id is the Webflow binding record ID, distinct from cloudflareResourceId; name is cloudflareResourceName. Binding types are preserved, including future types; environments without bindings return []. publicUrl is the user-facing environment address, or null when unavailable. latestDeploymentStatus is success, failed, starting, building, deploying, canceled, unstaged, unknown, or null if never deployed."
+    }
+  },
+  {
+    "id": "data_apps_tool.get_build_logs",
+    "tool": "data_apps_tool",
+    "action": "get_build_logs",
+    "area": "app_data",
+    "title": "Cloud logs & variables",
+    "mode": "read",
+    "permission": "app_data:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "app_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The Webflow Cloud app identifier (project UUID)."
+        },
+        "env_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Environment ID (UUID) within the app, from list_environments. The identified environment must contain the deployment specified by deployment_id."
+        },
+        "deployment_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The deployment identifier (from list_deployments)."
+        },
+        "limit": {
+          "description": "Maximum number of logs to return (1-100, default 100).",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "cursor": {
+          "description": "Pagination cursor from the previous page; absent for the first page.",
+          "type": "string"
+        },
+        "since": {
+          "description": "Logs at or after this ISO-8601 datetime.",
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+        },
+        "q": {
+          "description": "Case-sensitive substring filter on log messages.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "app_id",
+        "env_id",
+        "deployment_id"
+      ],
+      "additionalProperties": false,
+      "description": "Get build and/or deploy logs for a deployment, including deploy-only deployments. Logs contain timestamp, message, and phase ('build' | 'deploy'); deploy logs are sanitized, build logs raw. Returns logs and nextCursor; empty is valid. Unavailable logs return an error. unavailableLogStreams identifies phase ('build' | 'deploy') and reason ('incomplete' | 'timeout'). Retryable errors include retryable: true and retryAfterSeconds, the minimum wait before retrying identical deployment ID, filters, and cursor; another 503 remains possible."
+    }
+  },
+  {
+    "id": "data_apps_tool.get_runtime_logs",
+    "tool": "data_apps_tool",
+    "action": "get_runtime_logs",
+    "area": "app_data",
+    "title": "Cloud logs & variables",
+    "mode": "read",
+    "permission": "app_data:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "app_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The Webflow Cloud app identifier (project UUID)."
+        },
+        "env_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Environment ID (UUID) within the app, from list_environments."
+        },
+        "limit": {
+          "description": "Maximum number of logs to return (1-100, default 100).",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "cursor": {
+          "description": "Pagination cursor from the previous page; absent for the first page.",
+          "type": "string"
+        },
+        "since": {
+          "description": "Logs at or after this ISO-8601 datetime.",
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+        },
+        "q": {
+          "description": "Case-sensitive substring filter on log messages.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "app_id",
+        "env_id"
+      ],
+      "additionalProperties": false,
+      "description": "Get unsanitized runtime logs (timestamp and message). Base-plan retention is ~1 hour; since is clamped to it, so older windows return an empty list. Returns logs and nextCursor; no log-level filter."
+    }
+  },
+  {
+    "id": "data_apps_tool.list_variables",
+    "tool": "data_apps_tool",
+    "action": "list_variables",
+    "area": "app_data",
+    "title": "Cloud logs & variables",
+    "mode": "read",
+    "permission": "app_data:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "app_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The Webflow Cloud app identifier (project UUID)."
+        },
+        "env_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Environment ID (UUID) within the app, from list_environments."
+        },
+        "key": {
+          "description": "Exact case-sensitive variable-key filter; at most one variable matches.",
+          "type": "string"
+        },
+        "q": {
+          "description": "Case-insensitive substring filter on app name, branch, or variable key; IDs and variable values are not searched.",
+          "type": "string"
+        },
+        "limit": {
+          "description": "Maximum number of items to return (1-100, default 25).",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "cursor": {
+          "description": "Pagination cursor from the previous page; absent for the first page.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "app_id",
+        "env_id"
+      ],
+      "additionalProperties": false,
+      "description": "List environment variables. Returns variables and nextCursor; non-secret entries include their plaintext value, while secret entries have isSecret true and no value. key is exact; q searches key substrings, never values. Empty is valid."
+    }
+  },
+  {
+    "id": "data_apps_tool.create_app",
+    "tool": "data_apps_tool",
+    "action": "create_app",
+    "area": "apps",
+    "title": "Cloud Apps",
+    "mode": "write",
+    "permission": "apps:write",
+    "extraPermissions": [
+      "agent_instructions:read",
+      "scripts:write",
+      "apps:publish"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 39,
+          "description": "App name (3-39 characters)."
+        },
+        "source_url": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Canonical GitHub repository URL in the form https://github.com/owner/repository, optionally ending in .git. Webflow validates repository access."
+        },
+        "branch": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Git branch. Required to create; updates require branch or mount. Webflow validates its format."
+        },
+        "description": {
+          "description": "App description.",
+          "type": "string"
+        },
+        "site_id": {
+          "description": "Existing site ID from data_sites_tool; omit to create a standalone app and site.",
+          "type": "string",
+          "minLength": 1
+        },
+        "mount": {
+          "description": "App mount path. Standalone apps can only use '/' (the default). Site-attached apps default to '/app' and cannot use '/'. Webflow validates other site-attached paths.",
+          "type": "string",
+          "minLength": 1
+        },
+        "idempotency_key": {
+          "description": "Optional stable printable-ASCII key (1-255 characters) for best-effort deduplication of exact retries of the same operation.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255,
+          "pattern": "^[ -~]+$"
+        },
+        "dry_run": {
+          "default": true,
+          "description": "Whether the action is preview-only. Defaults to true; false executes the mutation.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name",
+        "source_url",
+        "branch"
+      ],
+      "additionalProperties": false,
+      "description": "Create a standalone or site-attached Webflow Cloud app from GitHub and attempt its initial deployment. The default dry_run previews without mutation; false creates the app. Dry runs return siteAttached (true for site-attached, false for standalone); siteId does not indicate attachment. Readable created apps match get_app's app shape."
+    },
+    "channelSchemas": {
+      "beta": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 39,
+            "description": "App name (3-39 characters)."
+          },
+          "source_url": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Canonical GitHub repository URL in the form https://github.com/owner/repository, optionally ending in .git. Webflow validates repository access."
+          },
+          "branch": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Git branch. Required to create; updates require branch or mount. Webflow validates its format."
+          },
+          "description": {
+            "description": "App description.",
+            "type": "string"
+          },
+          "site_id": {
+            "description": "Existing site ID from data_sites_tool; omit to create a standalone app and site.",
+            "type": "string",
+            "minLength": 1
+          },
+          "mount": {
+            "description": "App mount path. Standalone apps can only use '/' (the default). Site-attached apps default to '/app' and cannot use '/'. Webflow validates other site-attached paths.",
+            "type": "string",
+            "minLength": 1
+          },
+          "idempotency_key": {
+            "description": "Optional stable printable-ASCII key (1-255 characters) for best-effort deduplication of exact retries of the same operation.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255,
+            "pattern": "^[ -~]+$"
+          },
+          "dry_run": {
+            "default": true,
+            "description": "Whether the action is preview-only. Defaults to true; false executes the mutation.",
+            "type": "boolean"
+          },
+          "folder_id": {
+            "description": "Workspace folder to place a new standalone app in. Applies only to standalone creates (not site_id); omit to create at the workspace root. Find a folder's id in the dashboard URL's /folder/<id> path segment after opening that folder (e.g. webflow.com/dashboard/folder/<id>?workspace=...).",
+            "type": "string",
+            "minLength": 1
+          },
+          "site_specific_access": {
+            "description": "Access for a new standalone app site. 'everyone' gives all Workspace members access; 'restricted' limits access to admins and explicitly added people. Omit to inherit the Workspace default without requesting an override. An explicit mode that differs from the Workspace default requires permission to manage site membership. Workspaces without site-specific access persist 'everyone'. Invalid with site_id. A dry run returns the explicit accessMode or null but cannot verify the default, entitlement, permission, or persisted result. Execution returns the backend-persisted accessMode or null when unreadable.",
+            "type": "string",
+            "enum": [
+              "everyone",
+              "restricted"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "source_url",
+          "branch"
+        ],
+        "additionalProperties": false,
+        "description": "Create a standalone or site-attached Webflow Cloud app from GitHub and attempt its initial deployment. The default dry_run previews without mutation; false creates the app. Dry runs return siteAttached (true for site-attached, false for standalone); siteId does not indicate attachment. Readable created apps match get_app's app shape."
+      }
+    }
+  },
+  {
+    "id": "data_apps_tool.create_environment",
+    "tool": "data_apps_tool",
+    "action": "create_environment",
+    "area": "apps",
+    "title": "Cloud Apps",
+    "mode": "write",
+    "permission": "apps:write",
+    "extraPermissions": [
+      "agent_instructions:read",
+      "scripts:write",
+      "apps:publish"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "app_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The Webflow Cloud app identifier (project UUID)."
+        },
+        "branch": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Git branch. Required to create; updates require branch or mount. Webflow validates its format."
+        },
+        "mount": {
+          "type": "string",
+          "minLength": 1,
+          "description": "App mount path, such as '/' or '/preview/app'. Required to create; updates require mount or branch. Webflow validates its format."
+        },
+        "idempotency_key": {
+          "description": "Optional stable printable-ASCII key (1-255 characters) for best-effort deduplication of exact retries of the same operation.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255,
+          "pattern": "^[ -~]+$"
+        }
+      },
+      "required": [
+        "app_id",
+        "branch",
+        "mount"
+      ],
+      "additionalProperties": false,
+      "description": "Create an environment mapping a Git branch to an app mount. Immediate; does not deploy code. Mount safety requires siteAttached from get_app: '/' is valid only when false; siteId does not indicate attachment. Duplicate branches or mounts are rejected. An optional idempotency_key provides best-effort deduplication of exact retries. Returns { environment, mountRefreshStatus, message }; environment is null when an accepted response is unreadable; otherwise it matches a list_environments entry, where publicUrl is the user-facing environment address or null when unavailable. mountRefreshStatus is 'queued' | 'failed' | null, and message explains uncertainty or a failed refresh."
+    }
+  },
+  {
+    "id": "data_apps_tool.update_app",
+    "tool": "data_apps_tool",
+    "action": "update_app",
+    "area": "apps",
+    "title": "Cloud Apps",
+    "mode": "write",
+    "permission": "apps:write",
+    "extraPermissions": [
+      "agent_instructions:read",
+      "scripts:write"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "app_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The Webflow Cloud app identifier (project UUID)."
+        },
+        "name": {
+          "description": "New non-empty name; does not rename a site-attached parent site.",
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "description": "New description; pass null (not \"\") to clear it.",
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "source_url": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Canonical GitHub repository URL in the form https://github.com/owner/repository, optionally ending in .git. Webflow validates repository access."
+        }
+      },
+      "required": [
+        "app_id"
+      ],
+      "additionalProperties": false,
+      "description": "Update an app's name, description, and/or GitHub source. Source updates require a user-authorized token; machine tokens return 403. They attach or repoint the repository without changing any environment branch or triggering a deployment. Renaming a standalone app also renames its backing site best-effort; a sync failure keeps the old site name. Site-attached parent names are unchanged. Returns the get_app shape under app, or app: null with a reconciliation message when an accepted response is unreadable."
+    }
+  },
+  {
+    "id": "data_apps_tool.update_environment",
+    "tool": "data_apps_tool",
+    "action": "update_environment",
+    "area": "apps",
+    "title": "Cloud Apps",
+    "mode": "write",
+    "permission": "apps:write",
+    "extraPermissions": [
+      "agent_instructions:read",
+      "scripts:write",
+      "apps:publish"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "app_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The Webflow Cloud app identifier (project UUID)."
+        },
+        "env_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Environment ID (UUID) within the app, from list_environments."
+        },
+        "branch": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Git branch. Required to create; updates require branch or mount. Webflow validates its format."
+        },
+        "mount": {
+          "type": "string",
+          "minLength": 1,
+          "description": "App mount path, such as '/' or '/preview/app'. Required to create; updates require mount or branch. Webflow validates its format."
+        }
+      },
+      "required": [
+        "app_id",
+        "env_id"
+      ],
+      "additionalProperties": false,
+      "description": "Change an environment's Git branch and/or mount. Immediate; does not deploy code; same values are successful no-ops. Mount changes require siteAttached from get_app: '/' is valid only when false; siteId does not indicate attachment. Returns { environment, mountRefreshStatus, message }; environment is null when an accepted response is unreadable; otherwise it matches a list_environments entry, where publicUrl is the user-facing environment address or null when unavailable. mountRefreshStatus is 'queued' | 'failed' | 'skipped' | null, and message explains uncertainty or a failed refresh."
+    }
+  },
+  {
+    "id": "data_apps_tool.delete_app",
+    "tool": "data_apps_tool",
+    "action": "delete_app",
+    "area": "apps",
+    "title": "Cloud Apps",
+    "mode": "delete",
+    "permission": "apps:delete",
+    "extraPermissions": [
+      "agent_instructions:read",
+      "apps:publish"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "app_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The Webflow Cloud app identifier (project UUID)."
+        },
+        "dry_run": {
+          "default": true,
+          "description": "Whether the action is preview-only. Defaults to true; false executes the mutation.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "app_id"
+      ],
+      "additionalProperties": false,
+      "description": "Remove an app. DESTRUCTIVE. The default dry_run previews deletionMode: 'archive' unpublishes and removes it from the dashboard; 'hard_delete' permanently deletes the app and all environments and cannot be undone. dry_run: false executes."
+    }
+  },
+  {
+    "id": "data_apps_tool.delete_environment",
+    "tool": "data_apps_tool",
+    "action": "delete_environment",
+    "area": "apps",
+    "title": "Cloud Apps",
+    "mode": "delete",
+    "permission": "apps:delete",
+    "extraPermissions": [
+      "agent_instructions:read",
+      "apps:publish"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "app_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The Webflow Cloud app identifier (project UUID)."
+        },
+        "env_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Environment ID (UUID) within the app, from list_environments."
+        },
+        "dry_run": {
+          "default": true,
+          "description": "Whether the action is preview-only. Defaults to true; false executes the mutation.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "app_id",
+        "env_id"
+      ],
+      "additionalProperties": false,
+      "description": "Permanently delete an environment, including its worker, KV/D1/R2 storage, deployments, and variables. DESTRUCTIVE and irreversible. The default dry_run previews the target; dry_run: false executes the deletion. The last environment returns 400. Execution returns { dryRun, deleted, app_id, env_id, mountRefreshStatus, message }. After successful deletion, failed/null mountRefreshStatus means the environment was deleted but the routing refresh outcome is uncertain."
+    }
+  },
+  {
+    "id": "data_apps_tool.delete_variable",
+    "tool": "data_apps_tool",
+    "action": "delete_variable",
+    "area": "apps",
+    "title": "Cloud Apps",
+    "mode": "delete",
+    "permission": "apps:delete",
+    "extraPermissions": [
+      "agent_instructions:read"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "app_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The Webflow Cloud app identifier (project UUID)."
+        },
+        "env_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Environment ID (UUID) within the app, from list_environments."
+        },
+        "key": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The environment variable name. Must start with a letter and contain only letters, digits, and underscores."
+        },
+        "dry_run": {
+          "default": true,
+          "description": "Whether the action is preview-only. Defaults to true; false executes the mutation.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "app_id",
+        "env_id",
+        "key"
+      ],
+      "additionalProperties": false,
+      "description": "Delete one environment variable by key. DESTRUCTIVE. The default dry_run reports whether it exists without returning its value; dry_run: false deletes it. A missing key returns 404."
+    }
+  },
+  {
+    "id": "data_apps_tool.redeploy",
+    "tool": "data_apps_tool",
+    "action": "redeploy",
+    "area": "apps",
+    "title": "Cloud Apps",
+    "mode": "publish",
+    "permission": "apps:publish",
+    "extraPermissions": [
+      "agent_instructions:read",
+      "scripts:write"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "app_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The Webflow Cloud app identifier (project UUID)."
+        },
+        "env_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Environment ID (UUID) within the app, from list_environments. The identified environment must contain the deployment specified by deployment_id."
+        },
+        "deployment_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The deployment identifier (from list_deployments)."
+        },
+        "dry_run": {
+          "default": true,
+          "description": "Whether the action is preview-only. Defaults to true; false executes the mutation.",
+          "type": "boolean"
+        },
+        "idempotency_key": {
+          "description": "Optional stable printable-ASCII key (1-255 characters) for best-effort deduplication of exact retries of the same operation.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255,
+          "pattern": "^[ -~]+$"
+        }
+      },
+      "required": [
+        "app_id",
+        "env_id",
+        "deployment_id"
+      ],
+      "additionalProperties": false,
+      "description": "Rebuild and deploy a prior deployment's exact commit for a retry or rollback; GitHub source only. CONSEQUENTIAL. The default dry_run previews the commit; dry_run: false executes. Returns commitHash and status 'queued' or 'processing'; no deployment ID is returned. Wrong app/environment returns 404."
+    }
+  },
+  {
+    "id": "data_apps_tool.trigger_deployment",
+    "tool": "data_apps_tool",
+    "action": "trigger_deployment",
+    "area": "apps",
+    "title": "Cloud Apps",
+    "mode": "publish",
+    "permission": "apps:publish",
+    "extraPermissions": [
+      "agent_instructions:read",
+      "scripts:write"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "app_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The Webflow Cloud app identifier (project UUID)."
+        },
+        "env_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Environment ID (UUID) within the app, from list_environments."
+        },
+        "dry_run": {
+          "default": true,
+          "description": "Whether the action is preview-only. Defaults to true; false executes the mutation.",
+          "type": "boolean"
+        },
+        "idempotency_key": {
+          "description": "Optional stable printable-ASCII key (1-255 characters) for best-effort deduplication of exact retries of the same operation.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255,
+          "pattern": "^[ -~]+$"
+        }
+      },
+      "required": [
+        "app_id",
+        "env_id"
+      ],
+      "additionalProperties": false,
+      "description": "Deploy the connected GitHub branch HEAD; GitHub source only. CONSEQUENTIAL. The default dry_run previews the branch; dry_run: false executes. Returns 'queued', 'skipped' when the branch has no commit, or 'processing' when a request with the same idempotency key is already in flight; no deployment ID is returned."
+    }
+  },
+  {
+    "id": "data_campaigns_tool.get_campaign",
+    "tool": "data_campaigns_tool",
+    "action": "get_campaign",
+    "area": "campaigns",
+    "title": "Campaigns",
+    "mode": "read",
+    "permission": "campaigns:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Campaign Hub site id from list_campaign_hub_sites (not every list_sites id qualifies \u2014 campaign calls return 404 if the workspace lacks campaigns)."
+        },
+        "campaign_id": {
+          "type": "string",
+          "description": "Campaign id."
+        }
+      },
+      "required": [
+        "site_id",
+        "campaign_id"
+      ],
+      "additionalProperties": false,
+      "description": "Get one campaign. Returns id, siteId, name, brief, markdownBrief, state, createdOn, updatedOn, optional landingPage.pageId (absent means no landing page; page present can precede generation finish). state is not generation status \u2014 use get_campaign_task_status. Returns 404 if the campaign does not exist or belongs to a different site."
+    }
+  },
+  {
+    "id": "data_campaigns_tool.get_campaign_task_status",
+    "tool": "data_campaigns_tool",
+    "action": "get_campaign_task_status",
+    "area": "campaigns",
+    "title": "Campaigns",
+    "mode": "read",
+    "permission": "campaigns:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Campaign Hub site id from list_campaign_hub_sites (not every list_sites id qualifies \u2014 campaign calls return 404 if the workspace lacks campaigns)."
+        },
+        "task_id": {
+          "type": "string",
+          "description": "taskId from create_campaign (UUID, not campaign id)."
+        }
+      },
+      "required": [
+        "site_id",
+        "task_id"
+      ],
+      "additionalProperties": false,
+      "description": "Poll async landing-page generation from create_campaign (taskId) until finished/failed. ONLY signal generation is done \u2014 presence in get/list_campaigns or having a landingPage.pageId does not indicate completion. Status: queued/started means poll again (1s, 2s, up to 10s, max 10 min); finished returns campaignId & pageId; failed returns error.message & instruction. After 10 min still in progress is not failed; do not create_campaign again for same job. Returns 404 if the task does not exist, belongs to a different site, or is not a campaign generation task."
+    }
+  },
+  {
+    "id": "data_campaigns_tool.get_engaged_accounts",
+    "tool": "data_campaigns_tool",
+    "action": "get_engaged_accounts",
+    "area": "campaigns",
+    "title": "Campaigns",
+    "mode": "read",
+    "permission": "campaigns:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Campaign Hub site id from list_campaign_hub_sites (not every list_sites id qualifies \u2014 campaign calls return 404 if the workspace lacks campaigns)."
+        },
+        "campaign_id": {
+          "type": "string",
+          "description": "Campaign id."
+        },
+        "start_time": {
+          "type": "string",
+          "description": "UTC ISO 8601 ending in Z (e.g. 2026-04-01T00:00:00Z); no numeric offsets. start_time \u2265 2025-04-09. Window from start_time to end_time \u2264 100 days."
+        },
+        "end_time": {
+          "type": "string",
+          "description": "UTC ISO 8601 ending in Z; \u2265 2025-04-09. Must be > start_time. Window \u2264 100 days."
+        },
+        "sort_by": {
+          "type": "string",
+          "enum": [
+            "companyName",
+            "recentTimestamp",
+            "sessionsCount",
+            "formSubmissionsCount"
+          ],
+          "description": "Sort field for engaged-account rows: 'companyName', 'recentTimestamp', 'sessionsCount', or 'formSubmissionsCount'."
+        },
+        "sort_direction": {
+          "type": "string",
+          "enum": [
+            "ascending",
+            "descending"
+          ],
+          "description": "Sort direction: 'ascending' or 'descending'."
+        },
+        "device_type": {
+          "type": "string",
+          "enum": [
+            "desktop",
+            "mobile",
+            "tablet"
+          ],
+          "description": "Filter to one device type."
+        },
+        "page_variation_id": {
+          "type": "string",
+          "description": "Page variation id to scope analytics (only for campaigns with variations); omit for all variations."
+        }
+      },
+      "required": [
+        "site_id",
+        "campaign_id",
+        "start_time",
+        "end_time",
+        "sort_by",
+        "sort_direction"
+      ],
+      "additionalProperties": false,
+      "description": "Companies that engaged with a campaign landing page. Returns { data: [{ domain, companyName, sessionsCount, usersCount, recentTimestamp, finalStageName, finalValue, formSubmissionsCount }] } (recentTimestamp ISO; companyName may be null). Pass site_id, campaign_id, start_time, end_time, sort_by, sort_direction; optional device_type, page_variation_id. Published site with analytics required; empty data if none. Returns 404 if the campaign does not exist or belongs to a different site."
+    }
+  },
+  {
+    "id": "data_campaigns_tool.get_form_submissions_count",
+    "tool": "data_campaigns_tool",
+    "action": "get_form_submissions_count",
+    "area": "campaigns",
+    "title": "Campaigns",
+    "mode": "read",
+    "permission": "campaigns:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Campaign Hub site id from list_campaign_hub_sites (not every list_sites id qualifies \u2014 campaign calls return 404 if the workspace lacks campaigns)."
+        },
+        "campaign_id": {
+          "type": "string",
+          "description": "Campaign id."
+        },
+        "start_time": {
+          "type": "string",
+          "description": "UTC ISO 8601 ending in Z (e.g. 2026-04-01T00:00:00Z); no numeric offsets. start_time \u2265 2025-04-09. Window from start_time to end_time \u2264 100 days."
+        },
+        "end_time": {
+          "type": "string",
+          "description": "UTC ISO 8601 ending in Z; \u2265 2025-04-09. Must be > start_time. Window \u2264 100 days."
+        },
+        "page_variation_id": {
+          "type": "string",
+          "description": "Page variation id to scope analytics (only for campaigns with variations); omit for all variations."
+        }
+      },
+      "required": [
+        "site_id",
+        "campaign_id",
+        "start_time",
+        "end_time"
+      ],
+      "additionalProperties": false,
+      "description": "Aggregate form submit count for a campaign landing page (Webflow & CRM-attributed). Returns { formSubmissionsCount }. Not individual records \u2014 use data_forms_tool for those. Pass site_id, campaign_id, start_time, end_time; optional page_variation_id. Published site with analytics required; zero is valid. Returns 404 if the campaign does not exist or belongs to a different site."
+    }
+  },
+  {
+    "id": "data_campaigns_tool.get_opportunity_summary",
+    "tool": "data_campaigns_tool",
+    "action": "get_opportunity_summary",
+    "area": "campaigns",
+    "title": "Campaigns",
+    "mode": "read",
+    "permission": "campaigns:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Campaign Hub site id from list_campaign_hub_sites (not every list_sites id qualifies \u2014 campaign calls return 404 if the workspace lacks campaigns)."
+        },
+        "campaign_id": {
+          "type": "string",
+          "description": "Campaign id."
+        },
+        "start_time": {
+          "type": "string",
+          "description": "UTC ISO 8601 ending in Z (e.g. 2026-04-01T00:00:00Z); no numeric offsets. start_time \u2265 2025-04-09. Window from start_time to end_time \u2264 100 days."
+        },
+        "end_time": {
+          "type": "string",
+          "description": "UTC ISO 8601 ending in Z; \u2265 2025-04-09. Must be > start_time. Window \u2264 100 days."
+        },
+        "device_type": {
+          "type": "string",
+          "enum": [
+            "desktop",
+            "mobile",
+            "tablet"
+          ],
+          "description": "Filter to one device type."
+        },
+        "page_variation_id": {
+          "type": "string",
+          "description": "Page variation id to scope analytics (only for campaigns with variations); omit for all variations."
+        }
+      },
+      "required": [
+        "site_id",
+        "campaign_id",
+        "start_time",
+        "end_time"
+      ],
+      "additionalProperties": false,
+      "description": "CRM opportunity totals for campaign landing-page visitors. Returns { totalOpenOpportunityValue, totalClosedWonOpportunityValue, openOpportunityCount, closedWonOpportunityCount }. Pass site_id, campaign_id, start_time, end_time; optional device_type, page_variation_id. Published site with analytics required; zeros valid. Returns 404 if the campaign does not exist or belongs to a different site."
+    }
+  },
+  {
+    "id": "data_campaigns_tool.get_page_variation_suggestions",
+    "tool": "data_campaigns_tool",
+    "action": "get_page_variation_suggestions",
+    "area": "campaigns",
+    "title": "Campaigns",
+    "mode": "read",
+    "permission": "campaigns:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Campaign Hub site id from list_campaign_hub_sites (not every list_sites id qualifies \u2014 campaign calls return 404 if the workspace lacks campaigns)."
+        },
+        "campaign_id": {
+          "type": "string",
+          "description": "Campaign id."
+        }
+      },
+      "required": [
+        "site_id",
+        "campaign_id"
+      ],
+      "additionalProperties": false,
+      "description": "List page variation suggestions. Pass site_id, campaign_id. Returns { suggestions: [{ pageVariationSuggestionId, name, summary }] }. Pass pageVariationSuggestionId as page_variation_suggestion_id to create_page_variation. Returns 404 if the campaign does not exist."
+    }
+  },
+  {
+    "id": "data_campaigns_tool.get_page_variations",
+    "tool": "data_campaigns_tool",
+    "action": "get_page_variations",
+    "area": "campaigns",
+    "title": "Campaigns",
+    "mode": "read",
+    "permission": "campaigns:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Campaign Hub site id from list_campaign_hub_sites (not every list_sites id qualifies \u2014 campaign calls return 404 if the workspace lacks campaigns)."
+        },
+        "campaign_id": {
+          "type": "string",
+          "description": "Campaign id."
+        },
+        "limit": {
+          "description": "Max variations to return (max 100, default 100). Fields always fully returned.",
+          "type": "number",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "offset": {
+          "description": "Skip count for pagination. Use nextOffset from prior response.",
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "site_id",
+        "campaign_id"
+      ],
+      "additionalProperties": false,
+      "description": "List page variations & field matrix. Pass site_id, campaign_id; optional limit/offset. Returns { fields: [{ fieldSlug, name, type }], variations: [{ pageVariationId, name, slug, fieldValues }], pagination, hasMore, nextOffset }. Pagination applies to variations only; all fields always returned. fieldSlug keys feed bulk_update_page_variations. Returns 404 if the campaign does not exist."
+    }
+  },
+  {
+    "id": "data_campaigns_tool.get_time_series",
+    "tool": "data_campaigns_tool",
+    "action": "get_time_series",
+    "area": "campaigns",
+    "title": "Campaigns",
+    "mode": "read",
+    "permission": "campaigns:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Campaign Hub site id from list_campaign_hub_sites (not every list_sites id qualifies \u2014 campaign calls return 404 if the workspace lacks campaigns)."
+        },
+        "campaign_id": {
+          "type": "string",
+          "description": "Campaign id."
+        },
+        "start_time": {
+          "type": "string",
+          "description": "UTC ISO 8601 ending in Z (e.g. 2026-04-01T00:00:00Z); no numeric offsets. start_time \u2265 2025-04-09. Window from start_time to end_time \u2264 100 days."
+        },
+        "end_time": {
+          "type": "string",
+          "description": "UTC ISO 8601 ending in Z; \u2265 2025-04-09. Must be > start_time. Window \u2264 100 days."
+        },
+        "metric_scope": {
+          "type": "string",
+          "enum": [
+            "session",
+            "user",
+            "pageview"
+          ],
+          "description": "Which metric to count: 'session', 'user', or 'pageview'."
+        },
+        "bucket_time_zone": {
+          "type": "string",
+          "description": "IANA time zone for bucket boundaries (e.g. UTC, America/New_York). Bucket timestamps are UTC instants. Defaults to UTC."
+        },
+        "device_type": {
+          "type": "string",
+          "enum": [
+            "desktop",
+            "mobile",
+            "tablet"
+          ],
+          "description": "Filter to one device type."
+        },
+        "page_variation_id": {
+          "type": "string",
+          "description": "Page variation id to scope analytics (only for campaigns with variations); omit for all variations."
+        }
+      },
+      "required": [
+        "site_id",
+        "campaign_id",
+        "start_time",
+        "end_time",
+        "metric_scope"
+      ],
+      "additionalProperties": false,
+      "description": "Daily session/user/pageview series for a campaign landing page. Returns { startTime, endTime, data: [{ date, value }] }. Pass site_id, campaign_id, start_time, end_time, metric_scope ('session'|'user'|'pageview'); optional bucket_time_zone, device_type, page_variation_id. Site must be published with analytics. Empty data = no traffic. On empty-backend HTTP 500, returns { startTime, endTime, data: [], instruction } \u2014 follow instruction, do not retry immediately. Returns 404 if the campaign does not exist or belongs to a different site."
+    }
+  },
+  {
+    "id": "data_campaigns_tool.list_campaign_hub_sites",
+    "tool": "data_campaigns_tool",
+    "action": "list_campaign_hub_sites",
+    "area": "campaigns",
+    "title": "Campaigns",
+    "mode": "read",
+    "permission": "campaigns:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "workspace_id": {
+          "type": "string",
+          "description": "Workspace id from list_sites or get_site (workspaceId)."
+        }
+      },
+      "required": [
+        "workspace_id"
+      ],
+      "additionalProperties": false,
+      "description": "List Campaign Hub sites for a workspace. Returns { campaignSites } with id, name, shortName, createdOn, previewUrl. Site id = site_id for other campaign actions. Not paginated."
+    }
+  },
+  {
+    "id": "data_campaigns_tool.list_campaigns",
+    "tool": "data_campaigns_tool",
+    "action": "list_campaigns",
+    "area": "campaigns",
+    "title": "Campaigns",
+    "mode": "read",
+    "permission": "campaigns:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Campaign Hub site id from list_campaign_hub_sites (not every list_sites id qualifies \u2014 campaign calls return 404 if the workspace lacks campaigns)."
+        },
+        "limit": {
+          "description": "Max campaigns (1\u2013100, default 100).",
+          "type": "number",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "offset": {
+          "description": "Skip count; use nextOffset to continue.",
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "site_id"
+      ],
+      "additionalProperties": false,
+      "description": "List site campaigns (paginated). Returns { campaigns, pagination, hasMore, nextOffset }. Each: id, siteId, name, brief, markdownBrief, state, createdOn, updatedOn, optional landingPage.pageId (absent means no landing page; present can precede generation finish). Appears right after create_campaign. state is not generation status \u2014 use get_campaign_task_status. Default/max limit 100."
+    }
+  },
+  {
+    "id": "data_campaigns_tool.bulk_update_page_variations",
+    "tool": "data_campaigns_tool",
+    "action": "bulk_update_page_variations",
+    "area": "campaigns",
+    "title": "Campaigns",
+    "mode": "write",
+    "permission": "campaigns:write",
+    "extraPermissions": [
+      "agent_instructions:read",
+      "scripts:write"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Campaign Hub site id from list_campaign_hub_sites (not every list_sites id qualifies \u2014 campaign calls return 404 if the workspace lacks campaigns)."
+        },
+        "campaign_id": {
+          "type": "string",
+          "description": "Campaign id."
+        },
+        "variations": {
+          "minItems": 1,
+          "maxItems": 30,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "page_variation_id": {
+                "type": "string",
+                "description": "Page variation id. Discover via get_page_variations or create_page_variation."
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100,
+                "description": "Page variation display name (1\u2013100 chars)."
+              },
+              "slug": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100,
+                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                "description": "URL slug: lowercase kebab-case (a-z, 0-9, -), 1-100 chars; unique on campaign."
+              },
+              "field_values": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {},
+                "description": "Map of fieldSlug to value from get_page_variations.fields (max 30 keys). Valid field types: PlainText/Phone/Email/Link = string; RichText = HTML string; Number = number; Date = ISO string; Color = hex/rgb; Video = { url, metadata? }; ImageRef/FileRef = { url, alt? } where url is a publicly accessible URL or from list_assets."
+              }
+            },
+            "required": [
+              "page_variation_id"
+            ],
+            "additionalProperties": false
+          },
+          "description": "Array of page variation updates (1-30). Duplicate page_variation_id values are rejected."
+        }
+      },
+      "required": [
+        "site_id",
+        "campaign_id",
+        "variations"
+      ],
+      "additionalProperties": false,
+      "description": "Bulk-update page variations (name, slug, and/or field_values). Pass site_id, campaign_id, variations (1\u201330). Entries need unique page_variation_id updating at least one of name/slug/field_values. field_values keys from get_page_variations (\u2264 30 per item). Returns { results }, an array of ok or error rows (NOT_FOUND, VALIDATION_ERROR, INTERNAL_ERROR). Returns 404 if the campaign does not exist."
+    }
+  },
+  {
+    "id": "data_campaigns_tool.create_campaign",
+    "tool": "data_campaigns_tool",
+    "action": "create_campaign",
+    "area": "campaigns",
+    "title": "Campaigns",
+    "mode": "write",
+    "permission": "campaigns:write",
+    "extraPermissions": [
+      "agent_instructions:read",
+      "scripts:write",
+      "pages:write",
+      "assets:write"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Campaign Hub site id from list_campaign_hub_sites (not every list_sites id qualifies \u2014 campaign calls return 404 if the workspace lacks campaigns)."
+        },
+        "markdown_brief": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 10000,
+          "description": "User-confirmed markdown brief (guide Campaigns > markdown_brief); drives page generation."
+        },
+        "campaign_description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 10000,
+          "description": "Short campaign goal/theme."
+        },
+        "asset_ids": {
+          "description": "Optional site asset ids (list_assets) for the generated page.",
+          "maxItems": 30,
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "site_id",
+        "markdown_brief",
+        "campaign_description"
+      ],
+      "additionalProperties": false,
+      "description": "Create a campaign & landing page from a user-confirmed markdown_brief (see webflow_guide_tool Campaigns > markdown_brief). Returns { taskId, statusUrl }; poll get_campaign_task_status with site_id & taskId. Campaign/page appear in get/list immediately but that does not mean page content was generated. On failure, ask before retrying."
+    }
+  },
+  {
+    "id": "data_campaigns_tool.create_page_variation",
+    "tool": "data_campaigns_tool",
+    "action": "create_page_variation",
+    "area": "campaigns",
+    "title": "Campaigns",
+    "mode": "write",
+    "permission": "campaigns:write",
+    "extraPermissions": [
+      "agent_instructions:read",
+      "scripts:write"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Campaign Hub site id from list_campaign_hub_sites (not every list_sites id qualifies \u2014 campaign calls return 404 if the workspace lacks campaigns)."
+        },
+        "campaign_id": {
+          "type": "string",
+          "description": "Campaign id."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "description": "Page variation display name (1\u2013100 chars)."
+        },
+        "slug": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "description": "URL slug: lowercase kebab-case (a-z, 0-9, -), 1-100 chars; unique on campaign."
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000,
+          "description": "Target audience or personalization intent (1-2000 chars)."
+        },
+        "page_variation_suggestion_id": {
+          "type": "string",
+          "description": "Optional suggestion id; marks that suggestion generated. Omit when creating from scratch."
+        }
+      },
+      "required": [
+        "site_id",
+        "campaign_id",
+        "name",
+        "slug",
+        "summary"
+      ],
+      "additionalProperties": false,
+      "description": "Create a page variation. Pass site_id, campaign_id, name, slug (kebab-case, unique on campaign), summary (audience/intent). Optional page_variation_suggestion_id marks that suggestion generated. Returns { pageVariationId, name, slug }."
+    }
+  },
+  {
+    "id": "data_campaigns_tool.personalize_element",
+    "tool": "data_campaigns_tool",
+    "action": "personalize_element",
+    "area": "campaigns",
+    "title": "Campaigns",
+    "mode": "write",
+    "permission": "campaigns:write",
+    "extraPermissions": [
+      "agent_instructions:read",
+      "scripts:write"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Campaign Hub site id from list_campaign_hub_sites (not every list_sites id qualifies \u2014 campaign calls return 404 if the workspace lacks campaigns)."
+        },
+        "campaign_id": {
+          "type": "string",
+          "description": "Campaign id."
+        },
+        "field": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100,
+              "description": "Field display name (1\u2013100 chars)."
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "PlainText",
+                "ImageRef"
+              ],
+              "description": "Field type (only PlainText, ImageRef). PlainText binds only to valueType 'string'|'textContent'; ImageRef binds only to valueType 'image'|'imageAsset'."
+            }
+          },
+          "required": [
+            "name",
+            "type"
+          ],
+          "additionalProperties": false,
+          "description": "Field to create and bind."
+        },
+        "element_id": {
+          "type": "object",
+          "properties": {
+            "component": {
+              "type": "string",
+              "minLength": 1,
+              "description": "element.id.component from query_elements/get_all_elements."
+            },
+            "element": {
+              "type": "string",
+              "minLength": 1,
+              "description": "element.id.element from query_elements/get_all_elements."
+            }
+          },
+          "required": [
+            "component",
+            "element"
+          ],
+          "additionalProperties": false,
+          "description": "Element id { component, element } from query_elements/get_all_elements."
+        },
+        "key": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Element setting key from data_element_settings_tool > get_settings."
+        }
+      },
+      "required": [
+        "site_id",
+        "campaign_id",
+        "field",
+        "element_id",
+        "key"
+      ],
+      "additionalProperties": false,
+      "description": "Create a PlainText or ImageRef campaign field and bind it to a non-component element setting. Pass site_id, campaign_id, field ({ name, type }), element_id, key. Discover via get_all_elements or query_elements; key via get_settings. element_id.component must equal the campaign landing page id \u2014 definition trees (scope_component_id) never qualify. PlainText binds only to valueType 'string'|'textContent'; ImageRef binds only to valueType 'image'|'imageAsset' (canBind alone is insufficient). Not for ComponentInstances (no get_settings). Returns { field: { fieldSlug, name, type } }. 404 if campaign missing."
+    }
+  },
+  {
+    "id": "data_campaigns_tool.personalize_property",
+    "tool": "data_campaigns_tool",
+    "action": "personalize_property",
+    "area": "campaigns",
+    "title": "Campaigns",
+    "mode": "write",
+    "permission": "campaigns:write",
+    "extraPermissions": [
+      "agent_instructions:read",
+      "scripts:write"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Campaign Hub site id from list_campaign_hub_sites (not every list_sites id qualifies \u2014 campaign calls return 404 if the workspace lacks campaigns)."
+        },
+        "campaign_id": {
+          "type": "string",
+          "description": "Campaign id."
+        },
+        "field": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100,
+              "description": "Field display name (1\u2013100 chars)."
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "PlainText",
+                "ImageRef"
+              ],
+              "description": "Field type (only PlainText, ImageRef). PlainText binds only to valueType 'string'|'textContent'; ImageRef binds only to valueType 'image'|'imageAsset'."
+            }
+          },
+          "required": [
+            "name",
+            "type"
+          ],
+          "additionalProperties": false,
+          "description": "Field to create and bind."
+        },
+        "element_id": {
+          "type": "object",
+          "properties": {
+            "component": {
+              "type": "string",
+              "minLength": 1,
+              "description": "element.id.component from query_elements/get_all_elements."
+            },
+            "element": {
+              "type": "string",
+              "minLength": 1,
+              "description": "element.id.element from query_elements/get_all_elements."
+            }
+          },
+          "required": [
+            "component",
+            "element"
+          ],
+          "additionalProperties": false,
+          "description": "Element id { component, element } from query_elements/get_all_elements."
+        },
+        "prop_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Component prop id from query_elements instanceDetails.props[].propId."
+        }
+      },
+      "required": [
+        "site_id",
+        "campaign_id",
+        "field",
+        "element_id",
+        "prop_id"
+      ],
+      "additionalProperties": false,
+      "description": "Create a PlainText or ImageRef campaign field and bind it to a ComponentInstance prop. Pass site_id, campaign_id, field ({ name, type }), element_id, prop_id. Discover instances via get_all_elements or query_elements (type ComponentInstance); prop_id from instanceDetails.props[].propId. PlainText binds only to valueType 'string'|'textContent'; ImageRef binds only to valueType 'image'|'imageAsset' (canBind alone is insufficient). Not for non-component-instance elements. Returns { field: { fieldSlug, name, type } }. Returns 404 if the campaign does not exist."
+    }
+  },
+  {
+    "id": "data_campaigns_tool.update_campaign",
+    "tool": "data_campaigns_tool",
+    "action": "update_campaign",
+    "area": "campaigns",
+    "title": "Campaigns",
+    "mode": "write",
+    "permission": "campaigns:write",
+    "extraPermissions": [
+      "agent_instructions:read",
+      "scripts:write"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Campaign Hub site id from list_campaign_hub_sites (not every list_sites id qualifies \u2014 campaign calls return 404 if the workspace lacks campaigns)."
+        },
+        "campaign_id": {
+          "type": "string",
+          "description": "Campaign id."
+        },
+        "name": {
+          "description": "New name (1\u2013200 chars trimmed). Omit to leave unchanged.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "markdown_brief": {
+          "description": "New markdown brief (max 20k). Empty string clears. Omit to leave unchanged. Does not regenerate page.",
+          "type": "string",
+          "maxLength": 20000
+        }
+      },
+      "required": [
+        "site_id",
+        "campaign_id"
+      ],
+      "additionalProperties": false,
+      "description": "Update campaign metadata (name and/or markdown_brief). Only provided fields change. Does NOT regenerate/republish the landing page. Returns updated campaign. Returns 404 if the campaign does not exist or belongs to a different site."
+    }
+  },
+  {
+    "id": "data_campaigns_tool.update_personalized_field",
+    "tool": "data_campaigns_tool",
+    "action": "update_personalized_field",
+    "area": "campaigns",
+    "title": "Campaigns",
+    "mode": "write",
+    "permission": "campaigns:write",
+    "extraPermissions": [
+      "agent_instructions:read",
+      "scripts:write"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Campaign Hub site id from list_campaign_hub_sites (not every list_sites id qualifies \u2014 campaign calls return 404 if the workspace lacks campaigns)."
+        },
+        "campaign_id": {
+          "type": "string",
+          "description": "Campaign id."
+        },
+        "field_slug": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Field slug from get_page_variations.fields[].fieldSlug, or field.fieldSlug from personalize_property / personalize_element."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "description": "New field display name (1\u2013100 chars). Slug and type are unchanged."
+        }
+      },
+      "required": [
+        "site_id",
+        "campaign_id",
+        "field_slug",
+        "name"
+      ],
+      "additionalProperties": false,
+      "description": "Rename a personalized field's display name. Pass site_id, campaign_id, field_slug (from get_page_variations or personalize_property / personalize_element), and name (1\u2013100 chars). Slug and type cannot change; existing bindings stay valid. Returns { fieldSlug, name, type }. Returns 404 if the campaign or field does not exist."
+    }
+  },
+  {
+    "id": "data_campaigns_tool.delete_campaign",
+    "tool": "data_campaigns_tool",
+    "action": "delete_campaign",
+    "area": "campaigns",
+    "title": "Campaigns",
+    "mode": "delete",
+    "permission": "campaigns:delete",
+    "extraPermissions": [
+      "agent_instructions:read",
+      "pages:delete",
+      "assets:delete"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Campaign Hub site id from list_campaign_hub_sites (not every list_sites id qualifies \u2014 campaign calls return 404 if the workspace lacks campaigns)."
+        },
+        "campaign_id": {
+          "type": "string",
+          "description": "Campaign id."
+        }
+      },
+      "required": [
+        "site_id",
+        "campaign_id"
+      ],
+      "additionalProperties": false,
+      "description": "Permanently delete a campaign, its landing-page record, and generated assets; the underlying Webflow page is archived. Irreversible. Only states: draft, ready-to-publish, no-landing-page, or no-page are deletable \u2014 live, paused, and archived campaigns return 409. Returns 404 if the campaign doesn't exist or belongs to a different site."
+    }
+  },
+  {
+    "id": "data_campaigns_tool.delete_page_variation",
+    "tool": "data_campaigns_tool",
+    "action": "delete_page_variation",
+    "area": "campaigns",
+    "title": "Campaigns",
+    "mode": "delete",
+    "permission": "campaigns:delete",
+    "extraPermissions": [
+      "agent_instructions:read"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Campaign Hub site id from list_campaign_hub_sites (not every list_sites id qualifies \u2014 campaign calls return 404 if the workspace lacks campaigns)."
+        },
+        "campaign_id": {
+          "type": "string",
+          "description": "Campaign id."
+        },
+        "page_variation_id": {
+          "type": "string",
+          "description": "Page variation id. Discover via get_page_variations or create_page_variation."
+        }
+      },
+      "required": [
+        "site_id",
+        "campaign_id",
+        "page_variation_id"
+      ],
+      "additionalProperties": false,
+      "description": "Permanently delete a page variation. Pass site_id, campaign_id, page_variation_id. Irreversible; published variations cannot be deleted. The API returns 204 on success; this action responds with { deleted: true, pageVariationId }. Returns 404 if the campaign or variation does not exist."
+    }
+  },
+  {
+    "id": "data_campaigns_tool.unlink_delete_personalized_field",
+    "tool": "data_campaigns_tool",
+    "action": "unlink_delete_personalized_field",
+    "area": "campaigns",
+    "title": "Campaigns",
+    "mode": "delete",
+    "permission": "campaigns:delete",
+    "extraPermissions": [
+      "agent_instructions:read"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Campaign Hub site id from list_campaign_hub_sites (not every list_sites id qualifies \u2014 campaign calls return 404 if the workspace lacks campaigns)."
+        },
+        "campaign_id": {
+          "type": "string",
+          "description": "Campaign id."
+        },
+        "field_slug": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Field slug from get_page_variations.fields[].fieldSlug, or field.fieldSlug from personalize_property / personalize_element."
+        }
+      },
+      "required": [
+        "site_id",
+        "campaign_id",
+        "field_slug"
+      ],
+      "additionalProperties": false,
+      "description": "Permanently unlink and delete a personalized field. Destructive across all page variations (they share content afterwards). Pass site_id, campaign_id, field_slug (from get_page_variations or personalize_property / personalize_element). Irreversible. The API returns 204 on success; this action responds with { deleted: true, fieldSlug }. Returns 404 if the campaign or field does not exist."
+    }
+  },
+  {
+    "id": "data_members_tool.list_site_members",
+    "tool": "data_members_tool",
+    "action": "list_site_members",
+    "area": "site_access",
+    "title": "Site Access",
+    "mode": "read",
+    "permission": "site_access:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Site id. Discover it with data_sites_tool > list_sites."
+        },
+        "email": {
+          "type": "string",
+          "description": "Return only the member with this exact email address. Omit to list all members."
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "description": "Members per page, 1-100. Defaults to the API default. Values above 100 are rejected."
+        },
+        "cursor": {
+          "type": "string",
+          "minLength": 1,
+          "description": "pagination.nextCursor from a previous response, to fetch the following page. Omit it for the first page, and stop when it comes back null."
+        }
+      },
+      "required": [
+        "site_id"
+      ],
+      "additionalProperties": false,
+      "description": "List the members who have access to a site. Each row carries id, email, firstName, lastName, and roles: roles.site is their site role, roles.siteRoleId names the custom role when roles.site is custom, and roles.workspace is their workspace role. Use it to see who has access today and to read a member's current role before changing it. Paginated: pagination.nextCursor is a string for the next page and null once the listing is exhausted \u2014 it is always present, so null is the end signal, not absence."
+    }
+  },
+  {
+    "id": "data_members_tool.list_site_roles",
+    "tool": "data_members_tool",
+    "action": "list_site_roles",
+    "area": "workspace_members",
+    "title": "Workspace Members",
+    "mode": "read",
+    "permission": "workspace_members:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "workspace_id": {
+          "type": "string",
+          "description": "Workspace id. Discover it with data_workspaces_tool > list_workspaces; a site's workspaceId is on data_sites_tool > list_sites."
+        }
+      },
+      "required": [
+        "workspace_id"
+      ],
+      "additionalProperties": false,
+      "description": "List every site role a workspace can assign: the five built-in roles, then the workspace's custom roles sorted by name. Each entry is the exact siteRole / siteRoleId pair the write actions take. Built-ins carry only siteRole; a custom role has siteRole `custom` plus siteRoleId, name, baseRole and, when set, description. Use it to turn a role name like \"Contractor\" into the site_role_id a write needs, or to resolve a roles.siteRoleId read off a member to its name. Match custom roles on name and built-ins on siteRole \u2014 a custom role can be named \"Marketer\". Not paginated."
+    },
+    "scope": "workspace"
+  },
+  {
+    "id": "data_members_tool.list_workspace_members",
+    "tool": "data_members_tool",
+    "action": "list_workspace_members",
+    "area": "workspace_members",
+    "title": "Workspace Members",
+    "mode": "read",
+    "permission": "workspace_members:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "workspace_id": {
+          "type": "string",
+          "description": "Workspace id. Discover it with data_workspaces_tool > list_workspaces."
+        },
+        "email": {
+          "type": "string",
+          "description": "Return only the member and invite matching this exact email address. Omit to list everyone."
+        },
+        "roles": {
+          "type": "string",
+          "description": "Return only members holding one of these workspace roles, as a comma-separated list \u2014 e.g. \"admin,member\". Accepts owner, admin, member, guest, reviewer, public, client; a value outside that set is rejected. Wider than the set that can be granted (owner, public and client cannot be assigned, but can be filtered on)."
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "description": "Rows per page, 1-100, applied to members and invites separately \u2014 so a page can carry up to twice this many rows. Values above 100 are rejected."
+        },
+        "cursor": {
+          "type": "string",
+          "minLength": 1,
+          "description": "pagination.nextCursor from a previous response, to fetch the following page. It is opaque and covers both lists at once, and it is bound to the filters it was issued under: changing email or roles invalidates it, and a changed query starts without one. Stop when it comes back null."
+        }
+      },
+      "required": [
+        "workspace_id"
+      ],
+      "additionalProperties": false,
+      "description": "List a workspace's members and its invites. Returns two separate lists: members, each with id, email, firstName, lastName, roles (roles.workspace, plus roles.site where one is set), and addedOn (a timestamp, or null for a legacy row with none recorded) \u2014 addedOn is the MOST RECENT join, not member-since: it resets on a remove-and-re-add but not on a role change, and for an invite it is acceptance time, not send time. Invites, each with id, email, role, createdOn and a status of pending, declined or expired \u2014 so the invite list is not only outstanding ones. Pass email to resolve one person to a member id, the lookup step before a site grant when you only have an address. Both lists share one cursor; pagination.nextCursor is null once exhausted and always present, so null is the end signal rather than absence. Filters match on exact email and on roles; there is no search by display name."
+    },
+    "scope": "workspace"
+  },
+  {
+    "id": "data_members_tool.bulk_update_workspace_roles",
+    "tool": "data_members_tool",
+    "action": "bulk_update_workspace_roles",
+    "area": "workspace_members",
+    "title": "Workspace Members",
+    "mode": "write",
+    "permission": "workspace_members:write",
+    "extraPermissions": [
+      "agent_instructions:read"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "workspace_id": {
+          "type": "string",
+          "description": "Workspace id. Discover it with data_workspaces_tool > list_workspaces."
+        },
+        "member_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Member ids to update, from the members list of list_workspace_members. member_ids, invite_ids, or both may be given; at least one id is required, and the two arrays combined cap at 100."
+        },
+        "invite_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Pending invite ids to update, from the invites list of list_workspace_members. Invites are a separate list from members and are identified by their own ids. member_ids and invite_ids combined cap at 100."
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "admin",
+            "member",
+            "reviewer"
+          ],
+          "description": "The workspace role applied to every id in this call. Owner cannot be granted through the API and is not accepted."
+        },
+        "default_site_role": {
+          "type": "string",
+          "enum": [
+            "site_manager",
+            "designer",
+            "marketer",
+            "content_editor",
+            "reviewer",
+            "custom"
+          ],
+          "description": "Required. The site role applied on workspace sites for every id in this call. Required rather than optional because invites cannot derive one: a mixed batch without it would apply every member and then fail every invite."
+        },
+        "default_site_role_id": {
+          "type": "string",
+          "description": "Id of a custom site role, required when default_site_role is `custom` and not valid otherwise. Find it with list_site_roles."
+        }
+      },
+      "required": [
+        "workspace_id",
+        "role",
+        "default_site_role"
+      ],
+      "additionalProperties": false,
+      "description": "Set one workspace role on many members and pending invites at once \u2014 the alternative to repeating update_workspace_role per person. Every id in the call receives the SAME role; different roles require separate calls. Individual ids can fail while others succeed, and the call still returns success with a per-id outcome. Seat checks apply to the whole batch: if it would exceed available seats it is rejected outright and nothing is applied."
+    },
+    "scope": "workspace"
+  },
+  {
+    "id": "data_members_tool.grant_site_access",
+    "tool": "data_members_tool",
+    "action": "grant_site_access",
+    "area": "site_access",
+    "title": "Site Access",
+    "mode": "write",
+    "permission": "site_access:write",
+    "extraPermissions": [
+      "agent_instructions:read"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Site id. Discover it with data_sites_tool > list_sites."
+        },
+        "email": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Email address of the person to grant access to. Use this when you have their email; no lookup is needed first. Mutually exclusive with member_id."
+        },
+        "member_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Member id from list_workspace_members or list_site_members. Mutually exclusive with email."
+        },
+        "site_role": {
+          "type": "string",
+          "enum": [
+            "site_manager",
+            "designer",
+            "marketer",
+            "content_editor",
+            "reviewer",
+            "custom"
+          ],
+          "description": "Site role to assign \u2014 these values match the labels shown in the Webflow dashboard (e.g. `marketer`, `content_editor`). `custom` is valid only together with a site role id."
+        },
+        "site_role_id": {
+          "type": "string",
+          "description": "Id of a custom site role, required when site_role is `custom` and not valid otherwise. Find it with list_site_roles."
+        }
+      },
+      "required": [
+        "site_id",
+        "site_role"
+      ],
+      "additionalProperties": false,
+      "description": "Give a person access to a site with a given site role. Creates the site membership. Provide either email or member_id, not both \u2014 email works without a prior lookup, so the whole grant is one call."
+    }
+  },
+  {
+    "id": "data_members_tool.invite_workspace_member",
+    "tool": "data_members_tool",
+    "action": "invite_workspace_member",
+    "area": "workspace_members",
+    "title": "Workspace Members",
+    "mode": "write",
+    "permission": "workspace_members:write",
+    "extraPermissions": [
+      "agent_instructions:read"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "workspace_id": {
+          "type": "string",
+          "description": "Workspace id. Discover it with data_workspaces_tool > list_workspaces."
+        },
+        "email": {
+          "type": "string",
+          "maxLength": 320,
+          "format": "email",
+          "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
+          "description": "Email address to invite. Pending invites appear in the invites list of list_workspace_members."
+        },
+        "workspace_role": {
+          "type": "string",
+          "enum": [
+            "admin",
+            "member",
+            "reviewer",
+            "client"
+          ],
+          "description": "Workspace role the invitee receives on acceptance. Client creates collaborator client access for exactly one site. Owner cannot be granted through the API and is not accepted."
+        },
+        "default_site_role": {
+          "type": "string",
+          "enum": [
+            "site_manager",
+            "designer",
+            "marketer",
+            "content_editor",
+            "reviewer",
+            "custom"
+          ],
+          "description": "The one site role the invitee gets on every workspace site once they accept. For non-client invites, exactly one of default_site_role or site_access is required. Client invites do not accept this field."
+        },
+        "default_site_role_id": {
+          "type": "string",
+          "description": "Id of a custom site role, required when default_site_role is `custom` and not valid otherwise. Find it with list_site_roles."
+        },
+        "site_access": {
+          "minItems": 1,
+          "maxItems": 100,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "site_id": {
+                "type": "string",
+                "description": "Site id to grant access to. Discover it with data_sites_tool > list_sites."
+              },
+              "site_role": {
+                "type": "string",
+                "enum": [
+                  "site_manager",
+                  "designer",
+                  "marketer",
+                  "content_editor",
+                  "reviewer",
+                  "custom"
+                ],
+                "description": "Site role to grant. Must be identical on every entry \u2014 an invite stores one site role for all its sites."
+              },
+              "site_role_id": {
+                "type": "string",
+                "description": "Id of a custom site role, required when site_role is `custom`; find it with list_site_roles. Must also be identical on every entry."
+              }
+            },
+            "required": [
+              "site_id",
+              "site_role"
+            ],
+            "additionalProperties": false
+          },
+          "description": "Sites to grant the same site role on once the invitee accepts, 1 to 100 entries with no repeated site_id. Every entry must carry the same site_role (and site_role_id). Non-client invites accept site_access instead of default_site_role; client invites require exactly one entry and do not accept default_site_role. An empty array is rejected outright rather than treated as no sites."
+        }
+      },
+      "required": [
+        "workspace_id",
+        "email",
+        "workspace_role"
+      ],
+      "additionalProperties": false,
+      "description": "Invite someone to a workspace by email. For admin, member, and reviewer invites, initial site access must be named exactly one of two ways: default_site_role for the same role on every workspace site, or site_access for the same role on specific sites only (an invite stores one site role, so per-site roles are not possible until the invitee accepts) \u2014 providing both, or neither, is rejected. A client invite creates collaborator client access and requires exactly one site_access entry; default_site_role is not accepted. The response is one of two shapes, told apart by its status field. status 'invited' means an invite was created and the person has NO access until they accept and sign up \u2014 details are under invite. status 'active' means the address already belonged to a workspace member and nothing was created \u2014 details are under member, including their existing addedOn (see list_workspace_members for what it means). Reporting both as added would tell the user someone has access when they have only been asked. Consumes a seat and fails when none are available."
+    },
+    "scope": "workspace"
+  },
+  {
+    "id": "data_members_tool.update_site_role",
+    "tool": "data_members_tool",
+    "action": "update_site_role",
+    "area": "site_access",
+    "title": "Site Access",
+    "mode": "write",
+    "permission": "site_access:write",
+    "extraPermissions": [
+      "agent_instructions:read"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Site id. Discover it with data_sites_tool > list_sites."
+        },
+        "member_id": {
+          "type": "string",
+          "description": "Member id of the existing site member, from list_site_members."
+        },
+        "site_role": {
+          "type": "string",
+          "enum": [
+            "site_manager",
+            "designer",
+            "marketer",
+            "content_editor",
+            "reviewer",
+            "custom"
+          ],
+          "description": "Site role to assign \u2014 these values match the labels shown in the Webflow dashboard (e.g. `marketer`, `content_editor`). `custom` is valid only together with a site role id."
+        },
+        "site_role_id": {
+          "type": "string",
+          "description": "Id of a custom site role, required when site_role is `custom` and not valid otherwise. Find it with list_site_roles."
+        }
+      },
+      "required": [
+        "site_id",
+        "member_id",
+        "site_role"
+      ],
+      "additionalProperties": false,
+      "description": "Change an existing site member's role. The person must already have access \u2014 use grant_site_access to add someone new. Changing to a role with a different seat type can require an available seat."
+    }
+  },
+  {
+    "id": "data_members_tool.update_workspace_role",
+    "tool": "data_members_tool",
+    "action": "update_workspace_role",
+    "area": "workspace_members",
+    "title": "Workspace Members",
+    "mode": "write",
+    "permission": "workspace_members:write",
+    "extraPermissions": [
+      "agent_instructions:read"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "workspace_id": {
+          "type": "string",
+          "description": "Workspace id. Discover it with data_workspaces_tool > list_workspaces."
+        },
+        "member_id": {
+          "type": "string",
+          "description": "Member id of the existing workspace member, from list_workspace_members."
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "admin",
+            "member",
+            "reviewer"
+          ],
+          "description": "New workspace role. Owner cannot be granted through the API and is not accepted."
+        },
+        "default_site_role": {
+          "type": "string",
+          "enum": [
+            "site_manager",
+            "designer",
+            "marketer",
+            "content_editor",
+            "reviewer",
+            "custom"
+          ],
+          "description": "Required. The site role this member gets on workspace sites. Unlike the dashboard this is not optional: omitted, the API would keep the default derived from their previous workspace role, so promoting someone to admin would leave them on a member's site default."
+        },
+        "default_site_role_id": {
+          "type": "string",
+          "description": "Id of a custom site role, required when default_site_role is `custom` and not valid otherwise. Find it with list_site_roles."
+        }
+      },
+      "required": [
+        "workspace_id",
+        "member_id",
+        "role",
+        "default_site_role"
+      ],
+      "additionalProperties": false,
+      "description": "Change one existing workspace member's role. Use bulk_update_workspace_roles for several people at once. Owner cannot be granted through the API, and a role change that alters seat type can require an available seat. Both the workspace role and the default site role are required. The response's addedOn is unchanged by this call \u2014 a role change never resets it; see list_workspace_members for what it means."
+    },
+    "scope": "workspace"
+  },
+  {
+    "id": "data_members_tool.remove_workspace_member",
+    "tool": "data_members_tool",
+    "action": "remove_workspace_member",
+    "area": "workspace_members",
+    "title": "Workspace Members",
+    "mode": "delete",
+    "permission": "workspace_members:delete",
+    "extraPermissions": [
+      "agent_instructions:read"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "workspace_id": {
+          "type": "string",
+          "description": "Workspace id. Discover it with data_workspaces_tool > list_workspaces."
+        },
+        "member_id": {
+          "type": "string",
+          "description": "Member id of the workspace member to remove, from list_workspace_members."
+        }
+      },
+      "required": [
+        "workspace_id",
+        "member_id"
+      ],
+      "additionalProperties": false,
+      "description": "Remove a member from a workspace. This also ends their access to the workspace's sites \u2014 use revoke_site_access to remove access to a single site while keeping workspace membership. Takes effect immediately and cannot be undone through this tool."
+    },
+    "scope": "workspace"
+  },
+  {
+    "id": "data_members_tool.revoke_site_access",
+    "tool": "data_members_tool",
+    "action": "revoke_site_access",
+    "area": "site_access",
+    "title": "Site Access",
+    "mode": "delete",
+    "permission": "site_access:delete",
+    "extraPermissions": [
+      "agent_instructions:read"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Site id. Discover it with data_sites_tool > list_sites."
+        },
+        "email": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Email address of the person to remove. Mutually exclusive with member_id."
+        },
+        "member_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Member id of the site member to remove, from list_site_members. Mutually exclusive with email."
+        }
+      },
+      "required": [
+        "site_id"
+      ],
+      "additionalProperties": false,
+      "description": "Remove a member's access to a site. Provide either email or member_id, not both \u2014 email works without a prior lookup, so the whole revoke is one call. The person keeps their workspace membership; use remove_workspace_member to remove them from the workspace entirely. Takes effect immediately and cannot be undone through this tool."
+    }
+  },
+  {
+    "id": "data_optimize_tool.get_optimization_audience_insights",
+    "tool": "data_optimize_tool",
+    "action": "get_optimization_audience_insights",
+    "area": "optimize",
+    "title": "Optimize",
+    "mode": "read",
+    "permission": "optimize:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "optimizeId": {
+          "type": "string",
+          "description": "Optimize id from list_optimize_resources."
+        },
+        "optimizationId": {
+          "type": "string",
+          "description": "Optimization id from list_optimizations."
+        },
+        "intervalStart": {
+          "type": "string",
+          "description": "Report window start, UTC ISO 8601 ending in Z. The window must lie within one interval from list_optimizations; any sub-range is valid. Interval bounds are exact instants, not day boundaries; a bound rounded out to the day falls outside the interval."
+        },
+        "intervalEnd": {
+          "type": "string",
+          "description": "Report window end, UTC ISO 8601 ending in Z. For an interval with no end (still running), the current time is valid."
+        },
+        "groupBy": {
+          "type": "string",
+          "description": "Dimension id to split results by. The bare urlParameter id is rejected; a listed urlParameter:<name> id works."
+        },
+        "goalId": {
+          "type": "string",
+          "description": "Goal to report on, from the goals of the interval containing the window. Defaults to the first isPrimary (target) goal. The response names the goal used."
+        },
+        "filter": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "pattern": "^[^[\\]]*$"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "in": {
+                "minItems": 1,
+                "maxItems": 50,
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Raw values to keep, 1\u201350."
+              },
+              "nin": {
+                "minItems": 1,
+                "maxItems": 50,
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Raw values to exclude, 1\u201350."
+              }
+            },
+            "additionalProperties": false
+          },
+          "description": "Narrow results by dimension. Keys are dimension ids; in keeps the listed values, nin excludes them. Values are raw values (list_dimension_values value, or an audience-insights segment), not labels. Multiple keys combine with AND."
+        }
+      },
+      "required": [
+        "optimizeId",
+        "optimizationId",
+        "intervalStart",
+        "intervalEnd",
+        "groupBy"
+      ],
+      "additionalProperties": false,
+      "description": "Get per-variation results for one optimization over a report window, split by each value of one dimension. Each segment has segment (raw value, usable in filter), segmentLabel, sessions, users, conversions, conversionRate, value for value goals, and for other goals lift (a fraction) against the base variation in the same segment."
+    }
+  },
+  {
+    "id": "data_optimize_tool.get_optimization_summary",
+    "tool": "data_optimize_tool",
+    "action": "get_optimization_summary",
+    "area": "optimize",
+    "title": "Optimize",
+    "mode": "read",
+    "permission": "optimize:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "optimizeId": {
+          "type": "string",
+          "description": "Optimize id from list_optimize_resources."
+        },
+        "optimizationId": {
+          "type": "string",
+          "description": "Optimization id from list_optimizations."
+        },
+        "intervalStart": {
+          "type": "string",
+          "description": "Report window start, UTC ISO 8601 ending in Z. The window must lie within one interval from list_optimizations; any sub-range is valid. Interval bounds are exact instants, not day boundaries; a bound rounded out to the day falls outside the interval."
+        },
+        "intervalEnd": {
+          "type": "string",
+          "description": "Report window end, UTC ISO 8601 ending in Z. For an interval with no end (still running), the current time is valid."
+        },
+        "goalId": {
+          "type": "string",
+          "description": "Goal to report on, from the goals of the interval containing the window. Defaults to the first isPrimary (target) goal. The response names the goal used."
+        },
+        "filter": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "pattern": "^[^[\\]]*$"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "in": {
+                "minItems": 1,
+                "maxItems": 50,
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Raw values to keep, 1\u201350."
+              },
+              "nin": {
+                "minItems": 1,
+                "maxItems": 50,
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Raw values to exclude, 1\u201350."
+              }
+            },
+            "additionalProperties": false
+          },
+          "description": "Narrow results by dimension. Keys are dimension ids; in keeps the listed values, nin excludes them. Values are raw values (list_dimension_values value, or an audience-insights segment), not labels. Multiple keys combine with AND."
+        }
+      },
+      "required": [
+        "optimizeId",
+        "optimizationId",
+        "intervalStart",
+        "intervalEnd"
+      ],
+      "additionalProperties": false,
+      "description": "Get per-variation results for one optimization over a report window: sessions, users, conversions, conversionRate (a fraction: conversions per session, or per user for user-scoped goals), and value for value goals. comparison is against the isBaseline (base) variation and depends on optimizationType. test: lift (a fraction, 0.19 = +19%; on value for value goals), statisticalSignificance (0\u20131), and isWinner (significance \u2265 0.95 and lift > 0). aiOptimize: strength (0\u20131 probability of beating baseline, conversion-based for every goal). personalize: none."
+    }
+  },
+  {
+    "id": "data_optimize_tool.get_optimization_trend",
+    "tool": "data_optimize_tool",
+    "action": "get_optimization_trend",
+    "area": "optimize",
+    "title": "Optimize",
+    "mode": "read",
+    "permission": "optimize:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "optimizeId": {
+          "type": "string",
+          "description": "Optimize id from list_optimize_resources."
+        },
+        "optimizationId": {
+          "type": "string",
+          "description": "Optimization id from list_optimizations."
+        },
+        "intervalStart": {
+          "type": "string",
+          "description": "Report window start, UTC ISO 8601 ending in Z. The window must lie within one interval from list_optimizations; any sub-range is valid. Interval bounds are exact instants, not day boundaries; a bound rounded out to the day falls outside the interval."
+        },
+        "intervalEnd": {
+          "type": "string",
+          "description": "Report window end, UTC ISO 8601 ending in Z. For an interval with no end (still running), the current time is valid."
+        },
+        "granularity": {
+          "type": "string",
+          "enum": [
+            "daily",
+            "weekly"
+          ],
+          "description": "Bucket size."
+        },
+        "goalId": {
+          "type": "string",
+          "description": "Goal to report on, from the goals of the interval containing the window. Defaults to the first isPrimary (target) goal. The response names the goal used."
+        },
+        "filter": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "pattern": "^[^[\\]]*$"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "in": {
+                "minItems": 1,
+                "maxItems": 50,
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Raw values to keep, 1\u201350."
+              },
+              "nin": {
+                "minItems": 1,
+                "maxItems": 50,
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Raw values to exclude, 1\u201350."
+              }
+            },
+            "additionalProperties": false
+          },
+          "description": "Narrow results by dimension. Keys are dimension ids; in keeps the listed values, nin excludes them. Values are raw values (list_dimension_values value, or an audience-insights segment), not labels. Multiple keys combine with AND."
+        }
+      },
+      "required": [
+        "optimizeId",
+        "optimizationId",
+        "intervalStart",
+        "intervalEnd",
+        "granularity"
+      ],
+      "additionalProperties": false,
+      "description": "Get get_optimization_summary's per-variation rows for each daily or weekly bucket in a report window. Each date is the bucket start as a UTC instant, aligned to the account time zone returned as timeZone. For aiOptimize, strength is the whole-window value repeated in every bucket."
+    }
+  },
+  {
+    "id": "data_optimize_tool.list_dimension_values",
+    "tool": "data_optimize_tool",
+    "action": "list_dimension_values",
+    "area": "optimize",
+    "title": "Optimize",
+    "mode": "read",
+    "permission": "optimize:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "optimizeId": {
+          "type": "string",
+          "description": "Optimize id from list_optimize_resources."
+        },
+        "optimizationId": {
+          "type": "string",
+          "description": "Optimization id from list_optimizations."
+        },
+        "intervalStart": {
+          "type": "string",
+          "description": "Report window start, UTC ISO 8601 ending in Z. The window must lie within one interval from list_optimizations; any sub-range is valid. Interval bounds are exact instants, not day boundaries; a bound rounded out to the day falls outside the interval."
+        },
+        "intervalEnd": {
+          "type": "string",
+          "description": "Report window end, UTC ISO 8601 ending in Z. For an interval with no end (still running), the current time is valid."
+        },
+        "dimension": {
+          "type": "string",
+          "description": "Dimension id from list_optimization_dimensions, e.g. deviceType."
+        },
+        "filter": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "pattern": "^[^[\\]]*$"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "in": {
+                "minItems": 1,
+                "maxItems": 50,
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Raw values to keep, 1\u201350."
+              },
+              "nin": {
+                "minItems": 1,
+                "maxItems": 50,
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Raw values to exclude, 1\u201350."
+              }
+            },
+            "additionalProperties": false
+          },
+          "description": "Narrow results by dimension. Keys are dimension ids; in keeps the listed values, nin excludes them. Values are raw values (list_dimension_values value, or an audience-insights segment), not labels. Multiple keys combine with AND."
+        },
+        "pageSize": {
+          "description": "Values per page, 1\u2013200. Defaults to 100.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
+        },
+        "cursor": {
+          "description": "nextCursor from the previous page. Valid only with the same dimension, window and filter it came from; any other combination is rejected.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "optimizeId",
+        "optimizationId",
+        "intervalStart",
+        "intervalEnd",
+        "dimension"
+      ],
+      "additionalProperties": false,
+      "description": "List the values one dimension took over a report window, most frequent first, one page per call; nextCursor is returned while more remain. value is the raw form filter accepts (e.g. trafficSource DN); label is its display name and may equal value. A null value cannot be filtered on. eventCount is not comparable with session or user counts."
+    }
+  },
+  {
+    "id": "data_optimize_tool.list_optimization_dimensions",
+    "tool": "data_optimize_tool",
+    "action": "list_optimization_dimensions",
+    "area": "optimize",
+    "title": "Optimize",
+    "mode": "read",
+    "permission": "optimize:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "optimizeId": {
+          "type": "string",
+          "description": "Optimize id from list_optimize_resources."
+        },
+        "optimizationId": {
+          "type": "string",
+          "description": "Optimization id from list_optimizations."
+        },
+        "intervalStart": {
+          "type": "string",
+          "description": "Report window start, UTC ISO 8601 ending in Z. The window must lie within one interval from list_optimizations; any sub-range is valid. Interval bounds are exact instants, not day boundaries; a bound rounded out to the day falls outside the interval."
+        },
+        "intervalEnd": {
+          "type": "string",
+          "description": "Report window end, UTC ISO 8601 ending in Z. For an interval with no end (still running), the current time is valid."
+        }
+      },
+      "required": [
+        "optimizeId",
+        "optimizationId",
+        "intervalStart",
+        "intervalEnd"
+      ],
+      "additionalProperties": false,
+      "description": "List the dimensions available to groupBy, filter keys, and list_dimension_values over a report window: id (e.g. deviceType, customAttribute:planType) and display name."
+    }
+  },
+  {
+    "id": "data_optimize_tool.list_optimization_goals",
+    "tool": "data_optimize_tool",
+    "action": "list_optimization_goals",
+    "area": "optimize",
+    "title": "Optimize",
+    "mode": "read",
+    "permission": "optimize:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "optimizeId": {
+          "type": "string",
+          "description": "Optimize id from list_optimize_resources."
+        },
+        "optimizationId": {
+          "type": "string",
+          "description": "Optimization id from list_optimizations."
+        },
+        "intervalStart": {
+          "type": "string",
+          "description": "Report window start, UTC ISO 8601 ending in Z. The window must lie within one interval from list_optimizations; any sub-range is valid. Interval bounds are exact instants, not day boundaries; a bound rounded out to the day falls outside the interval."
+        },
+        "intervalEnd": {
+          "type": "string",
+          "description": "Report window end, UTC ISO 8601 ending in Z. For an interval with no end (still running), the current time is valid."
+        }
+      },
+      "required": [
+        "optimizeId",
+        "optimizationId",
+        "intervalStart",
+        "intervalEnd"
+      ],
+      "additionalProperties": false,
+      "description": "List the goals for one optimization over a report window, isPrimary (target) goals first. Same goals as that interval's goals in list_optimizations."
+    }
+  },
+  {
+    "id": "data_optimize_tool.list_optimizations",
+    "tool": "data_optimize_tool",
+    "action": "list_optimizations",
+    "area": "optimize",
+    "title": "Optimize",
+    "mode": "read",
+    "permission": "optimize:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "optimizeId": {
+          "type": "string",
+          "description": "Optimize id from list_optimize_resources."
+        },
+        "status": {
+          "description": "Statuses to include. Defaults to live and draft. off means stopped or all variations paused. A cursor carries its first page's statuses; a different status alongside it is rejected.",
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "live",
+              "draft",
+              "ready",
+              "archived",
+              "off"
+            ]
+          }
+        },
+        "pageSize": {
+          "description": "Results per page, 1\u2013200. Defaults to 100.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
+        },
+        "cursor": {
+          "description": "nextCursor from the previous page.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "optimizeId"
+      ],
+      "additionalProperties": false,
+      "description": "List an Optimize resource's optimizations with id, name, optimizationType (test: traditional test; aiOptimize: AI-optimized; personalize: manual personalization), status, and intervals. Intervals are listed oldest first, each with its own goals; one with no end is still running. Returns no performance data."
+    }
+  },
+  {
+    "id": "data_optimize_tool.list_optimize_resources",
+    "tool": "data_optimize_tool",
+    "action": "list_optimize_resources",
+    "area": "optimize",
+    "title": "Optimize",
+    "mode": "read",
+    "permission": "optimize:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false,
+      "description": "List the Optimize resources this token can access. Each pairs an optimizeId, which every other action requires, with the resource it belongs to."
+    }
+  },
+  {
+    "id": "data_workspaces_tool.list_workspaces",
+    "tool": "data_workspaces_tool",
+    "action": "list_workspaces",
+    "area": "workspace_discovery",
+    "title": "Workspace discovery",
+    "mode": "read",
+    "permission": "workspace_discovery:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false,
+      "description": "List workspaces accessible to the authenticated user. Returns { workspaces } with id, name, and slug for each workspace, including workspaces that have no sites. Use returned id values as workspace_id for workspace-scoped actions."
+    },
+    "scope": "connection"
+  },
+  {
+    "id": "data_recommendations_tool.update_recommendation_settings",
+    "tool": "data_recommendations_tool",
+    "action": "update_recommendation_settings",
+    "area": "recommendations",
+    "title": "AEO recommendation settings",
+    "mode": "write",
+    "permission": "recommendations:write",
+    "extraPermissions": [
+      "agent_instructions:read"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Unique identifier for the Webflow site. Use data_sites_tool (list_sites) to discover available site IDs."
+        },
+        "ruleConfig": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "enum": [
+              "asset_alt_text_required",
+              "page_title_required",
+              "page_title_length_invalid",
+              "page_title_stale",
+              "page_description_required",
+              "page_description_length_invalid",
+              "page_description_stale",
+              "page_schema_required",
+              "page_schema_stale",
+              "broken_link",
+              "item_recommendation"
+            ]
+          },
+          "additionalProperties": {
+            "type": "boolean"
+          },
+          "description": "Partial map of recommendation rules to enable or disable. Omitted rules stay unchanged. At least one rule is required when this object is sent."
+        },
+        "recurringAuditsEnabled": {
+          "description": "Enable or disable recurring audits.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "site_id"
+      ],
+      "additionalProperties": false,
+      "description": "Partially update a site's AEO recommendation settings. Provide at least one of ruleConfig or recurringAuditsEnabled. Omitted fields stay unchanged. Returns the fully resolved settings document. Requires sites:write. This writes to the live site configuration."
+    }
+  },
+  {
+    "id": "data_apps_tool.create_standalone_app",
+    "tool": "data_apps_tool",
+    "action": "create_app",
+    "area": "standalone_apps",
+    "title": "Standalone Cloud Apps",
+    "mode": "write",
+    "permission": "standalone_apps:write",
+    "extraPermissions": [
+      "agent_instructions:read",
+      "scripts:write",
+      "apps:publish"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 39,
+          "description": "App name (3-39 characters)."
+        },
+        "source_url": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Canonical GitHub repository URL in the form https://github.com/owner/repository, optionally ending in .git. Webflow validates repository access."
+        },
+        "branch": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Git branch. Required to create; updates require branch or mount. Webflow validates its format."
+        },
+        "description": {
+          "description": "App description.",
+          "type": "string"
+        },
+        "mount": {
+          "description": "App mount path. Standalone apps can only use '/' (the default). Site-attached apps default to '/app' and cannot use '/'. Webflow validates other site-attached paths.",
+          "type": "string",
+          "minLength": 1
+        },
+        "idempotency_key": {
+          "description": "Optional stable printable-ASCII key (1-255 characters) for best-effort deduplication of exact retries of the same operation.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255,
+          "pattern": "^[ -~]+$"
+        },
+        "dry_run": {
+          "default": true,
+          "description": "Whether the action is preview-only. Defaults to true; false executes the mutation.",
+          "type": "boolean"
+        },
+        "folder_id": {
+          "description": "Workspace folder to place a new standalone app in. Applies only to standalone creates (not site_id); omit to create at the workspace root. Find a folder's id in the dashboard URL's /folder/<id> path segment after opening that folder (e.g. webflow.com/dashboard/folder/<id>?workspace=...).",
+          "type": "string",
+          "minLength": 1
+        },
+        "site_specific_access": {
+          "description": "Access for a new standalone app site. 'everyone' gives all Workspace members access; 'restricted' limits access to admins and explicitly added people. Omit to inherit the Workspace default without requesting an override. An explicit mode that differs from the Workspace default requires permission to manage site membership. Workspaces without site-specific access persist 'everyone'. Invalid with site_id. A dry run returns the explicit accessMode or null but cannot verify the default, entitlement, permission, or persisted result. Execution returns the backend-persisted accessMode or null when unreadable.",
+          "type": "string",
+          "enum": [
+            "everyone",
+            "restricted"
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "source_url",
+        "branch"
+      ],
+      "additionalProperties": false,
+      "description": "Create a standalone or site-attached Webflow Cloud app from GitHub and attempt its initial deployment. The default dry_run previews without mutation; false creates the app. Dry runs return siteAttached (true for site-attached, false for standalone); siteId does not indicate attachment. Readable created apps match get_app's app shape."
+    },
+    "scope": "connection",
+    "upstreamAlias": true
   }
 ]

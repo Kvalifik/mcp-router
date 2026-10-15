@@ -223,3 +223,11 @@ public/
 !/assets/icons/menubar/MCPRouterUpdateTemplate.png
 !/assets/icons/menubar/MCPRouterUpdateTemplate@2x.png
 !/assets/icons/menubar/MCPRouterUpdateTemplate@3x.png
+
+!/src/project-resources.js
+!/test/upstream-families.test.js
+
+!/scripts/check-release-review.mjs
+!/docs/release-review.json
+
+!/test/release-review.test.js

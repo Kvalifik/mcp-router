@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.8.11 — Complete reviewed Webflow capabilities
+
+- Add GSAP interactions, Cloud Apps, Campaigns, Optimize and site/member access tools on Stable and Beta.
+- Add separate default-off workspace-member and account-wide Beta grants for workspace discovery and standalone app creation, including access/folder controls. Preserve all existing saved grants.
+- Add Beta AEO recommendation settings writes and refresh five Modal element/link schemas on both channels.
+- Verify site, app, campaign, interaction, member and Optimize ownership before dispatch; filter broader discovery responses to approved scope unless account-wide access is explicitly granted.
+- Close screenshot capture sessions gracefully and document the required desktop launch environment.
+- Require recommendations and an explicit coverage report during release review; reject stale or source-mismatched reports in release builds.
+
+Compatibility: 37 Stable and 39 Beta tools reviewed from complete authorized captures.
+No missing classified actions or unexpected schema differences; the existing CMS
+fieldData export correction remains intentional. Utility tools and owner-only site
+inventory remain excluded from agent execution. New writes have synthetic permission
+and ownership coverage; no customer resources were mutated for release testing.
+
+
 ## 0.8.10 — Reliable preparation and clearer Mac setup
 
 - Load enabled project rules and a skill index during preparation; fetch relevant skill bodies on demand instead of downloading every skill.

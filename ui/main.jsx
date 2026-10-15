@@ -275,6 +275,31 @@ function PermissionForm({ model, data, busy, perform, close, connect, refresh })
     <DialogFooter className="shrink-0 border-t pt-4">{!defaults && <Button type="button" variant="outline" size="icon" aria-label={testing?'Testing connection…':testResult==='success'?'Connection test succeeded':testResult==='error'?'Connection test failed — retry':'Test connection'} aria-busy={testing} title={testing?'Testing connection…':testUnavailable || 'Test connection using saved permissions'} disabled={busy || testing || !!testUnavailable} onClick={async()=>{if(testing)return;setTestResult(null);setTesting(true);try{await perform('/api/read-project',{projectId:item.id});setTestResult('success');toast.success(`${item.name}: read succeeded.`);}catch(e){setTestResult('error');toast.error(e.message);}finally{setTesting(false);}}}><AnimatedSwap icon value={testing?'testing':testResult} className="size-4">{testing?<LoaderCircle className="size-4 animate-spin motion-reduce:animate-none" />:testResult==='success'?<Check className="size-4" />:testResult==='error'?<TriangleAlert className="size-4" />:<TestTubeDiagonal className="size-4" />}</AnimatedSwap></Button>}<Button type="button" variant="outline" disabled={busy} onClick={close}>Cancel</Button><Button disabled={busy || requestedChannel!==null || !defaults && !name.trim()}><AnimatedText>{busy?'Saving…':'Save changes'}</AnimatedText></Button></DialogFooter>
   </form>;
 }
+function WorkspacePermissionForm({connection,busy,perform,close}) {
+  const workspaces=[...new Map((connection.sites||[]).filter(site=>site.workspaceId).map(site=>[site.workspaceId,{id:site.workspaceId,name:site.workspaceName||site.workspaceId}])).values()];
+  const [grants,setGrants]=useState(connection.workspacePermissions||{});
+  const [accountGrants,setAccountGrants]=useState(connection.connectionPermissions||{});
+  async function submit(event) {
+    event.preventDefault();
+    try { await perform(`/api/connections/${connection.id}/edit`,{connectionPermissions:accountGrants,workspacePermissions:Object.fromEntries(workspaces.map(w=>[w.id,grants[w.id]||{}]))});toast.success('Workspace permissions saved.');close(); }
+    catch(error){toast.error(error.message);}
+  }
+  return <form className="dialog-form" onSubmit={submit}>
+    <p className="text-sm">Workspace Members permissions apply to the whole workspace, including sites that are disabled in this router. They are separate from each project’s Site Access permissions.</p>
+    <div className="dialog-scroll space-y-4">
+      <fieldset className="rounded-md border p-3 space-y-3"><legend className="px-1 text-sm font-medium">Account-wide · Beta</legend>
+        <p className="text-xs text-muted-foreground">These apply across the selected Webflow connection. Standalone creation creates a new site and attempts deployment in the workspace chosen by Webflow. It can set the new site’s access and folder; project permissions do not limit its destination.</p>
+        {[["workspace_discovery:read","List all accessible workspaces"],["standalone_apps:write","Create and deploy standalone apps and set their access"]].map(([key,label])=><div key={key} className="flex items-center justify-between gap-3"><Label htmlFor={key}>{label}</Label><Switch id={key} aria-label={label} disabled={busy} checked={accountGrants[key]===true} onCheckedChange={value=>setAccountGrants({...accountGrants,[key]:value})}/></div>)}
+      </fieldset>
+      {!workspaces.length&&<p className="text-sm text-muted-foreground">Re-sync projects to discover workspace information before granting access.</p>}
+      {workspaces.map(workspace=><fieldset key={workspace.id} className="rounded-md border p-3 space-y-3"><legend className="px-1 text-sm font-medium">{workspace.name}</legend>
+        {[['read','Read members, invitations and site roles'],['write','Invite members and change workspace roles'],['delete','Remove members from the workspace']].map(([mode,label])=><div key={mode} className="flex items-center justify-between gap-3"><Label htmlFor={`workspace-${workspace.id}-${mode}`} className="text-sm">{label}</Label><Switch id={`workspace-${workspace.id}-${mode}`} aria-label={`${workspace.name}: ${mode}`} disabled={busy} checked={grants[workspace.id]?.[`workspace_members:${mode}`]===true} onCheckedChange={value=>setGrants({...grants,[workspace.id]:{...grants[workspace.id],[`workspace_members:${mode}`]:value}})} /></div>)}
+      </fieldset>)}
+    </div>
+    <p className="text-xs text-muted-foreground">All permissions start off. Webflow must also authorize the selected Stable or Beta connection. Role changes and invitations can consume seats; removing a member ends their access across the workspace.</p>
+    <DialogFooter><Button type="button" variant="outline" disabled={busy} onClick={close}>Cancel</Button><Button disabled={busy}>Save changes</Button></DialogFooter>
+  </form>;
+}
 function ClientConnections() {
   const [clients,setClients] = useState([]), [pending,setPending] = useState(null);
   useEffect(()=>{if(!window.routerDesktop)return;let alive=true;const refresh=()=>window.routerDesktop.clientStatus().then(result=>{if(alive)setClients(result);}).catch(()=>{});refresh();window.addEventListener('focus',refresh);const timer=setInterval(refresh,30000);return()=>{alive=false;clearInterval(timer);window.removeEventListener('focus',refresh);};},[]);
@@ -436,7 +461,7 @@ function App() {
   const issueDescription=displayedModal?.projectId
     ? data.connections.find(c=>c.id===displayedModal.connectionId)?.name
     : issueProjects.length&&visibleIssues.some(i=>!i.pending)?`${issueProjects.filter(p=>readiness.readyProjectIds.includes(p.id)).length} of ${issueProjects.length} enabled projects ready`:data.connections.find(c=>c.id===displayedModal?.connectionId)?.name || 'Review access below.';
-  const titles={issues:visibleIssues.length?(visibleIssues.some(i=>!i.pending)?'Access needs attention':'Checking access'):'Access restored',connect:'Connect your Webflow projects',about:'About MCP Router',rename:'Rename',permissions:'Project settings',defaults:'Default permissions',delete:'Delete from router',diagnostics:'Diagnostics',order:'Reorder connections',channel:'Reconnect Webflow'};
+  const titles={workspace:'Workspace permissions',issues:visibleIssues.length?(visibleIssues.some(i=>!i.pending)?'Access needs attention':'Checking access'):'Access restored',connect:'Connect your Webflow projects',about:'About MCP Router',rename:'Rename',permissions:'Project settings',defaults:'Default permissions',delete:'Delete from router',diagnostics:'Diagnostics',order:'Reorder connections',channel:'Reconnect Webflow'};
   const search=query.trim().toLowerCase();
   const grouped=data.connections.map(c => ({...c,projects:data.projects.filter(p => p.connectionId===c.id).sort((a,b)=>Number(!!b.favourite)-Number(!!a.favourite)||(!a.favourite ? Number(b.enabled)-Number(a.enabled) : 0)||a.name.localeCompare(b.name))})).map(c=>({...c,visible:c.projects.filter(p=>(!pinnedOnly||p.favourite)&&(!search||`${p.name} ${p.sourceName} ${p.shortName} ${c.name}`.toLowerCase().includes(search)))})).filter(c=>pinnedOnly?c.visible.length:!search||c.visible.length||c.name.toLowerCase().includes(search));
   const settingsItems = [
@@ -467,6 +492,7 @@ function App() {
             <ActionMenu trigger={<Button variant="ghost" size="icon" aria-label={`More options for ${c.name}`} title={`More options for ${c.name}`} disabled={busy}><Ellipsis className="size-4" /></Button>} items={[
               ...(c.enabled&&c.tokenFingerprint?[{id:'sync',label:'Sync projects',icon:'RefreshCw',onSelect:()=>action(()=>perform(`/api/connections/${c.id}/check`),`${c.name}: projects updated.`)}]:[]),
               {id:'channel',label:'Reconnect Webflow',icon:'Unplug',onSelect:()=>setModal({type:'channel',item:c})},
+              {id:'workspace',label:'Workspace permissions',icon:'ShieldCheck',onSelect:()=>setModal({type:'workspace',item:c})},
               {id:'rename',label:'Rename',icon:'Pencil',onSelect:()=>setModal({type:'rename',kind:'connections',item:c})},
               {separator:true},
               {id:'delete',label:'Delete',icon:'Trash2',variant:'destructive',onSelect:()=>setModal({type:'delete',kind:'connections',item:c})},
@@ -513,6 +539,7 @@ function App() {
         <GrantComparison connection={data.connections.find(c=>c.id===displayedModal.item.id)} busy={busy} onReconnect={()=>action(async()=>{await connect(displayedModal.item.id,'beta');},'Complete β Beta authorization in your browser.')} />
         <p className="text-xs text-muted-foreground">The default is set in Settings. β Beta uses the existing permission catalog; new or changed tools are not automatically enabled. Router limits do not change access in Webflow or other integrations.</p>
       </div>}
+    {displayedModal?.type==='workspace'&&<WorkspacePermissionForm key={displayedModal.item.id} connection={data.connections.find(c=>c.id===displayedModal.item.id)||displayedModal.item} busy={busy} perform={perform} close={()=>setModal(null)} />}
     {displayedModal?.type==='order'&&<ConnectionOrderForm connections={data.connections} busy={busy} perform={perform} close={()=>setModal(null)} />}
       {displayedModal?.type==='rename'&&<NameForm key={displayedModal.item.id} model={displayedModal} busy={busy} perform={perform} close={closeModal} />}
       {displayedModal?.type==='delete'&&<><p className="text-sm">Permanently remove this connection, its local OAuth credentials and project settings?</p><p className="text-xs text-muted-foreground">This cannot be undone. Webflow sites are not deleted. You can authorize a new connection later.</p><DialogFooter><Button variant="outline" disabled={busy} onClick={()=>setModal(null)}>Cancel</Button><Button variant="destructive" disabled={busy} onClick={()=>action(async()=>{await perform(`/api/${displayedModal.kind}/${displayedModal.item.id}/delete`);setModal(null);},'Connection permanently deleted.')}>Delete connection</Button></DialogFooter></>}
