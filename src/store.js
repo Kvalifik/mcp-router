@@ -65,7 +65,7 @@ export class Store extends EventEmitter {
         clientFingerprint: fingerprint(c.client?.client_id), tokenFingerprint: fingerprint((this.data.settings?.defaultChannel==='beta'?c.beta:c)?.tokens?.access_token),
         hasRefreshToken: !!c.tokens?.refresh_token, tokenVersion: c.tokenVersion || 0,
         expiresAt: c.expiresAt || null, lastChecked: c.lastChecked || null,
-        siteCount: c.sites?.length || 0, sites: c.sites || [], lastError: c.lastError || null
+        siteCount: c.sites?.length || 0, sites: c.sites || [], connectionPermissions:c.connectionPermissions||{},workspacePermissions:c.workspacePermissions||{}, lastError: c.lastError || null
       })),
       projects: Object.values(this.data.projects).filter(p => !p.deletedAt && p.available !== false && !this.data.connections[p.connectionId]?.deletedAt).map(p=>({...p,permissions:permissions(p)})),
       audit: this.data.audit.slice(-30).reverse()

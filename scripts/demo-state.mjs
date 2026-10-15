@@ -1,5 +1,5 @@
 // In-memory behavior for the fictional demo only. No router, OAuth, disk, or network access.
-import { validatePermissions } from '../src/permissions.js';
+import { validatePermissions, validateWorkspacePermissions, validateConnectionPermissions } from '../src/permissions.js';
 import { connectionTestUnavailable } from '../ui/permission-availability.js';
 
 export function createDemoState(seed) {
@@ -55,6 +55,14 @@ export function createDemoState(seed) {
         if (body.dismissNaming) update.needsName = false;
         for (const key of ['enabled', 'favourite']) if (body[key] !== undefined) update[key] = boolean(body[key]);
         if (body.permissions !== undefined) update.permissions = validatePermissions(body.permissions);
+        if (body.connectionPermissions !== undefined) {
+          if(kind!=='connections')throw new Error('Connection permissions belong to a connection');
+          update.connectionPermissions=validateConnectionPermissions(body.connectionPermissions);
+        }
+        if (body.workspacePermissions !== undefined) {
+          if(kind!=='connections')throw new Error('Workspace permissions belong to a connection');
+          update.workspacePermissions=validateWorkspacePermissions(body.workspacePermissions,item.sites||[]);
+        }
         if (body.channel !== undefined) update.channel = body.channel === 'inherit' ? 'inherit' : channel(body.channel);
         Object.assign(item, update);
       } else if (kind !== 'connections') throw new Error('Unsupported demo action');

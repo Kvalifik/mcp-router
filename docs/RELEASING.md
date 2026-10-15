@@ -6,14 +6,16 @@ Dependabot opens grouped patch/minor updates weekly, separating routine dependen
 
 ## Prepare a release
 
-Whenever a new candidate for the release is discovered, flag it to the user before
-including or deferring it. Summarize what changed, its benefit, risk, required
-validation and recommended scope. This applies to dependencies, upstream MCP
-tools and schemas, bug fixes and security updates. Ask for a scope decision unless
-the user has already explicitly decided on that candidate. Continue independent
-checks while waiting, but do not finalize or publish with unresolved scope choices.
-A written deferral alone does not satisfy this requirement. Once a candidate is
-approved for inclusion, routine execution and merges do not need repeated approval.
+Lead with a recommended release scope and do the assessment, rather than asking
+the user to classify every difference. A request for upstream parity authorizes
+routine compatible additions and schema fixes after permission and ownership review.
+Ask a grouped scope question only for materially broader effects, significant
+tradeoffs or unavailable access. Existing scope decisions cover routine execution.
+Every review must show supported, missing, outdated, deliberately excluded, deferred
+and unverified capabilities for both channels, including previous omissions.
+Missing channel access makes the review incomplete: explicitly recommend obtaining
+access or releasing with that limitation and obtain a decision before publication.
+Do not silently defer candidates or use a clean action diff as proof of full coverage.
 
 1. Complete the Webflow MCP compatibility review and review eligible Dependabot PRs using the procedures below, then use `npm version patch --no-git-tag-version` (or minor/major) to update package.json and package-lock.json. Add the matching version entry to CHANGELOG.md.
 2. Merge the version and application changes into main after checks pass.
@@ -242,3 +244,90 @@ reads on Beta, under Analytics read. Recommendation settings writes and unreview
 families are excluded. Schema/channel/targeting changes stop the generator for
 review. Optimize resource discovery is account-wide; do not expose it or trust a
 caller-supplied resource ID without a verified project mapping.
+
+### Interactions and upstream coverage review (2026-10-15)
+
+A complete live Stable `tools/list` capture contained 37 tools. The six
+`data_interactions_tool` actions are now classified under Interactions (GSAP),
+with separate read/write/delete grants. Create/update additionally require custom
+code write; mutations require instruction read and preparation. The upstream
+`webflow://guides/interactions` resource was reviewed for scope, target and payload
+semantics. No site content was changed during discovery. Regenerate this family
+from a freshly reviewed complete Stable snapshot with:
+
+```sh
+python3 scripts/build-catalog.py --refresh-interactions STABLE.json
+```
+
+The generator imports only the six named actions and checks envelope requirements.
+Review schema changes before running it; it is not an automatic approval mechanism.
+Beta had no authorized grant available for this review, so interactions remain
+Stable-only and no Beta parity claim is made.
+
+The follow-up scope explicitly includes the other 56 Stable actions:
+
+| Family | Actions | Router policy |
+| --- | ---: | --- |
+| Apps | 18 | Site-pinned creation, app/environment/deployment ownership, separate Publish and sensitive-data Read grants |
+| Campaigns | 20 | Site/campaign/variation ownership, filtered workspace discovery, page/asset prerequisites |
+| Members | 10 | Four site-access actions plus six workspace actions with separately saved, default-off workspace grants |
+| Optimize | 8 | Filtered account discovery and verified Webflow site/optimization mapping |
+
+Refresh these families and the five reviewed Modal schemas with:
+
+```sh
+python3 scripts/build-catalog.py --refresh-project-tools STABLE.json
+```
+
+This generator has explicit action allowlists, checks envelope requirements, and
+preserves Beta's prior schemas. It does not approve future upstream changes.
+Stable `create_prop`, `update_prop`, `set_component_instance_prop_values`,
+`set_settings`, and `data_element_builder.build` now include modal-link settings
+and the Modal element type. Existing canvas/custom-code prerequisites remain.
+No existing Stable action was removed.
+
+The final Stable comparison has no missing actions, unclassified tools or removed
+actions. Its only schema difference is the deliberate CMS fieldData export
+correction documented above. Do not suppress that difference globally. Utility
+tools and owner-only `list_sites` remain deliberately outside agent execution.
+App creation always attaches to an approved site; account discovery returns only
+project-scoped results. Workspace member operations are the sole explicit
+workspace-wide exception, controlled outside project permissions.
+
+Beta still has no authorized grant available for this review: no new family or
+Modal schema is enabled there and no Beta parity claim is made. The review used
+live schema/guide metadata and synthetic execution fixtures, not mutations of
+customer sites. This dated review is not a substitute for final-commit checks
+before a release.
+
+### Beta coverage follow-up (2026-10-15)
+
+A complete authorized Beta capture contained 39 tools. The reviewed five families
+(62 actions including Interactions) and five Modal schemas now support both channels.
+Beta adds account-wide workspace discovery and standalone Cloud app creation,
+including folder/access controls, under separate default-off connection permissions.
+Standalone creation is an explicit alias of create_app without site_id; Webflow
+chooses the destination workspace and enforces folder/access authorization. It does
+not grant subsequent project access to the created site. Existing create_app remains
+site-pinned. AEO recommendation settings use a separate project write permission.
+The user explicitly included all these capabilities in release scope.
+
+Regenerate with `python3 scripts/build-catalog.py --refresh-beta-tools STABLE.json BETA.json`
+after the Stable family refresh. The generator rejects unreviewed cross-channel
+family differences. Both comparisons retain only the known CMS fieldData correction.
+Utility tools and owner-only list_sites remain excluded by design. No channel is
+unverified in this review. Review metadata and checks again on the release commit.
+
+### Source-bound coverage report
+
+After staging the final source files and completing both channel reviews, run
+`node scripts/check-release-review.mjs --record STABLE.json BETA.json` and stage
+`docs/release-review.json`. This records schema snapshot hashes, tool/operation
+counts, gaps, exclusions and accepted differences without provider payloads.
+The release workflow runs `node scripts/check-release-review.mjs` and rejects a
+missing, stale (over seven days), incomplete or source-mismatched report. The digest
+covers all tracked files except the report itself, so it binds to the final source
+tree without a self-referential commit hash. Any later tracked change requires a
+renewed review. Hashes do not establish review quality: the agent must still inspect
+guides, tool descriptions, envelopes, effects and ownership. The recorder refuses
+unknown differences; changed exclusions require explicit review, never a blind bypass.

@@ -77,7 +77,7 @@ Disabled projects can be tested without enabling them for AI clients. If testing
 the button’s tooltip. It tests a read, not write, delete, or publish access. Enabling a project
 exposes its allowed actions to connected AI clients; review permissions first.
 
-Use the sliders button next to a project to edit its permissions. The searchable matrix covers 27 areas and 223 pinned Webflow actions: site metadata/publishing, CMS, pages and branches, localization, elements/builders, styles, components/props/variants, variables, assets/fonts, custom code, forms, comments, analytics, webhooks, sitemap, enterprise settings, instructions, and Designer sessions/snapshots/uploads.
+Use the sliders button next to a project to edit its permissions. The searchable matrix covers 34 project permission areas. The catalog contains 316 pinned router operations, including six separately controlled workspace actions and two account-wide operations: site metadata/publishing, CMS, pages and branches, localization, elements/builders, styles, components/props/variants, variables, GSAP interactions, assets/fonts, custom code, forms, comments, analytics, Cloud Apps, campaigns, site access, Optimize, webhooks, sitemap, enterprise settings, instructions, and Designer sessions/snapshots/uploads.
 
 Project overview badges show icons for Beta and permission access. Hover or keyboard-focus
 an icon to see its label; click it to open project settings. Icons stay beside the
@@ -97,9 +97,38 @@ turning off Delete and Publish permissions. Presets take effect when you save.
 - Connections expand to show their projects; global search opens matching groups. Enabled projects are listed first. **More options → Sync projects** refreshes project availability for enabled, connected connections; projects cannot be deleted locally. Previously trashed projects return disabled when available.
 - Projects follow their Webflow names until locally renamed. **Use default name** removes an override. Connections use a provider workspace name when available; otherwise their local label is retained and no Webflow default is claimed. Labels can always be overwritten.
 - All changes also require **Instructions → Read** so the agent can load project rules before writing.
+- **Cloud Apps** separates Read, Write, Delete, and Publish. App creation attaches to the selected site and can deploy immediately, so it requires Write, Publish, and Custom code Write. Creating/changing environments can change live routing and also requires Publish. Deploy/redeploy use Publish; app/environment removal also requires Delete. App, environment, and deployment IDs are verified in sequence. Existing standalone apps can be managed only through their approved backing site; standalone creation uses a separate account-wide permission described below.
+- **Cloud logs & variables → Read** is separate from ordinary Cloud Apps Read. It exposes raw logs and non-secret environment-variable values, which may contain sensitive content. Secret variables remain subject to Webflow’s masking. The router does not save these response bodies to its audit log.
+- **Campaigns** has separate Read, Write, and Delete. Writes require Custom code Write; campaign creation also requires Pages Write and Assets Write, and campaign deletion requires Pages Delete and Assets Delete. Campaign, variation, suggestion and landing-page targets stay within the selected site. Campaign Hub discovery returns only the selected site. Creation is asynchronous: inspect task status before considering it complete or retrying.
+- **Site Access** controls reading site members, granting/changing roles, and revoking access to that site. Revoke uses Delete. Workspace-wide membership is controlled separately below.
+- **Optimize → Read** exposes resources and reports for the selected Webflow site only. Account-wide discovery is filtered before returning data; ambiguous resource mappings and external Optimize sites are rejected.
+- **Interactions (GSAP)** exposes guide, list, get, create, update, and delete on Stable and Beta. Read, Write, and Delete are separate grants; saved grants do not automatically gain these permissions. Supply an owned `pageId` even for the guide. Creation and updates also require **Custom code → Write** because IX3 extension payloads contain open property bags; all mutations require preparation and **Instructions → Read**. The router verifies interaction IDs, page scopes and filters, and instance/component targets against the selected project. Library-owned scopes are unsupported. Both Stable and Beta are supported.
 - Canvas editing/building also requires **Custom code → Write**, since element content and settings can contain executable code. The operation catalog reports these extra permission requirements.
 - These categories govern MCP actions. Editing operations can replace values or affect live settings without a separate publish call. Delete does not mean every edit is reversible, and disabling Publish does not make all writes draft-only.
 - Webflow OAuth grants, account roles, paid-plan restrictions, and active Designer/MCP Bridge requirements still apply. The router cannot provide functionality absent from Webflow's MCP server.
+
+### Workspace permissions
+
+Open a connection’s menu → **Workspace permissions** to grant **Workspace Members**
+Read, Write, or Delete for a specific workspace. All start disabled, even when a
+project has Full access. Read includes members, invitations and assignable site
+roles; Write includes invitations and workspace-role changes; Delete removes
+members from the entire workspace. These grants can affect sites that are disabled
+or not individually enabled in the router. Invitations and role changes may consume
+Webflow seats. Use Site Access when the change should affect only one site.
+
+The workspace must appear in the connection’s verified project inventory. Agents
+use an enabled project in that workspace as context for operation discovery and
+preparation, and pass its workspace ID. The router checks the live site-to-workspace
+mapping on the same OAuth grant before execution. Disabling the connection or
+context project blocks these calls. Changing workspace permissions invalidates
+outstanding preparation proofs; grants never transfer to another connection.
+Workspace member operations require an authorized context project. Account-wide discovery can also list workspaces without sites.
+
+Cloud Apps, Campaigns, Site Access, Workspace Members, Optimize, and the refreshed
+Modal element/link schemas are enabled on both Stable and Beta. Webflow’s
+OAuth permissions, plan requirements and member-management admin role still apply;
+router toggles do not grant access at Webflow.
 
 Project search covers both local and original site names. Rename changes local labels. Project settings contain rename, permissions and a test of saved read access. Deleting a connection permanently removes its local credentials and project settings; it does not delete Webflow sites. Existing trashed connections are purged on upgrade.
 
@@ -323,7 +352,7 @@ AEO reports and prompt history on Stable and Beta, plus recommendation reads on
 Beta, also use **Analytics → Read**. The router fixes the site to the selected
 project and checks page/collection references. Webflow entitlement and AI-feature
 gates still apply; availability in the router does not grant an upstream plan
-feature. Recommendation settings writes are not exposed. Optimize reports remain
+feature. Recommendation settings writes require a separate Beta project grant. Optimize reports remain
 unavailable until their account-level resource IDs can be mapped reliably to a
 project.
 
@@ -348,3 +377,14 @@ require project preparation. The router verifies branch membership in the
 selected site's in-progress Releases and verifies an optional origin page.
 These actions and the `create_page.site_branch_id` parameter are unavailable on
 Stable. Page branches remain separate operations.
+
+Beta supports the reviewed GSAP, Cloud Apps, Campaigns, Members and Optimize
+operations and Modal schemas. AEO recommendation settings have a separate project
+write grant. Under Workspace permissions, two default-off **account-wide** connection
+grants allow listing all accessible workspaces and creating standalone Cloud apps.
+Standalone creation can create a site, deploy code and set its folder/access mode in
+the workspace chosen by Webflow; it requires Custom code write and Cloud Apps publish
+on the context project as well as preparation. It does not enable the new project
+in the router. Use `data_apps_tool.create_standalone_app` for this path; regular
+`create_app` always attaches to the approved project. Existing saved project or
+workspace-member permissions never grant these account-wide capabilities.

@@ -2,8 +2,8 @@
 // Renders the current UI against fictional data, never the router or saved accounts.
 import { app, BrowserWindow, nativeTheme, Tray, nativeImage, Menu, screen, ipcMain } from 'electron';
 import { createServer } from 'vite';
-import { writeFile, mkdir, rm, readdir, readFile } from 'node:fs/promises';
-import { mkdtempSync } from 'node:fs';
+import { writeFile, mkdir, readdir, readFile } from 'node:fs/promises';
+import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -21,6 +21,8 @@ const verifyAttention = process.argv.includes('--verify-attention');
 const attentionPreview = process.argv.includes('--attention') || verifyAttention;
 const root = fileURLToPath(new URL('../', import.meta.url));
 const temporary = mkdtempSync(join(tmpdir(), 'mcp-router-screenshots-'));
+// Keep Chromium's profile until shutdown; quit handlers must be synchronous.
+app.once('quit', () => rmSync(temporary, { recursive: true, force: true }));
 app.setPath('userData', join(temporary, 'profile'));
 nativeTheme.themeSource = 'light';
 const keys = GROUPS.flatMap(group => group.modes.map(mode => `${group.area}:${mode}`));
@@ -41,7 +43,7 @@ const data = {
   csrf: 'fictional-demo', permissionGroups: GROUPS, projects, audit: [],
   settings: { defaultChannel: 'stable', defaultPermissions: presetGrants(keys, 'all') },
   connections: [['studio', 'Example Studio'], ['personal', 'Personal Projects']].map(([id, name]) => ({
-    id, name, enabled: true, channel: 'stable', tokenFingerprint: 'fictional-demo',
+    id, name, enabled: true, sites:projects.filter(p=>p.connectionId===id).map(p=>({id:p.siteId,workspaceId:`demo-workspace-${id}`,workspaceName:name})), workspacePermissions:{}, channel: 'stable', tokenFingerprint: 'fictional-demo',
     channels: Object.fromEntries(['stable', 'beta'].map(channel => [channel, {
       authorized: true, status: 'connected', siteIds: projects.filter(p => p.connectionId === id).map(p => p.siteId),
     }])),
@@ -104,12 +106,18 @@ try {
     icons[file.slice(0, -4)] = icon;
   }
   const nativeMenus = new Set();
+  let verificationMenuSelection=null;
   ipcMain.handle('demo-native-menu', (event, request) => {
     if (!allowed(event) || !request || !Number.isFinite(request.x) || !Number.isFinite(request.y)) throw new Error('Denied');
     const owner = BrowserWindow.fromWebContents(event.sender);
     if (nativeMenus.has(owner)) throw new Error('Menu already open');
     let selection = null;
     const menu = Menu.buildFromTemplate(nativeMenusApi.menuTemplate(request.items, id => { selection = id; }, icons));
+    if(verificationMenuSelection) {
+      const id=verificationMenuSelection;verificationMenuSelection=null;
+      if(!request.items.some(item=>item.id===id&&!item.disabled))throw new Error('Verification menu item missing');
+      return id;
+    }
     const [width, height] = owner.getContentSize();
     nativeMenus.add(owner);
     return new Promise((resolve, reject) => {
@@ -208,6 +216,21 @@ try {
     const projectBadge = '[aria-label="Access needs attention for Paper Moon Journal"]';
     const connectionBadge = '[aria-label="Access needs attention for Example Studio"]';
     const dismiss = async () => { await click('[data-slot="dialog-close"]'); await new Promise(resolve=>setTimeout(resolve,250)); };
+    await dismiss();
+    const projectPermissionsBefore=JSON.stringify(demo.state.projects.map(project=>project.permissions));
+    verificationMenuSelection='workspace';
+    await click('[aria-label="More options for Example Studio"]');
+    await waitFor('[aria-label="Example Studio: read"]');
+    await assertUI(`document.querySelector('[role="dialog"]').textContent.includes('including sites that are disabled') && document.querySelector('[aria-label="Example Studio: read"]').getAttribute('aria-checked')==='false'`, 'workspace scope must be explicit and default off');
+    await assertUI(`document.querySelector('[aria-label="List all accessible workspaces"]').getAttribute('aria-checked')==='false' && document.querySelector('[aria-label="Create and deploy standalone apps and set their access"]').getAttribute('aria-checked')==='false'`, 'account-wide grants must default off');
+    await click('[aria-label="List all accessible workspaces"]');
+    await click('[aria-label="Example Studio: read"]');
+    await evaluate(`Array.from(document.querySelectorAll('[role="dialog"] button')).find(button=>button.textContent==='Save changes').click()`);
+    for(let attempt=0;attempt<50&&await evaluate(`!!document.querySelector('[role="dialog"]')`);attempt++)await new Promise(resolve=>setTimeout(resolve,100));
+    if(demo.state.connections[0].workspacePermissions?.['demo-workspace-studio']?.['workspace_members:read']!==true || JSON.stringify(demo.state.projects.map(project=>project.permissions))!==projectPermissionsBefore)throw new Error('Workspace permissions must save independently of project grants');
+    if(demo.state.connections[0].connectionPermissions?.['workspace_discovery:read']!==true)throw new Error('Account-wide grant must save independently');
+    demo.state.connections[0].connectionPermissions={};
+    demo.state.connections[0].workspacePermissions={};
     window.setWindowButtonVisibility(false);
     window.setSize(400, 560);
     await loadDemo();
@@ -315,11 +338,11 @@ try {
   ipcMain.removeHandler('demo-native-menu');
   ipcMain.removeHandler('demo-open-main-window');
   tray?.destroy();
-  popover?.destroy();
-  window?.destroy();
   await server?.close();
-  await rm(temporary, { recursive: true, force: true });
-  app.exit(process.exitCode || 0);
+  // Normal captures follow Electron's graceful window/application lifecycle.
+  // Retain a nonzero exit status for failed automation.
+  if(process.exitCode)app.exit(process.exitCode);
+  else app.quit();
 }
 }
 main().catch(error => { console.error(error); app.exit(1); });

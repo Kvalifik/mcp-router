@@ -112,5 +112,52 @@ creation. Stable cannot accept the Beta-only branch target in page creation.
 
 Site-scoped AEO and recommendation reads use Analytics read. The router injects
 the selected site and rejects site overrides; page and collection filters require
-project ownership. Account-wide Optimize discovery and recommendation settings
-writes are not exposed. Upstream feature entitlements remain required.
+project ownership. Recommendation settings writes require a separate Beta project grant. Optimize discovery is reconstructed
+to include only unambiguous Webflow resources for the selected site. Upstream feature entitlements remain required.
+
+GSAP interactions have explicit read/write/delete grants on both reviewed channels. Create/update also require Custom code write
+because upstream IX3 extension bags are open-ended. Mutations require instruction
+read and preparation. The router injects the site, checks the envelope page,
+verifies existing interaction IDs through paginated site listings, and verifies
+page scopes, visibility filters and component/instance targets. Library-owned
+scopes and incomplete ownership listings fail closed. Saved grants are not expanded.
+
+### Cloud, campaigns, Optimize and member permissions
+
+New tool families are explicitly classified on both channels; existing saved grants
+are retained. Cloud app creation is forced onto the selected site. App,
+environment and deployment ownership is checked through site-filtered, fully
+paginated resource chains. Deployments and routing-affecting changes require Cloud
+Apps Publish; app/environment deletion requires Delete and Publish. Logs and
+variable values require a separate Cloud logs & variables Read permission. No raw
+response bodies are added to audit events.
+
+Campaign IDs are checked against the selected site; variation/field/suggestion IDs
+are verified under that campaign, and personalization is confined to its landing
+page. Campaign creation/deletion also requires page and asset grants. Workspace
+Campaign Hub discovery is verified against the selected site's live workspace and
+reconstructed to include only the selected site. Optimize account discovery is
+reconstructed similarly; external sites and ambiguous Optimize IDs fail closed.
+
+Site Access grants operate on one approved site. Workspace Members grants are a
+separate, owner-managed map on each connection, defaulting to off and excluded from
+project grants and presets. They explicitly authorize workspace-wide member/role
+operations, including effects on sibling sites, and are displayed as such in the
+management UI. An enabled context project and connection, matching inventory
+workspace, live workspace verification, and the selected channel's OAuth grant are
+required. Member/invite IDs and explicitly named invite sites are checked against
+that workspace. Workspace-grant or mapping changes invalidate preparation proofs
+and prevent dispatch/release of in-flight data. These controls preserve project
+isolation for all operations without explicit workspace scope.
+
+
+Beta supports the reviewed GSAP, Cloud Apps, Campaigns, Members and Optimize
+operations and Modal schemas. AEO recommendation settings have a separate project
+write grant. Under Workspace permissions, two default-off **account-wide** connection
+grants allow listing all accessible workspaces and creating standalone Cloud apps.
+Standalone creation can create a site, deploy code and set its folder/access mode in
+the workspace chosen by Webflow; it requires Custom code write and Cloud Apps publish
+on the context project as well as preparation. It does not enable the new project
+in the router. Use `data_apps_tool.create_standalone_app` for this path; regular
+`create_app` always attaches to the approved project. Existing saved project or
+workspace-member permissions never grant these account-wide capabilities.

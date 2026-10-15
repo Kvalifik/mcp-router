@@ -19,6 +19,14 @@ or changed. The script briefly shows an 860 × 640 demo window and uses macOS
 Recording permission may be required. Two demo projects use authorized Beta
 access. The README displays both Retina captures at a maximum width of 720 pixels.
 
+Run Electron with desktop access from the start. In a restricted agent execution
+sandbox, request an approved unsandboxed launch rather than trying a sandboxed
+launch first: an Electron startup abort can trigger macOS's “quit unexpectedly”
+dialog before this script can handle it. Do not disable Chromium's own sandbox.
+Successful captures close the Vite server and use `app.quit()` for normal window
+shutdown, then remove the temporary profile on the `quit` event. Do not kill the
+capture process or remove its profile while Chromium is still using it.
+
 Review both PNGs after regenerating them, especially when layout or permission
 groups change. Demo names and presets live in `scripts/capture-readme.mjs`.
 
@@ -49,3 +57,5 @@ state, including in this preview mode.
 
 For the same interaction checks without replacing screenshots, use
 `npx electron scripts/capture-readme.mjs --verify-attention`.
+This also verifies the connection menu's Workspace permissions dialog, its
+default-off state and scope explanation, and saving without changing project grants.

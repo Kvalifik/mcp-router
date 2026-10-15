@@ -73,14 +73,16 @@ demonstrate a distinct feature and the user requests or agrees to the addition.
 
 ## Dependency review before releases
 
-Whenever release work discovers anything new that could go into the release,
-flag it to the user before deciding to include or defer it. Explain the benefit,
-risk, validation needed and recommendation, then obtain the user's scope decision
-unless that specific candidate is already covered by an explicit decision.
-This includes dependencies, upstream MCP capabilities and schema changes, bugs,
-and security fixes. Continue independent checks while awaiting the decision;
-do not finalize or publish a release with unresolved scope choices. Documenting
-a deferral is not a substitute for flagging the candidate to the user.
+Lead release scope reviews with a concrete recommendation, not a list of decisions
+for the user to solve. Explain the benefit, risk, validation and proposed grouping.
+For requested upstream parity, routine compatible additions and schema fixes are
+in scope: implement them after reviewing permissions and ownership. Ask only when
+a candidate materially expands the authorized scope, introduces a significant
+tradeoff, or requires unavailable access. Group related choices into one recommended
+plan and honor existing authorization; do not ask repeatedly about its execution.
+Never silently omit a candidate: report what was included, explicitly deferred,
+excluded by design, or could not be verified, with reasons and a recommended next step.
+An unavailable channel is an incomplete review, not evidence of compatibility.
 
 Before every release, also perform the Webflow MCP compatibility review in
 `docs/RELEASING.md` for Stable and Beta separately. New operations may reuse

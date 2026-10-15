@@ -1,0 +1,60 @@
+{
+  "version": "0.8.11",
+  "reviewedAt": "2026-10-15T13:10:26.628Z",
+  "sourceDigest": "f71e20db1e28e73c68174a3fea8ba52ec8fa2ed1c44978395246dfec45700116",
+  "channels": {
+    "stable": {
+      "status": "reviewed",
+      "toolCount": 37,
+      "snapshotSha256": "5bc7069c11f9487bef54d0ffeb927238d5c207183d3b26f51dd59368308eeab7",
+      "supportedOperations": 304,
+      "missing": [],
+      "outdated": [],
+      "deferred": [],
+      "unverified": [],
+      "acceptedDifferences": [
+        {
+          "id": "data_cms_tool.create_collection_items",
+          "fields": [
+            "schema"
+          ],
+          "reason": "Reviewed narrow CMS fieldData export correction; custom field slugs remain accepted."
+        }
+      ]
+    },
+    "beta": {
+      "status": "reviewed",
+      "toolCount": 39,
+      "snapshotSha256": "e3174bc95864134e22e1709d34bca9d275ebcc82700c476dfba5df7aa460b033",
+      "supportedOperations": 316,
+      "missing": [],
+      "outdated": [],
+      "deferred": [],
+      "unverified": [],
+      "acceptedDifferences": [
+        {
+          "id": "data_cms_tool.create_collection_items",
+          "fields": [
+            "schema"
+          ],
+          "reason": "Reviewed narrow CMS fieldData export correction; custom field slugs remain accepted."
+        }
+      ]
+    }
+  },
+  "excluded": [
+    {
+      "tools": [
+        "ask_webflow_ai",
+        "get_more_tools",
+        "webflow_guide_tool"
+      ],
+      "reason": "Utility guidance/discovery is handled by the router, not exposed as arbitrary execution."
+    },
+    {
+      "operation": "data_sites_tool.list_sites",
+      "reason": "Owner-managed inventory; agents use approved project discovery."
+    }
+  ],
+  "notes": "Complete paginated captures, guides and envelope differences reviewed locally. No customer mutations used for compatibility testing. New permissions default off for existing grants."
+}

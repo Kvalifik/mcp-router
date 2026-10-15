@@ -66,6 +66,8 @@ jobs:
         with:
           node-version: '22'
           package-manager-cache: false
+      - name: Verify source-bound Webflow review
+        run: node scripts/check-release-review.mjs
       - name: Validate version and release notes
         id: version
         run: |

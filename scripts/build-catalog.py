@@ -1,6 +1,99 @@
 """Build a pinned action catalog from a reviewed Webflow tools/list snapshot."""
 import json,sys,copy
 from pathlib import Path
+if sys.argv[1]=='--refresh-beta-tools':
+ stable,beta=[json.load(open(f)) for f in sys.argv[2:4]]
+ tools={t['name']:t for t in beta};shared={t['name']:t for t in stable}
+ catalog=json.loads(Path('src/catalog.json').read_text())
+ families={'data_apps_tool','data_campaigns_tool','data_members_tool','data_optimize_tool','data_interactions_tool'}
+ modal={'data_component_props_tool.create_prop','data_component_props_tool.update_prop','data_component_props_tool.set_component_instance_prop_values','data_element_settings_tool.set_settings','data_element_builder.build'}
+ def actions(tool):
+  items=tool['inputSchema']['properties']['actions']['items']
+  return {'build':items} if tool['name']=='data_element_builder' else {k:v for variant in items.get('anyOf',[items]) for k,v in variant['properties'].items() if k!='label'}
+ for name in families:
+  old,new=shared[name]['inputSchema'],tools[name]['inputSchema']
+  # Only the two reviewed standalone-create fields may differ from Stable.
+  normalized=copy.deepcopy(new)
+  if name=='data_apps_tool':
+   create=actions({'name':name,'inputSchema':normalized})['create_app']
+   for key in ['folder_id','site_specific_access']:del create['properties'][key]
+  if normalized!=old:raise ValueError('Review new Beta family differences: '+name)
+ for op in catalog:
+  if op['tool'] in families:
+   op['channels']=['stable','beta']
+   schema=actions(tools[op['tool']])[op['action']]
+   if schema!=op['schema']:op.setdefault('channelSchemas',{})['beta']=schema
+   else:op.pop('channelSchemas',None)
+  if op['id'] in modal:
+   schema=actions(tools[op['tool']])[op['action']]
+   if schema!=op.get('channelSchemas',{}).get('stable',op['schema']):raise ValueError('Review new Modal differences')
+   op['schema']=schema;op.pop('channelSchemas',None)
+ def add(tool,action,area,title,mode,scope=None,schema=None,alias=None,extra=None):
+  schema=schema or actions(tools[tool])[action]
+  op={'id':tool+'.'+(alias or action),'tool':tool,'action':action,'area':area,'title':title,'mode':mode,'permission':area+':'+mode,'extraPermissions':extra or ([] if mode=='read' else ['agent_instructions:read']),'topSite':None,'page':False,'builder':False,'direct':False,'channels':['beta'],'schema':schema}
+  if scope:op['scope']=scope
+  if alias:op['upstreamAlias']=True
+  catalog[:]=[o for o in catalog if o['id']!=op['id']];catalog.append(op)
+ add('data_workspaces_tool','list_workspaces','workspace_discovery','Workspace discovery','read','connection')
+ add('data_recommendations_tool','update_recommendation_settings','recommendations','AEO recommendation settings','write')
+ schema=copy.deepcopy(actions(tools['data_apps_tool'])['create_app']);del schema['properties']['site_id']
+ add('data_apps_tool','create_app','standalone_apps','Standalone Cloud Apps','write','connection',schema,'create_standalone_app',['agent_instructions:read','scripts:write','apps:publish'])
+ Path('src/catalog.json').write_text(json.dumps(catalog,indent=2)+'\n')
+ print(len(catalog),'reviewed operations');sys.exit(0)
+if sys.argv[1]=='--refresh-project-tools':
+ source=json.load(open(sys.argv[2]));catalog=json.loads(Path('src/catalog.json').read_text())
+ tools={t['name']:t for t in source}
+ def action_map(tool):
+  items=tool['inputSchema']['properties']['actions']['items']
+  if tool['name']=='data_element_builder':return {'build':items}
+  return {k:v for variant in items.get('anyOf',[items]) for k,v in variant['properties'].items() if k!='label'}
+ reviewed={
+  'data_apps_tool':{'read':['get_app','get_app_domains','get_deployment','list_apps','list_deployments','list_environments','get_build_logs','get_runtime_logs','list_variables'],'write':['create_app','create_environment','update_app','update_environment'],'delete':['delete_app','delete_environment','delete_variable'],'publish':['redeploy','trigger_deployment']},
+  'data_campaigns_tool':{'read':['get_campaign','get_campaign_task_status','get_engaged_accounts','get_form_submissions_count','get_opportunity_summary','get_page_variation_suggestions','get_page_variations','get_time_series','list_campaign_hub_sites','list_campaigns'],'write':['bulk_update_page_variations','create_campaign','create_page_variation','personalize_element','personalize_property','update_campaign','update_personalized_field'],'delete':['delete_campaign','delete_page_variation','unlink_delete_personalized_field']},
+  'data_members_tool':{'read':['list_site_members','list_site_roles','list_workspace_members'],'write':['bulk_update_workspace_roles','grant_site_access','invite_workspace_member','update_site_role','update_workspace_role'],'delete':['remove_workspace_member','revoke_site_access']},
+  'data_optimize_tool':{'read':['get_optimization_audience_insights','get_optimization_summary','get_optimization_trend','list_dimension_values','list_optimization_dimensions','list_optimization_goals','list_optimizations','list_optimize_resources']}}
+ titles={'apps':'Cloud Apps','app_data':'Cloud logs & variables','campaigns':'Campaigns','site_access':'Site Access','workspace_members':'Workspace Members','optimize':'Optimize'}
+ for name,modes in reviewed.items():
+  tool=tools[name];props=tool['inputSchema']['properties'];entries=action_map(tool)
+  if set(tool['inputSchema']['required'])!={'actions','session_id','agent_id','context'} or 'siteId' in props or 'pageId' in props:raise ValueError('Review tool envelope: '+name)
+  if set(entries)!={a for names in modes.values() for a in names}:raise ValueError('Review changed actions: '+name)
+  for mode,names in modes.items():
+   for action in names:
+    schema=entries[action];area={'data_apps_tool':'apps','data_campaigns_tool':'campaigns','data_members_tool':'site_access','data_optimize_tool':'optimize'}[name];scope='project'
+    if name=='data_members_tool' and 'workspace_id' in schema['properties']:area='workspace_members';scope='workspace'
+    if action in ['get_build_logs','get_runtime_logs','list_variables']:area='app_data'
+    extra=[] if mode=='read' else ['agent_instructions:read']
+    if name=='data_apps_tool' and mode in ['write','publish']:extra+=['scripts:write']
+    if action in ['create_app','create_environment','update_environment','delete_app','delete_environment']:extra+=['apps:publish']
+    if name=='data_campaigns_tool' and mode=='write':extra+=['scripts:write']
+    if name=='data_campaigns_tool' and action=='create_campaign':extra+=['pages:write','assets:write']
+    if name=='data_campaigns_tool' and action=='delete_campaign':extra+=['pages:delete','assets:delete']
+    key=name+'.'+action
+    op={'id':key,'tool':name,'action':action,'area':area,'title':titles[area],'mode':mode,'permission':area+':'+mode,'extraPermissions':extra,'topSite':None,'page':False,'builder':False,'direct':False,'channels':['stable'],'schema':schema}
+    if scope=='workspace':op['scope']='workspace'
+    catalog=[o for o in catalog if o['id']!=key];catalog.append(op)
+ # Keep the previous Beta schemas: that grant was unavailable for this review.
+ for key in ['data_component_props_tool.create_prop','data_component_props_tool.update_prop','data_component_props_tool.set_component_instance_prop_values','data_element_settings_tool.set_settings','data_element_builder.build']:
+  name,action=key.split('.');tool=tools[name];op=next(o for o in catalog if o['id']==key)
+  if op['topSite']!=('siteId' if 'siteId' in tool['inputSchema']['properties'] else None) or op['page']!=('pageId' in tool['inputSchema']['properties']):raise ValueError('Review changed targeting: '+key)
+  op.setdefault('channelSchemas',{})['stable']=action_map(tool)[action]
+ Path('src/catalog.json').write_text(json.dumps(catalog,indent=2)+'\n')
+ print(len(catalog),'reviewed operations');sys.exit(0)
+if sys.argv[1]=='--refresh-interactions':
+ source=json.load(open(sys.argv[2]))
+ tool=next(t for t in source if t['name']=='data_interactions_tool')
+ props=tool['inputSchema']['properties']
+ if set(tool['inputSchema']['required'])!={'siteId','pageId','actions','session_id','agent_id','context'}:raise ValueError('Review interaction envelope')
+ entries={k:v for variant in props['actions']['items']['anyOf'] for k,v in variant['properties'].items() if k!='label'}
+ modes={'guide':'read','list_interactions':'read','get_interaction':'read','create_interaction':'write','update_interaction':'write','delete_interaction':'delete'}
+ if set(entries)!=set(modes):raise ValueError('Review changed interaction actions')
+ catalog=json.loads(Path('src/catalog.json').read_text())
+ for action,mode in modes.items():
+  key='data_interactions_tool.'+action
+  op={'id':key,'tool':'data_interactions_tool','action':action,'area':'interactions','title':'Interactions (GSAP)','mode':mode,'permission':'interactions:'+mode,'extraPermissions':(['scripts:write'] if mode=='write' else [])+(['agent_instructions:read'] if mode!='read' else []),'topSite':'siteId','page':True,'builder':False,'direct':False,'channels':['stable'],'schema':entries[action]}
+  catalog=[existing for existing in catalog if existing['id']!=key];catalog.append(op)
+ Path('src/catalog.json').write_text(json.dumps(catalog,indent=2)+'\n')
+ print(len(catalog),'reviewed operations');sys.exit(0)
 # Incremental refresh preserves reviewed permission policy and excludes unrelated
 # new families. Both channel snapshots must agree for shared schema updates.
 if sys.argv[1] in ['--refresh-compatible','--refresh-site-branches','--refresh-site-reads']:
