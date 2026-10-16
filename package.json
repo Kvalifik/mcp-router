@@ -1,6 +1,6 @@
 {
   "name": "mcp-router",
-  "version": "0.8.11",
+  "version": "0.8.12",
   "main": "src/desktop.cjs",
   "private": true,
   "type": "module",
@@ -15,7 +15,8 @@
     "mcp": "node src/stdio.js",
     "test": "node --test test/*.test.js",
     "build:ui": "vite build",
-    "build:desktop": "npm run build:ui && node build.mjs"
+    "build:desktop": "npm run build:ui && node build.mjs",
+    "clean:dist": "python3 scripts/clean-dist.py"
   },
   "dependencies": {
     "@decimalturn/toml-patch": "3.3.0",

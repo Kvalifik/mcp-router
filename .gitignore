@@ -231,3 +231,6 @@ public/
 !/docs/release-review.json
 
 !/test/release-review.test.js
+
+!/scripts/clean-dist.py
+!/test/clean-dist.test.js

@@ -20359,7 +20359,7 @@
         },
         "goalId": {
           "type": "string",
-          "description": "Goal to report on, from the goals of the interval containing the window. Defaults to the first isPrimary (target) goal. The response names the goal used."
+          "description": "Goal to report on, from the goals of the interval containing the window or from currentGoals. Defaults to the first isPrimary (target) goal. The response names the goal used."
         },
         "filter": {
           "type": "object",
@@ -20443,7 +20443,7 @@
         },
         "goalId": {
           "type": "string",
-          "description": "Goal to report on, from the goals of the interval containing the window. Defaults to the first isPrimary (target) goal. The response names the goal used."
+          "description": "Goal to report on, from the goals of the interval containing the window or from currentGoals. Defaults to the first isPrimary (target) goal. The response names the goal used."
         },
         "filter": {
           "type": "object",
@@ -20534,7 +20534,7 @@
         },
         "goalId": {
           "type": "string",
-          "description": "Goal to report on, from the goals of the interval containing the window. Defaults to the first isPrimary (target) goal. The response names the goal used."
+          "description": "Goal to report on, from the goals of the interval containing the window or from currentGoals. Defaults to the first isPrimary (target) goal. The response names the goal used."
         },
         "filter": {
           "type": "object",
@@ -20765,7 +20765,7 @@
         "intervalEnd"
       ],
       "additionalProperties": false,
-      "description": "List the goals for one optimization over a report window, isPrimary (target) goals first. Same goals as that interval's goals in list_optimizations."
+      "description": "List the goals for one optimization over a report window. Returns the same goals and currentGoals as list_optimizations, for just that optimization and window."
     }
   },
   {
@@ -20822,7 +20822,7 @@
         "optimizeId"
       ],
       "additionalProperties": false,
-      "description": "List an Optimize resource's optimizations with id, name, optimizationType (test: traditional test; aiOptimize: AI-optimized; personalize: manual personalization), status, and intervals. Intervals are listed oldest first, each with its own goals; one with no end is still running. Returns no performance data."
+      "description": "List an Optimize resource's optimizations with id, name, optimizationType (test: traditional test; aiOptimize: AI-optimized; personalize: manual personalization), status, and intervals. Intervals are listed oldest first, each with its own goals as they were then; one with no end is still running. Each optimization also has currentGoals, its goals as they are now, including goals its intervals don't list. Each currentGoal has a source: site (applies to every optimization on the site), existing (a goal that is not a site goal, added to this optimization or chosen as its target), or optimization (created in it). Returns no performance data."
     }
   },
   {

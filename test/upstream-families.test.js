@@ -145,6 +145,53 @@ test('Optimize reports verify optimization membership, including archived optimi
  await assert.rejects(f.read('data_optimize_tool.get_optimization_summary',{...params,optimizationId:'foreign'}));
 });
 
+test('Optimize membership follows cursors and rejects incomplete or malformed listings before reading reports',async t=>{
+ const f=fixture(t);f.grant(['optimize:read']);
+ const params={optimizeId:'optimize',optimizationId:'optimization',intervalStart:'2026-10-01T00:00:00Z',intervalEnd:'2026-10-02T00:00:00Z'};
+ f.setIntercept((tool,action,p)=>action==='list_optimizations'?envelope(action,p.cursor?{optimizations:[{optimizationId:'optimization'}],nextCursor:null}:{optimizations:[],nextCursor:'next'}):undefined);
+ await f.read('data_optimize_tool.get_optimization_summary',params);
+ assert.deepEqual(f.calls.filter(c=>c.action==='list_optimizations').map(c=>c.params.cursor),[undefined,'next']);
+ for(const result of [{optimizations:[],nextCursor:'repeat'},{optimizations:[],nextCursor:42},{unexpected:[]}]) {
+  f.setIntercept((tool,action)=>action==='list_optimizations'?envelope(action,result):undefined);
+  const before=f.calls.filter(c=>c.action==='get_optimization_summary').length;
+  await assert.rejects(f.read('data_optimize_tool.get_optimization_summary',params));
+  assert.equal(f.calls.filter(c=>c.action==='get_optimization_summary').length,before);
+ }
+});
+
+test('Optimize discovery filters the final response and strips alternative response channels',async t=>{
+ const f=fixture(t);f.grant(['optimize:read']);let reads=0;
+ f.setIntercept((tool,action)=>{
+  if(action!=='list_optimize_resources')return;
+  reads++;
+  const references=reads===1?[{optimizeId:'optimize',resource:{type:'webflow-site',siteId:'site'}}]:[
+   {optimizeId:'optimize',resource:{type:'webflow-site',siteId:'foreign-site'}},
+   {optimizeId:'owned',resource:{type:'webflow-site',siteId:'site'}}
+  ];
+  return {...envelope(action,{references}),structuredContent:{private:'foreign-site'},content:[{type:'text',text:'foreign-site'},...envelope(action,{references}).content]};
+ });
+ const result=await f.read('data_optimize_tool.list_optimize_resources');
+ assert.equal(reads,2);
+ assert(!JSON.stringify(result).includes('foreign-site'));
+ assert.deepEqual(JSON.parse(result.content[0].text).result.references,[{optimizeId:'owned',resource:{type:'webflow-site',siteId:'site'}}]);
+ assert.equal(result.structuredContent,undefined);
+});
+
+test('Optimize requires its own read grant on both channels and withholds results after revocation',async t=>{
+ for(const channel of ['stable','beta']) {
+  const f=fixture(t);f.c.beta={tokens:{access_token:'synthetic-beta'},sites:f.c.sites};f.store.data.projects.project.channel=channel;
+  f.grant(['analyze:read']);
+  await assert.rejects(f.read('data_optimize_tool.list_optimize_resources'),/Optimize/);
+  assert.equal(f.calls.length,0);
+  f.grant(['optimize:read']);
+  await f.read('data_optimize_tool.list_optimizations',{optimizeId:'optimize'});
+  f.setIntercept((tool,action)=>{
+   if(action==='list_optimizations') {f.grant([]);return envelope(action,{optimizations:[],nextCursor:null});}
+  });
+  await assert.rejects(f.read('data_optimize_tool.list_optimizations',{optimizeId:'optimize'}),/policy changed/);
+ }
+});
+
 test('workspace grants are owner-managed, separate from projects, and bound to a verified workspace',async t=>{
  const f=fixture(t);f.grant(PERMISSIONS);
  const op='data_members_tool.list_workspace_members';

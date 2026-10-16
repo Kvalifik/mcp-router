@@ -1,12 +1,12 @@
 {
-  "version": "0.8.11",
-  "reviewedAt": "2026-10-15T13:10:26.628Z",
-  "sourceDigest": "f71e20db1e28e73c68174a3fea8ba52ec8fa2ed1c44978395246dfec45700116",
+  "version": "0.8.12",
+  "reviewedAt": "2026-10-16T07:58:21.313Z",
+  "sourceDigest": "38a0f1c262ae032c326538cd34044cdd65c35a204bf75caaaa8f21a2928c5205",
   "channels": {
     "stable": {
       "status": "reviewed",
       "toolCount": 37,
-      "snapshotSha256": "5bc7069c11f9487bef54d0ffeb927238d5c207183d3b26f51dd59368308eeab7",
+      "snapshotSha256": "f6dd4922c9bffc4cb40be4aa438b567e8bc9af0c196fd5ecc0ddfb8317998715",
       "supportedOperations": 304,
       "missing": [],
       "outdated": [],
@@ -25,7 +25,7 @@
     "beta": {
       "status": "reviewed",
       "toolCount": 39,
-      "snapshotSha256": "e3174bc95864134e22e1709d34bca9d275ebcc82700c476dfba5df7aa460b033",
+      "snapshotSha256": "127b8689ce898a47af2ad8fd96fc8ad9d7d56bed30204d85d661d3a5f2681934",
       "supportedOperations": 316,
       "missing": [],
       "outdated": [],
