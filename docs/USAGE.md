@@ -352,9 +352,12 @@ AEO reports and prompt history on Stable and Beta, plus recommendation reads on
 Beta, also use **Analytics → Read**. The router fixes the site to the selected
 project and checks page/collection references. Webflow entitlement and AI-feature
 gates still apply; availability in the router does not grant an upstream plan
-feature. Recommendation settings writes require a separate Beta project grant. Optimize reports remain
-unavailable until their account-level resource IDs can be mapped reliably to a
-project.
+feature. Recommendation settings writes require a separate Beta project grant.
+Optimize reports on Stable and Beta use **Optimize → Read**. Resource discovery
+returns only verified mappings to the selected Webflow site; external sites and
+ambiguous mappings are rejected. Reports for an individual optimization also
+verify that it belongs to the selected resource, including archived experiments.
+Existing saved project permissions do not automatically gain Optimize access.
 
 CMS creation preserves custom collection fields inside `fieldData` for both the
 legacy array and per-item locale format. A targeted correction removes an

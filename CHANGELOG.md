@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.8.12 — Optimize guidance and release cleanup
+
+- Refresh five Optimize action descriptions on Stable and Beta to explain current versus historical goals.
+- Correct the usage guide: all eight Optimize read actions are available under the separate Optimize Read permission, with site and experiment ownership checks.
+- Add regression coverage for paginated experiment ownership, filtering of final discovery responses, separate read grants and permission revocation.
+- Add safe distribution cleanup after successful packaging and a `npm run clean:dist` command; preserve current/newer builds, backups and unknown files.
+
+Compatibility: fresh complete captures of 37 Stable and 39 Beta tools show no
+missing or unclassified actions. The only accepted schema difference remains the
+reviewed CMS fieldData correction. Utility tools and owner-only site inventory
+remain excluded by design. No permissions, grants or request constraints change.
+
 ## 0.8.11 — Complete reviewed Webflow capabilities
 
 - Add GSAP interactions, Cloud Apps, Campaigns, Optimize and site/member access tools on Stable and Beta.

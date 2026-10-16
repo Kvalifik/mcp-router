@@ -79,6 +79,14 @@ development builds do not need a release review.
 
 ## Local builds
 
+Run `npm run clean:dist` to remove recognized distribution outputs older than the
+version in package.json. Successful release packaging runs this cleanup automatically
+for local and CI builds. It removes old versioned ZIPs, CI downloads, obsolete app
+bundles, stale update feeds and checksums, and release notes without archives.
+Current/newer versions, installation backups, icon assets, unknown files and symlinks
+are preserved. Cleanup is limited to local `dist`; published GitHub assets are untouched.
+Keep anything requiring long-term retention outside `dist`.
+
 Use `BUILD_ARCH=x64 npm run build:desktop` on Mac for Intel, or `BUILD_ARCH=arm64` for Apple Silicon.
 On Windows PowerShell, set `$env:BUILD_PLATFORM="win32"` and `$env:BUILD_ARCH="x64"`, then run `npm run build:desktop`.
 Keep the target environment set while running `node scripts/smoke-package.mjs` and `python scripts/package-release.py`.
@@ -331,3 +339,35 @@ tree without a self-referential commit hash. Any later tracked change requires a
 renewed review. Hashes do not establish review quality: the agent must still inspect
 guides, tool descriptions, envelopes, effects and ownership. The recorder refuses
 unknown differences; changed exclusions require explicit review, never a blind bypass.
+
+### Optimize compatibility follow-up (2026-10-16)
+
+Fresh, fully paginated captures contained 37 Stable tools and 39 Beta tools,
+using each channel's existing authorization separately. Compared with the
+October 15 captures, only five Optimize action descriptions changed. The three
+performance reports now document accepting goals from `currentGoals`; goal
+listing and optimization listing explain current versus historical goals.
+Request constraints, tool envelopes, permission scope and ownership targeting
+are unchanged. Regenerate with the project-tools and beta-tools commands above.
+
+Both channels include 12 Analyze, 14 AEO Analytics and eight Optimize read
+actions. Analyze and AEO use Analytics Read; Optimize requires its separate
+Optimize Read grant. Discovery filters account resources to verified Webflow
+site mappings, and individual reports verify optimization membership with
+pagination, including archived optimizations. Existing saved permissions do
+not automatically gain Optimize access. No additional permission category or
+upstream operation was introduced by this follow-up.
+
+Both full catalog comparisons retain only the documented CMS fieldData export
+correction, with no added, removed or unclassified operations. Tool descriptions
+and complete input schemas were also compared with the prior reviewed captures;
+the current guides retain read-only analytics semantics and upstream entitlement
+and concurrency limits. Utility tools and owner-only list_sites remain excluded
+by design. No new capability was deferred and neither channel was unavailable.
+This is schema and synthetic execution validation, not live analytics-report
+validation on an entitled site.
+
+The release review in `docs/release-review.json` binds both channel outcomes to
+the staged release source. No open Dependabot PRs were present. No UI or dependency
+changes are included in this follow-up; native prototype and manual resync work
+remain separate from this release.

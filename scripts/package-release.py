@@ -109,3 +109,6 @@ SHA-256 checksum is included in SHA256SUMS.txt.
 '''
 (out / 'release-notes.md').write_text(notes, encoding='utf-8')
 print(f'Verified bundle and prepared {archive.name}')
+
+# Prune obsolete local outputs only after packaging and verification succeed.
+subprocess.run([sys.executable, str(root / 'scripts/clean-dist.py')], check=True)
