@@ -32,8 +32,10 @@ While the router is running, it checks once a minute for project inventories who
 last successful sync is at least an hour old, including at startup. Enabled,
 authorized Stable and Beta grants sync independently. Manual resync remains available.
 Busy connections and pending browser authorizations are skipped until a later check.
-Failures retry after 5, 10, 20, 40 minutes and progressively longer delays, capped
-at six hours. Retry delays reset on restart or a successful sync.
+Pending and failed access checks bypass the hourly freshness rule. Routine token
+refreshes preserve an already verified connection's ready state. Failures retry
+after 1, 2, 4, 8 minutes, then every 15 minutes. Retry delays reset on restart or
+a successful sync.
 
 Resync reads project summaries, not pages, CMS content, or assets. New projects
 remain disabled; existing permissions and local names are preserved. Projects

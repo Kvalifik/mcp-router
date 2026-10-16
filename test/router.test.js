@@ -14,6 +14,7 @@ test('scheduled inventory sync respects freshness, grant isolation and disabled 
   const { router, store, a, b } = fixture(t);
   const now = Date.now();
   const stable = store.connection(a);
+  stable.status = 'connected';
   stable.lastChecked = new Date(now).toISOString();
   stable.beta = { tokens: { access_token: 'synthetic-beta' }, sites: [] };
   store.connection(b).enabled = false;
@@ -43,6 +44,7 @@ test('scheduled sync backs off failures, preserves inventory and recovers', asyn
   assert.equal(attempts, 1);
   assert.deepEqual(store.connection(a).sites, before);
   const retry = router.inventoryRetries.get(`${a}:stable`);
+  assert.ok(retry.nextAttempt - Date.now() <= 60_000);
   await router.resyncDueProjects(retry.nextAttempt - 1);
   assert.equal(attempts, 1);
   await router.resyncDueProjects(retry.nextAttempt);
@@ -51,6 +53,36 @@ test('scheduled sync backs off failures, preserves inventory and recovers', asyn
   router.open = async () => ({ listSites: async () => before, close: async () => {} });
   await router.sites(a);
   assert.equal(router.inventoryRetries.size, 0);
+});
+
+test('token refresh preserves verified readiness on both channels', async t => {
+  const { router, store, a } = fixture(t);
+  const c = store.connection(a);
+  c.status = 'connected';
+  c.beta = { tokens: { access_token: 'synthetic-beta' }, status: 'connected' };
+  for (const channel of ['stable', 'beta']) {
+    const grant = channel === 'stable' ? c : c.beta;
+    router.oauth.provider(a, false, channel).saveTokens({ access_token: 'synthetic-rotated', token_type: 'Bearer' });
+    assert.equal(grant.status, 'connected');
+    grant.inventoryPending = true;
+    router.oauth.provider(a, false, channel).saveTokens({ access_token: 'synthetic-new', token_type: 'Bearer' });
+    assert.equal(grant.status, 'authorized');
+  }
+});
+
+test('pending and failed checks recover despite a recent successful inventory', async t => {
+  const { router, store, a, b, calls } = fixture(t);
+  store.connection(b).enabled = false;
+  const grant = store.connection(a);
+  for (const status of ['authorized', 'check_failed', 'connected']) {
+    grant.lastChecked = new Date().toISOString();
+    grant.status = status;
+    grant.inventoryPending = status === 'connected';
+    await router.resyncDueProjects();
+    assert.equal(grant.status, 'connected');
+    assert.equal(grant.inventoryPending, false);
+  }
+  assert.deepEqual(calls, [a, a, a]);
 });
 
 test('scheduled sync skips busy, unauthorised and authorizing connections', async t => {

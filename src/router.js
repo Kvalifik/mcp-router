@@ -196,7 +196,7 @@ export class Router {
         if (retry && retry.lastChecked !== grant.lastChecked) this.inventoryRetries.delete(key);
         else if (retry && now < retry.nextAttempt) return;
         const checked = Date.parse(grant.lastChecked);
-        if (Number.isFinite(checked) && now - checked < 60 * 60_000) return;
+        if (grant.status === 'connected' && !grant.inventoryPending && Number.isFinite(checked) && now - checked < 60 * 60_000) return;
       }
       const c = this.store.connection(id), auth=session(this.store,id,channel);
       if (!c.enabled && !afterAuthorization) throw new AgentError('project_access_denied', 'Connection disabled. Enable it in MCP Router.');
@@ -218,7 +218,7 @@ export class Router {
         if (automatic) {
           const failures = Math.min((this.inventoryRetries.get(key)?.failures || 0) + 1, 8);
           this.inventoryRetries.set(key, { failures, lastChecked: auth.lastChecked,
-            nextAttempt: Date.now() + Math.min(5 * 60_000 * 2 ** (failures - 1), 6 * 60 * 60_000) });
+            nextAttempt: Date.now() + Math.min(60_000 * 2 ** (failures - 1), 15 * 60_000) });
         }
         auth.status = 'check_failed';
         c.lastError = 'Connection check failed. Retry or reconnect; credentials were not copied to another connection.';
