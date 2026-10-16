@@ -59,7 +59,9 @@ export class Provider {
       ...(tokens.scope === undefined && old?.scope !== undefined ? { scope: old.scope } : {}) };
     this.c.expiresAt = tokens.expires_in ? new Date(Date.now() + tokens.expires_in * 1000).toISOString() : null;
     this.c.tokenVersion = (this.c.tokenVersion || 0) + 1;
-    this.c.status = 'authorized'; this.c.lastError = null;
+    // Rotating tokens does not invalidate an already verified site inventory.
+    if (!old || this.c.status !== 'connected' || this.c.inventoryPending) this.c.status = 'authorized';
+    this.c.lastError = null;
     this.store.audit('oauth_tokens_saved', { connectionId: this.id, tokenVersion: this.c.tokenVersion });
   }
   redirectToAuthorization(url) {

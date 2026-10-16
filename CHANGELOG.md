@@ -1,7 +1,8 @@
 # Changelog
 
-## 0.8.12 — Optimize guidance and release cleanup
+## 0.8.12 — Reliable reconnects, Optimize guidance and release cleanup
 
+- Preserve verified readiness during OAuth token refresh, retry pending or failed access checks despite recent inventory, and shorten failed-sync retry delays to one minute initially and 15 minutes maximum.
 - Refresh five Optimize action descriptions on Stable and Beta to explain current versus historical goals.
 - Correct the usage guide: all eight Optimize read actions are available under the separate Optimize Read permission, with site and experiment ownership checks.
 - Add regression coverage for paginated experiment ownership, filtering of final discovery responses, separate read grants and permission revocation.
