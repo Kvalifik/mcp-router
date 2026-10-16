@@ -45,7 +45,7 @@ with tempfile.TemporaryDirectory() as temp:
     assert not (dist / 'MCP Router-darwin-x64').exists()
     assert not (release / 'update-mac-x64.json').exists()
     assert (external / 'keep').exists()
-    assert sums.read_text() == '1' * 64 + '  ' + current.name + '\\n'
+    assert sums.read_bytes() == ('1' * 64 + '  ' + current.name + '\\n').encode('utf-8')
     module.clean_dist(root)
 `], { encoding: 'utf8' });
   assert.equal(result.status, 0, result.stderr || result.stdout);

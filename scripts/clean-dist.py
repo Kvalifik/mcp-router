@@ -50,7 +50,7 @@ def clean_dist(root):
                      if re.fullmatch(r'[a-fA-F0-9]{64}  [^/\\]+', line)
                      and (folder / line[66:]).is_file()]
             if lines:
-                checksum.write_text('\n'.join(lines) + '\n')
+                checksum.write_text('\n'.join(lines) + '\n', encoding='utf-8', newline='\n')
             else:
                 remove(checksum)
         for feed in folder.glob('update-mac-*.json'):
