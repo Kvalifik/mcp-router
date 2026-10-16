@@ -5,7 +5,7 @@
 - Refresh five Optimize action descriptions on Stable and Beta to explain current versus historical goals.
 - Correct the usage guide: all eight Optimize read actions are available under the separate Optimize Read permission, with site and experiment ownership checks.
 - Add regression coverage for paginated experiment ownership, filtering of final discovery responses, separate read grants and permission revocation.
-- Add safe distribution cleanup after successful packaging and a `npm run clean:dist` command; preserve current/newer builds, backups and unknown files.
+- Add safe distribution cleanup after successful packaging and a `npm run clean:dist` command; preserve current/newer builds, backups and unknown files, and keep checksums readable across platforms.
 
 Compatibility: fresh complete captures of 37 Stable and 39 Beta tools show no
 missing or unclassified actions. The only accepted schema difference remains the
