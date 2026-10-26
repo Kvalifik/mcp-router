@@ -234,3 +234,11 @@ public/
 
 !/scripts/clean-dist.py
 !/test/clean-dist.test.js
+
+!/src/startup.cjs
+!/test/startup.test.js
+!/test/direct-mode.test.js
+!/assets/icons/menu/Power.png
+!/assets/icons/menu/Split.png
+
+!/test/beta-slots.test.js

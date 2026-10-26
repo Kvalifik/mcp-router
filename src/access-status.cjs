@@ -11,7 +11,7 @@ function grantIssue(connection, channel) {
 }
 function accessStatus(summary) {
   const connections = summary.connections.filter(c => c.enabled);
-  const selected = summary.projects.filter(p => p.enabled && connections.some(c => c.id === p.connectionId));
+  const selected = summary.projects.filter(p => p.enabled && connections.some(c => c.id === p.connectionId && c.accessMode !== 'direct'));
   const issues = [];
   const readyProjectIds = [];
   for (const project of selected) {
@@ -26,6 +26,7 @@ function accessStatus(summary) {
     else readyProjectIds.push(project.id);
   }
   for (const connection of connections) {
+    if (connection.accessMode === 'direct' && Object.values(connection.channels || {}).some(grantReady)) continue;
     const channel = connection.channel || 'stable';
     const issue = grantIssue(connection, channel);
     if (issue && !issues.some(i => i.connectionId === connection.id && i.channel === channel)) issues.push({ ...issue, connectionId: connection.id, name: connection.name, channel });

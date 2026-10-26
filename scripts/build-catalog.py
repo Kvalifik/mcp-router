@@ -126,16 +126,23 @@ if sys.argv[1] in ['--refresh-compatible','--refresh-site-branches','--refresh-s
   Path('src/catalog.json').write_text(json.dumps(catalog,indent=2)+'\n')
   print(len(catalog),'reviewed operations');sys.exit(0)
  if sys.argv[1]=='--refresh-site-branches':
-  for action,mode in [('list_site_branches','read'),('create_site_branch','write'),('stage_site_branch','publish'),('discard_site_branch','delete')]:
+  for action,mode in [('list_site_branches','read'),('create_site_branch','write'),('stage_site_branch','publish'),('discard_site_branch','delete'),('get_site_branch_freshness','read'),('update_site_branch_details','write')]:
    key='data_pages_tool.'+action;schema,props=preview[key]
    if key in shared or 'siteId' in props or 'pageId' in props or 'site_id' not in schema.get('required',[]):raise ValueError('Review branch targeting/channel: '+key)
    op={'id':key,'tool':'data_pages_tool','action':action,'area':'pages','title':'Pages','mode':mode,'permission':'pages:'+mode,'extraPermissions':[] if mode=='read' else ['agent_instructions:read'],'topSite':None,'page':False,'builder':False,'direct':False,'channels':['beta'],'schema':schema}
    catalog=[existing for existing in catalog if existing['id']!=key];catalog.append(op)
-  key='data_pages_tool.create_page'
   for op in catalog:
-   if op['id']==key:
+   if op['id'] in ['data_pages_tool.create_page','data_pages_tool.list_pages']:
+    key=op['id']
     if op['schema']!=shared[key][0]:raise ValueError('Review Stable page creation schema')
     op['channelSchemas']={'beta':preview[key][0]}
+  for action,mode in [('get_slot_default','read'),('add_to_slot_default','write'),('remove_from_slot_default','delete'),('reset_slot_to_default','write'),('clear_slot','delete')]:
+   key='data_component_props_tool.'+action;schema,props=preview[key]
+   if key in shared or not {'siteId','pageId'}.issubset(props):raise ValueError('Review slot targeting/channel: '+key)
+   extra=[] if mode=='read' else ['agent_instructions:read','scripts:write']
+   if action=='reset_slot_to_default':extra.append('component_props:delete')
+   op={'id':key,'tool':'data_component_props_tool','action':action,'area':'component_props','title':'Component properties','mode':mode,'permission':'component_props:'+mode,'extraPermissions':extra,'topSite':'siteId','page':True,'builder':False,'direct':False,'channels':['beta'],'schema':schema}
+   catalog=[existing for existing in catalog if existing['id']!=key];catalog.append(op)
   Path('src/catalog.json').write_text(json.dumps(catalog,indent=2)+'\n')
   print(len(catalog),'reviewed operations');sys.exit(0)
  reviewed={

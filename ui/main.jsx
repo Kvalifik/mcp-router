@@ -2,7 +2,7 @@ import { SettingsMenu, ActionMenu } from './settings-menu.jsx';
 import React, { useEffect, useState, useRef } from 'react';
 import { AnimatePresence, motion, useIsPresent, useReducedMotion } from 'motion/react';
 import { createRoot } from 'react-dom/client';
-import { TestTubeDiagonal, Maximize2, Plus, RotateCcw, Ellipsis, Pencil, Trash2, RefreshCw, Check, Monitor, Terminal, ChevronDown, Settings2, Paintbrush, ArrowUpRight, LoaderCircle, Copy, Sparkles, Pin, GripVertical, ArrowUp, ArrowDown, Server, TriangleAlert, ArrowDownUp, ShieldCheck, Activity, AppWindow, MessageSquare, Code2, Info, FileText, CheckCheck, CloudOff, Eye, Ban, ShieldEllipsis } from 'lucide-react';
+import { Unplug, TestTubeDiagonal, Maximize2, Plus, RotateCcw, Ellipsis, Pencil, Trash2, RefreshCw, Check, Monitor, Terminal, ChevronDown, Settings2, Paintbrush, ArrowUpRight, LoaderCircle, Copy, Sparkles, Pin, GripVertical, ArrowUp, ArrowDown, Server, TriangleAlert, ArrowDownUp, ShieldCheck, Activity, AppWindow, MessageSquare, Code2, Info, FileText, CheckCheck, CloudOff, Eye, Ban, ShieldEllipsis } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AnimatedSwap, AnimatedText, AnimatedReveal, AnimatedWords } from '@/components/ui/animated-content';
 import { ClearableInput as Input } from '@/components/ui/clearable-input';
@@ -121,12 +121,24 @@ async function checkForUpdates(manual=false) {
   if(manual)toast.loading('Checking for updates…',{id:'app-update'});
   showUpdateStatus(await window.routerDesktop.checkUpdates().catch(()=>({state:'error'})),manual);
 }
+async function openGitHubIssues() {
+  try {
+    if(window.routerDesktop)await window.routerDesktop.openIssues();
+    else window.open(`https://github.com/${appPackage.updateRepository}/issues`,'_blank','noopener,noreferrer');
+  } catch {toast.error('Could not open GitHub Issues.');}
+}
 function AboutPanel() {
   return <div className="space-y-6">
     <div className="flex items-center gap-4 rounded-lg border bg-background p-5">
       <div><p className="text-xs text-muted-foreground">Created by</p><PublisherLink large className="mt-2" /></div>
     </div>
     <div className="space-y-2 text-sm"><p>Connect multiple Webflow workspaces to your AI tools through one MCP connection.</p><p className="text-muted-foreground">Independent software by <PublisherLink>Kvalifik ApS</PublisherLink>. Not affiliated with or endorsed by Webflow or connected AI providers.</p></div>
+    <Button asChild variant="outline" className="w-full justify-between"><a href={`https://github.com/${appPackage.updateRepository}`} target="_blank" rel="noopener noreferrer" onClick={async event=>{
+      if(!window.routerDesktop)return;
+      event.preventDefault();
+      try {await window.routerDesktop.openRepository();} catch {toast.error('Could not open GitHub.');}
+    }}><span className="flex items-center gap-2"><svg className="size-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .297C5.37.297 0 5.67 0 12.297c0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.043-1.61-4.043-1.61-.546-1.387-1.333-1.756-1.333-1.756-1.09-.745.083-.729.083-.729 1.205.084 1.838 1.237 1.838 1.237 1.07 1.835 2.809 1.305 3.495.998.108-.776.418-1.305.762-1.605-2.665-.3-5.467-1.334-5.467-5.931 0-1.31.469-2.381 1.236-3.221-.124-.303-.536-1.524.117-3.176 0 0 1.008-.322 3.301 1.23a11.52 11.52 0 013.003-.404c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.655 1.652.243 2.873.12 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.628-5.479 5.925.43.372.823 1.102.823 2.222 0 1.606-.015 2.898-.015 3.293 0 .322.216.694.825.576C20.565 22.092 24 17.597 24 12.297c0-6.627-5.373-12-12-12" /></svg>View on GitHub</span><ArrowUpRight className="size-4" /></a></Button>
+    <Button asChild variant="outline" className="w-full justify-between"><a href={`https://github.com/${appPackage.updateRepository}/issues`} target="_blank" rel="noopener noreferrer" onClick={event=>{if(window.routerDesktop){event.preventDefault();openGitHubIssues();}}}><span className="flex items-center gap-2"><MessageSquare className="size-4" />Report a bug or suggest a feature</span><ArrowUpRight className="size-4" /></a></Button>
     <Button variant="outline" className="w-full justify-between" onClick={async () => { try { await window.routerDesktop.openLicenses(); } catch { toast.error('Could not open third-party licenses.'); } }} disabled={!window.routerDesktop}><span className="flex items-center gap-2"><FileText className="size-4" />Third-party licenses</span><ArrowUpRight className="size-4" /></Button>
     <Button variant="outline" className="w-full" disabled={!window.routerDesktop} onClick={()=>checkForUpdates(true)}><RefreshCw className="size-4" />Check for updates</Button>
     <p className="text-xs text-muted-foreground">Version {appPackage.version} · © {new Date().getFullYear()} <PublisherLink>Kvalifik ApS</PublisherLink></p>
@@ -161,8 +173,8 @@ function AccessIssueBadge({ issues, name, onClick }) {
 }
 function AccessBadge({ project, connection, permissionKeys, onClick }) {
   const access = accessLabel(permissionKeys, project.permissions || {});
-  const label = project.available === false ? 'Unavailable' : !connection.enabled ? 'Connection off' : !project.enabled ? 'Disabled' : access;
-  const Icon = {'Full access':CheckCheck,'No publishing':CloudOff,'Read & write':Pencil,'Read-only':Eye,'No permissions':Ban,'Custom access':ShieldEllipsis,'Unavailable':TriangleAlert,'Connection off':Ban,'Disabled':Ban}[label];
+  const label = connection.accessMode === 'direct' ? (!connection.enabled ? 'Connection off' : 'Direct Webflow') : project.available === false ? 'Unavailable' : !connection.enabled ? 'Connection off' : !project.enabled ? 'Disabled' : access;
+  const Icon = {'Direct Webflow':Unplug,'Full access':CheckCheck,'No publishing':CloudOff,'Read & write':Pencil,'Read-only':Eye,'No permissions':Ban,'Custom access':ShieldEllipsis,'Unavailable':TriangleAlert,'Connection off':Ban,'Disabled':Ban}[label];
   return <Tooltip><TooltipTrigger asChild>
     <Badge asChild variant="secondary" className="project-access-badge hover:bg-accent hover:text-accent-foreground"><button type="button" onClick={onClick} aria-label={`${label} — settings for ${project.name}`}><AnimatedSwap icon value={Icon} className="size-3"><Icon className="size-3" /></AnimatedSwap></button></Badge>
   </TooltipTrigger><TooltipContent side="top" collisionPadding={{ top: 72, right: 12, bottom: 12, left: 12 }}><AnimatedText>{label}</AnimatedText></TooltipContent></Tooltip>;
@@ -300,6 +312,19 @@ function WorkspacePermissionForm({connection,busy,perform,close}) {
     <DialogFooter><Button type="button" variant="outline" disabled={busy} onClick={close}>Cancel</Button><Button disabled={busy}>Save changes</Button></DialogFooter>
   </form>;
 }
+function AccessModeForm({connection,busy,perform,close}) {
+  const [mode,setMode]=useState(connection.accessMode || 'managed');
+  return <form className="dialog-form" onSubmit={async event=>{event.preventDefault();try{await perform(`/api/connections/${connection.id}/edit`,{accessMode:mode});toast.success(`${connection.name}: ${mode==='direct'?'Direct Webflow':'Managed'} access saved.`);close();}catch(error){toast.error(error.message);}}}>
+    <div className="dialog-scroll space-y-4">
+    <fieldset className="space-y-3" disabled={busy}><legend className="sr-only">Connection access mode</legend>
+      {[['managed','Managed access','Recommended default. Router project switches, permissions and ownership checks apply.',ShieldCheck],['direct','Direct Webflow','Use live Webflow tools, including new tools not yet reviewed by the router.',Unplug]].map(([value,title,detail,Icon])=><label key={value} className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 ${mode===value?'border-foreground':''}`}><input type="radio" name="accessMode" value={value} checked={mode===value} onChange={()=>setMode(value)} className="mt-1" /><Icon className="mt-0.5 size-4 shrink-0" /><span><span className="block text-sm font-medium">{title}</span><span className="mt-1 block text-xs text-muted-foreground">{detail}</span></span></label>)}
+    </fieldset>
+    {mode==='direct'&&<div role="note" className="space-y-2 rounded-lg border p-3 text-sm"><p className="font-medium">Project permissions don’t apply in Direct mode.</p><p>Project switches and project, workspace and account permission settings are inactive. AI tools can access everything allowed by the selected Webflow authorization, including other projects or workspaces.</p><p className="text-xs text-muted-foreground">Stable and Beta remain separate. Turning off the connection blocks access. Saved settings return when you switch back to Managed.</p></div>}
+    </div>
+    <DialogFooter className="shrink-0"><Button type="button" variant="outline" disabled={busy} onClick={close}>Cancel</Button><Button disabled={busy}>{mode==='direct'&&connection.accessMode!=='direct'?'Enable Direct Webflow':'Save changes'}</Button></DialogFooter>
+  </form>;
+}
+
 function ClientConnections() {
   const [clients,setClients] = useState([]), [pending,setPending] = useState(null);
   useEffect(()=>{if(!window.routerDesktop)return;let alive=true;const refresh=()=>window.routerDesktop.clientStatus().then(result=>{if(alive)setClients(result);}).catch(()=>{});refresh();window.addEventListener('focus',refresh);const timer=setInterval(refresh,30000);return()=>{alive=false;clearInterval(timer);window.removeEventListener('focus',refresh);};},[]);
@@ -401,6 +426,8 @@ function App() {
   }
 
   const [data,setData] = useState(null), [busy,setBusy] = useState(false), [bootFailed,setBootFailed] = useState(false);
+  const [startup,setStartup]=useState(null);
+  useEffect(()=>{const refresh=()=>window.routerDesktop?.startupSettings?.().then(setStartup).catch(()=>setStartup(null));refresh();window.addEventListener('focus',refresh);return()=>window.removeEventListener('focus',refresh);},[]);
   const [menuBar,setMenuBar]=useState('projects');
   useEffect(()=>{const refresh=()=>window.routerDesktop?.menuBarMode?.().then(setMenuBar).catch(()=>{});refresh();window.addEventListener('focus',refresh);return()=>window.removeEventListener('focus',refresh);},[]);
   const [pinnedOnly,setPinnedOnly]=useState(false);
@@ -461,7 +488,7 @@ function App() {
   const issueDescription=displayedModal?.projectId
     ? data.connections.find(c=>c.id===displayedModal.connectionId)?.name
     : issueProjects.length&&visibleIssues.some(i=>!i.pending)?`${issueProjects.filter(p=>readiness.readyProjectIds.includes(p.id)).length} of ${issueProjects.length} enabled projects ready`:data.connections.find(c=>c.id===displayedModal?.connectionId)?.name || 'Review access below.';
-  const titles={workspace:'Workspace permissions',issues:visibleIssues.length?(visibleIssues.some(i=>!i.pending)?'Access needs attention':'Checking access'):'Access restored',connect:'Connect your Webflow projects',about:'About MCP Router',rename:'Rename',permissions:'Project settings',defaults:'Default permissions',delete:'Delete from router',diagnostics:'Diagnostics',order:'Reorder connections',channel:'Reconnect Webflow'};
+  const titles={accessMode:'Connection access mode',workspace:'Workspace permissions',issues:visibleIssues.length?(visibleIssues.some(i=>!i.pending)?'Access needs attention':'Checking access'):'Access restored',connect:'Connect your Webflow projects',about:'About MCP Router',rename:'Rename',permissions:'Project settings',defaults:'Default permissions',delete:'Delete from router',diagnostics:'Diagnostics',order:'Reorder connections',channel:'Reconnect Webflow'};
   const search=query.trim().toLowerCase();
   const grouped=data.connections.map(c => ({...c,projects:data.projects.filter(p => p.connectionId===c.id).sort((a,b)=>Number(!!b.favourite)-Number(!!a.favourite)||(!a.favourite ? Number(b.enabled)-Number(a.enabled) : 0)||a.name.localeCompare(b.name))})).map(c=>({...c,visible:c.projects.filter(p=>(!pinnedOnly||p.favourite)&&(!search||`${p.name} ${p.sourceName} ${p.shortName} ${c.name}`.toLowerCase().includes(search)))})).filter(c=>pinnedOnly?c.visible.length:!search||c.visible.length||c.name.toLowerCase().includes(search));
   const settingsItems = [
@@ -469,13 +496,22 @@ function App() {
     {label:'Appearance',icon:'SunMoon',children:['system','light','dark'].map(value=>({id:`theme-${value}`,label:value[0].toUpperCase()+value.slice(1),checked:theme===value,onSelect:()=>setTheme(value)}))},
     ...(window.routerDesktop?.titleBarPlatform==='darwin'?[{separator:true},{label:'Menu bar',icon:'PanelTop',children:[['off','Off'],['icon','Icon only'],['connections','Connections'],['projects','Projects'],['both','Connections and projects']].map(([value,label])=>({id:`menu-${value}`,label,checked:menuBar===value,onSelect:()=>action(async()=>setMenuBar(await window.routerDesktop.setMenuBarMode(value)))}))}]:[]),
     {separator:true},
+    ...(startup?.supported?[{id:'launch-at-startup',label:'Launch at startup',icon:'Power',checked:startup.enabled,onSelect:()=>action(async()=>{
+      const enabled=!startup.enabled;
+      const next=await window.routerDesktop.setStartupSettings(enabled);
+      setStartup(next);
+      if(next.requiresApproval)toast.info('Allow MCP Router in System Settings → General → Login Items.');
+      else if(next.enabled!==enabled)toast.error('Could not change launch at startup. Check your system login item settings.');
+    })},{separator:true}]:[]),
     {label:'Default MCP version',icon:'Server',children:['stable','beta'].map(channel=>({id:`channel-${channel}`,label:channel==='beta'?'β Beta':'Stable',checked:(data.settings.defaultChannel||'stable')===channel,onSelect:()=>action(()=>perform('/api/settings/default-channel',{channel}),'Default MCP version updated.')}))},
     {separator:true},
     {id:'disabled-project-discovery',label:'Let AI discover disabled project names',icon:'Eye',checked:data.settings.discoverDisabledProjects!==false,onSelect:()=>action(()=>perform('/api/settings/disabled-project-discovery',{enabled:data.settings.discoverDisabledProjects===false}),'Project discovery setting saved.')},
     ...[['order','Reorder connections'],['defaults','Default permissions'],['diagnostics','Diagnostics']].map(([type,label])=>({id:type,label,icon:{order:'ArrowDownUp',defaults:'ShieldCheck',diagnostics:'Activity'}[type],onSelect:()=>setModal({type})})),
     {separator:true},
     ...(window.routerDesktop?[{id:'updates',icon:'RefreshCw',label:'Check for updates',onSelect:()=>checkForUpdates(true)}]:[]),
+    {id:'feedback',icon:'MessageSquare',label:'Report a bug or suggest a feature',onSelect:openGitHubIssues},
     {id:'about',icon:'Info',label:'About MCP Router',onSelect:()=>setModal({type:'about'})},
+
   ];
   const filterActive=!!search||pinnedOnly;
   return <main ref={mainRef} tabIndex={-1} className="router-main">
@@ -485,14 +521,15 @@ function App() {
       {!grouped.length && <p className="rounded-lg border bg-background p-5 text-sm text-muted-foreground"><AnimatedText>{pinnedOnly?'No pinned projects match. Pin a project to add it here.':search?'No matching projects or connections.':'Add a connection to discover its projects.'}</AnimatedText></p>}
       <AnimatePresence initial={false}>{grouped.map(c=>{const expandKey=`${filterActive ? `filter:${search}:${pinnedOnly}:` : ''}${c.id}`;const open=expanded[expandKey]??filterActive;return <AnimatedConnection key={c.id} value={c.id} className="overflow-hidden rounded-lg border bg-background last:border-b">
         <div className="connection-header flex flex-wrap items-center gap-2 p-3">
-          <AccordionTrigger headerClassName="min-w-0 flex-1" className="items-center p-1 text-left hover:no-underline" aria-label={`${open?'Collapse':'Expand'} ${c.name}`} ><span className="min-w-0"><span className="block truncate text-sm font-semibold"><AnimatedText className="max-w-full truncate">{c.name}</AnimatedText></span><span className="mt-1 block text-xs text-muted-foreground"><AnimatedText>{`${c.projects.length} ${c.projects.length===1?'project':'projects'} · ${c.projects.filter(p=>p.enabled).length} enabled${!c.enabled?' · Connection off':''}`}</AnimatedText></span></span></AccordionTrigger>
+          <AccordionTrigger headerClassName="min-w-0 flex-1" className="items-center p-1 text-left hover:no-underline" aria-label={`${open?'Collapse':'Expand'} ${c.name}`} ><span className="min-w-0"><span className="block truncate text-sm font-semibold"><AnimatedText className="max-w-full truncate">{c.name}</AnimatedText></span><span className="mt-1 block text-xs text-muted-foreground"><AnimatedText>{`${c.projects.length} ${c.projects.length===1?'project':'projects'} · ${c.accessMode==='direct'?'Direct Webflow':`${c.projects.filter(p=>p.enabled).length} enabled`}${!c.enabled?' · Connection off':''}`}</AnimatedText></span></span></AccordionTrigger>
           <div className="connection-controls flex shrink-0 items-center gap-0.5">
             <AccessIssueBadge issues={readiness.issues.filter(i=>i.connectionId===c.id)} name={c.name} onClick={event=>openIssues({connectionId:c.id},event.currentTarget)} />
 
             <ActionMenu trigger={<Button variant="ghost" size="icon" aria-label={`More options for ${c.name}`} title={`More options for ${c.name}`} disabled={busy}><Ellipsis className="size-4" /></Button>} items={[
-              ...(c.enabled&&c.tokenFingerprint?[{id:'sync',label:'Sync projects',icon:'RefreshCw',onSelect:()=>action(()=>perform(`/api/connections/${c.id}/check`),`${c.name}: projects updated.`)}]:[]),
+              {id:'sync',label:'Re-sync projects',icon:'RefreshCw',disabled:!c.tokenFingerprint,onSelect:()=>action(()=>perform(`/api/connections/${c.id}/check`),`${c.name}: projects updated.`)},
               {id:'channel',label:'Reconnect Webflow',icon:'Unplug',onSelect:()=>setModal({type:'channel',item:c})},
-              {id:'workspace',label:'Workspace permissions',icon:'ShieldCheck',onSelect:()=>setModal({type:'workspace',item:c})},
+              {id:'access-mode',label:'Access mode',icon:'Split',onSelect:()=>setModal({type:'accessMode',item:c})},
+              {id:'workspace',label:'Workspace permissions',icon:'ShieldCheck',disabled:c.accessMode==='direct',onSelect:()=>setModal({type:'workspace',item:c})},
               {id:'rename',label:'Rename',icon:'Pencil',onSelect:()=>setModal({type:'rename',kind:'connections',item:c})},
               {separator:true},
               {id:'delete',label:'Delete',icon:'Trash2',variant:'destructive',onSelect:()=>setModal({type:'delete',kind:'connections',item:c})},
@@ -500,16 +537,16 @@ function App() {
             <Switch className="ml-2" aria-label={`Enable ${c.name}`} checked={c.enabled} disabled={busy} onCheckedChange={enabled=>action(()=>perform(`/api/connections/${c.id}/toggle`,{enabled}))} />
           </div>
         </div>
-        <AccordionContent className="pb-0"><AnimatedProjectList label={`${c.name} projects`} ids={c.visible.map(p=>p.id)}>
+        <AccordionContent className="pb-0">{c.accessMode==='direct'&&<p className="border-t px-4 py-3 text-xs text-muted-foreground"><span className="font-medium text-foreground">Direct Webflow: project permissions don’t apply.</span> Project switches and workspace permissions are inactive. Access follows the selected Webflow authorization and may include other projects or workspaces.</p>}<AnimatedProjectList label={`${c.name} projects`} ids={c.visible.map(p=>p.id)}>
           {!c.visible.length&&<p className="p-5 text-sm text-muted-foreground"><AnimatedText>{c.tokenFingerprint?'Sync this connection to discover projects.':'Connect with OAuth to discover projects.'}</AnimatedText></p>}
-          {c.visible.map(p=><div key={p.id} data-project-id={p.id} className="project-row flex items-center gap-2 pl-8 pr-3 py-2.5"><Button variant="ghost" size="icon-xs" className={`-ml-5 shrink-0 ${p.favourite?'text-foreground':'text-muted-foreground'}`} aria-pressed={!!p.favourite} aria-label={`${p.favourite?'Unpin':'Pin'} ${p.name}`} disabled={busy} onClick={()=>action(()=>perform(`/api/projects/${p.id}/edit`,{favourite:!p.favourite}))}><AnimatedSwap icon value={p.favourite} className="size-3.5"><Pin className={`size-3.5 ${p.favourite?'fill-current':''}`} /></AnimatedSwap></Button><div className="project-name mr-auto min-w-0"><div className="project-title flex min-w-0 items-center gap-1"><h3 className="truncate text-sm font-medium" title={p.name}><AnimatedText className="max-w-full truncate">{p.name}</AnimatedText></h3><ProjectLinks project={p} /></div></div><div className="project-controls flex shrink-0 items-center gap-0.5"><div className="project-badges flex items-center gap-2">{(p.channel&&p.channel!=='inherit'?p.channel:c.channel)==='beta'&&<BetaBadge project={p} connection={c} onClick={()=>setModal({type:'permissions',item:p})} />}{readiness.issues.some(i=>i.projectId===p.id)?<AccessIssueBadge issues={readiness.issues.filter(i=>i.projectId===p.id)} name={p.name} onClick={event=>openIssues({projectId:p.id,connectionId:c.id},event.currentTarget)} />:<AccessBadge project={p} connection={c} permissionKeys={permissionKeys} onClick={()=>setModal({type:'permissions',item:p})} />}</div>
-            <IconButton label={`Settings for ${p.name}`} icon={Settings2} disabled={busy} onClick={()=>setModal({type:'permissions',item:p})} />
-            <Switch className="ml-2" aria-label={`Enable ${p.name}`} checked={p.enabled} disabled={busy||!c.enabled||(p.available===false&&!p.enabled)} onCheckedChange={enabled=>action(()=>perform(`/api/projects/${p.id}/edit`,{enabled}))} />
+          {c.visible.map(p=><div key={p.id} data-project-id={p.id} className="project-row flex items-center gap-2 pl-8 pr-3 py-2.5"><Button variant="ghost" size="icon-xs" className={`-ml-5 shrink-0 ${p.favourite?'text-foreground':'text-muted-foreground'}`} aria-pressed={!!p.favourite} aria-label={`${p.favourite?'Unpin':'Pin'} ${p.name}`} disabled={busy} onClick={()=>action(()=>perform(`/api/projects/${p.id}/edit`,{favourite:!p.favourite}))}><AnimatedSwap icon value={p.favourite} className="size-3.5"><Pin className={`size-3.5 ${p.favourite?'fill-current':''}`} /></AnimatedSwap></Button><div className="project-name mr-auto min-w-0"><div className="project-title flex min-w-0 items-center gap-1"><h3 className="truncate text-sm font-medium" title={p.name}><AnimatedText className="max-w-full truncate">{p.name}</AnimatedText></h3><ProjectLinks project={p} /></div></div><div className="project-controls flex shrink-0 items-center gap-0.5"><div className="project-badges flex items-center gap-2">{c.accessMode!=='direct'&&(p.channel&&p.channel!=='inherit'?p.channel:c.channel)==='beta'&&<BetaBadge project={p} connection={c} onClick={()=>setModal({type:'permissions',item:p})} />}{readiness.issues.some(i=>i.projectId===p.id)?<AccessIssueBadge issues={readiness.issues.filter(i=>i.projectId===p.id)} name={p.name} onClick={event=>openIssues({projectId:p.id,connectionId:c.id},event.currentTarget)} />:<AccessBadge project={p} connection={c} permissionKeys={permissionKeys} onClick={()=>setModal(c.accessMode==='direct'?{type:'accessMode',item:c}:{type:'permissions',item:p})} />}</div>
+            <IconButton label={`Settings for ${p.name}`} icon={Settings2} disabled={busy||c.accessMode==='direct'} onClick={()=>setModal({type:'permissions',item:p})} />
+            <Switch className="ml-2" aria-label={`Enable ${p.name}`} checked={p.enabled} disabled={busy||c.accessMode==='direct'||!c.enabled||(p.available===false&&!p.enabled)} onCheckedChange={enabled=>action(()=>perform(`/api/projects/${p.id}/edit`,{enabled}))} />
           </div></div>)}
         </AnimatedProjectList></AccordionContent>
       </AnimatedConnection>;})}</AnimatePresence>
     </Accordion>
-    <Dialog open={!!modal} onOpenChange={open=>{if(!open&&!busy)void closeModal();}}><DialogContent onCloseAutoFocus={event=>{if(issueTriggerRef.current){event.preventDefault();const target=issueTriggerRef.current.isConnected?issueTriggerRef.current:mainRef.current;target?.focus({preventScroll:true});issueTriggerRef.current=null;}}} onInteractOutside={event=>{if(event.target.closest('[data-sonner-toaster]'))event.preventDefault();}} onOpenAutoFocus={event=>{if(['permissions','rename','issues'].includes(displayedModal?.type)){event.preventDefault();event.target.focus();}}} className={`dialog-shell ${['permissions','defaults'].includes(displayedModal?.type)?'permission-dialog sm:max-w-2xl':'sm:max-w-lg'}`}>{displayedModal?.type!=='permissions'&&<DialogHeader className="shrink-0 pr-6 text-left"><DialogTitle>{displayedModal?.initialNaming?'Name your connection':displayedModal&&titles[displayedModal.type]}</DialogTitle><DialogDescription className={['permissions','about'].includes(displayedModal?.type)?'sr-only':undefined}>{displayedModal?.initialNaming?'Webflow is connected. What would you like to call this connection?':displayedModal?.type==='issues'?(visibleIssues.length?issueDescription:'Your enabled projects are ready to use.'):displayedModal?.type==='connect'?'Choose access in Webflow, then limit AI access here.':displayedModal?.type==='permissions'?'Edit the project name and permissions.':displayedModal?.type==='about'?'Application information and third-party licenses.':displayedModal?.type==='defaults'?'Starting permissions for automatically discovered projects.':displayedModal?.type==='delete'?`Remove ${displayedModal.item.name} from this router?`:displayedModal?.type==='channel'?'Review Stable and β Beta access and reconnect either version.':displayedModal?.type==='order'?'Drag connections or use the arrows to change their order.':displayedModal?.type==='diagnostics'?'Connection checks and recent activity.':'Change the local display name.'}</DialogDescription></DialogHeader>}
+    <Dialog open={!!modal} onOpenChange={open=>{if(!open&&!busy)void closeModal();}}><DialogContent onCloseAutoFocus={event=>{if(issueTriggerRef.current){event.preventDefault();const target=issueTriggerRef.current.isConnected?issueTriggerRef.current:mainRef.current;target?.focus({preventScroll:true});issueTriggerRef.current=null;}}} onInteractOutside={event=>{if(event.target.closest('[data-sonner-toaster]'))event.preventDefault();}} onOpenAutoFocus={event=>{if(['permissions','rename','issues'].includes(displayedModal?.type)){event.preventDefault();event.target.focus();}}} className={`dialog-shell ${['permissions','defaults'].includes(displayedModal?.type)?'permission-dialog sm:max-w-2xl':'sm:max-w-lg'}`}>{displayedModal?.type!=='permissions'&&<DialogHeader className="shrink-0 pr-6 text-left"><DialogTitle>{displayedModal?.initialNaming?'Name your connection':displayedModal&&titles[displayedModal.type]}</DialogTitle><DialogDescription className={['permissions','about'].includes(displayedModal?.type)?'sr-only':undefined}>{displayedModal?.initialNaming?'Webflow is connected. What would you like to call this connection?':displayedModal?.type==='issues'?(visibleIssues.length?issueDescription:'Your enabled projects are ready to use.'):displayedModal?.type==='accessMode'?`Choose how AI tools access ${displayedModal.item.name}.`:displayedModal?.type==='connect'?'Choose access in Webflow, then limit AI access here.':displayedModal?.type==='permissions'?'Edit the project name and permissions.':displayedModal?.type==='about'?'Application information and third-party licenses.':displayedModal?.type==='defaults'?'Starting permissions for automatically discovered projects.':displayedModal?.type==='delete'?`Remove ${displayedModal.item.name} from this router?`:displayedModal?.type==='channel'?'Review Stable and β Beta access and reconnect either version.':displayedModal?.type==='order'?'Drag connections or use the arrows to change their order.':displayedModal?.type==='diagnostics'?'Connection checks and recent activity.':'Change the local display name.'}</DialogDescription></DialogHeader>}
       {displayedModal?.type==='issues'&&<>
         <div className="dialog-scroll divide-y">{visibleIssues.map(issue=><div key={`${issue.connectionId}:${issue.projectId||'connection'}:${issue.channel}`} className="space-y-3 py-4 first:pt-0 last:pb-0">
           <div><p className="text-sm font-medium">{issue.name}</p>{!displayedModal.connectionId&&issue.projectId&&<p className="mt-1 text-xs text-muted-foreground">{issue.connectionName}</p>}<p className="mt-1 text-sm text-muted-foreground">{issue.reason}</p></div>
@@ -540,6 +577,7 @@ function App() {
         <p className="text-xs text-muted-foreground">The default is set in Settings. β Beta uses the existing permission catalog; new or changed tools are not automatically enabled. Router limits do not change access in Webflow or other integrations.</p>
       </div>}
     {displayedModal?.type==='workspace'&&<WorkspacePermissionForm key={displayedModal.item.id} connection={data.connections.find(c=>c.id===displayedModal.item.id)||displayedModal.item} busy={busy} perform={perform} close={()=>setModal(null)} />}
+    {displayedModal?.type==='accessMode'&&<AccessModeForm key={displayedModal.item.id} connection={data.connections.find(c=>c.id===displayedModal.item.id)||displayedModal.item} busy={busy} perform={perform} close={()=>setModal(null)} />}
     {displayedModal?.type==='order'&&<ConnectionOrderForm connections={data.connections} busy={busy} perform={perform} close={()=>setModal(null)} />}
       {displayedModal?.type==='rename'&&<NameForm key={displayedModal.item.id} model={displayedModal} busy={busy} perform={perform} close={closeModal} />}
       {displayedModal?.type==='delete'&&<><p className="text-sm">Permanently remove this connection, its local OAuth credentials and project settings?</p><p className="text-xs text-muted-foreground">This cannot be undone. Webflow sites are not deleted. You can authorize a new connection later.</p><DialogFooter><Button variant="outline" disabled={busy} onClick={()=>setModal(null)}>Cancel</Button><Button variant="destructive" disabled={busy} onClick={()=>action(async()=>{await perform(`/api/${displayedModal.kind}/${displayedModal.item.id}/delete`);setModal(null);},'Connection permanently deleted.')}>Delete connection</Button></DialogFooter></>}

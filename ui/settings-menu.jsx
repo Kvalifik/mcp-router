@@ -1,11 +1,11 @@
 import React from 'react';
-import { ChevronDown, Settings2, SunMoon, PanelTop, Monitor, Server, ArrowDownUp, ShieldCheck, Activity, RefreshCw, Info, Pencil, Trash2, MessageSquare, Code2, Terminal, Plus, Copy, Check, TriangleAlert, CloudOff, Eye, Ban, CheckCheck, Unplug } from 'lucide-react';
+import { ChevronDown, Settings2, SunMoon, PanelTop, Monitor, Server, ArrowDownUp, ShieldCheck, Activity, RefreshCw, Info, Pencil, Trash2, MessageSquare, Code2, Terminal, Plus, Copy, Check, TriangleAlert, CloudOff, Eye, Ban, CheckCheck, Unplug, Split, Power } from 'lucide-react';
 import { AnimatedText } from './components/ui/animated-content.jsx';
 import { Button } from './components/ui/button.jsx';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuCheckboxItem } from './components/ui/dropdown-menu';
 import { toast } from 'sonner';
 
-const icons={SunMoon,PanelTop,Monitor,Server,ArrowDownUp,ShieldCheck,Activity,RefreshCw,Info,Pencil,Trash2,MessageSquare,Code2,Terminal,Plus,Copy,Check,TriangleAlert,CloudOff,Eye,Ban,CheckCheck,Unplug};
+const icons={SunMoon,PanelTop,Monitor,Server,ArrowDownUp,ShieldCheck,Activity,RefreshCw,Info,Pencil,Trash2,MessageSquare,Code2,Terminal,Plus,Copy,Check,TriangleAlert,CloudOff,Eye,Ban,CheckCheck,Unplug,Split,Power};
 function ItemIcon({name}){const Icon=icons[name];return Icon?<Icon className="size-4" />:null;}
 
 export function ActionMenu({items, trigger}) {

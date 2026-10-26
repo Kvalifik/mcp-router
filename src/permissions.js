@@ -141,6 +141,41 @@ export async function checkOwnership(client, op, value, siteId, pageId) {
     }
     await targets(value);
   }
+  if(op.tool==='data_component_props_tool' && ['get_slot_default','add_to_slot_default','remove_from_slot_default','reset_slot_to_default','clear_slot'].includes(op.action)) {
+    const read = async (tool,action,params) => resultOf(await client.call(tool,{siteId,pageId,actions:[{label:'Verify project slot ownership',[action]:params}]}),action);
+    const result=await read('data_component_tool','get_all_components',{options:{includeProps:true}});
+    const components=Array.isArray(result)?result:result.components;
+    if(!Array.isArray(components) || result.pagination?.hasMore || result.pagination?.nextCursor || result.pagination?.total>components.length)throw new Error('Cannot verify component ownership');
+    const component = id => {
+      const found=components.find(row=>row.id===id);
+      if(!found)throw new Error('Resource does not belong to this project');
+      return found;
+    };
+    if(value.component_id) {
+      const owner=component(value.component_id);
+      if(!Array.isArray(owner.props) || !owner.props.some(prop=>prop.id===value.slot_prop_id && prop.type==='slot'))throw new Error('Slot does not belong to this component');
+      if(value.child_component_id)component(value.child_component_id);
+      if(op.action==='remove_from_slot_default') {
+        const defaults=await read(op.tool,'get_slot_default',{component_id:value.component_id,slot_prop_id:value.slot_prop_id});
+        const roots=Array.isArray(defaults)?defaults:defaults.elements;
+        if(!Array.isArray(roots) || defaults.pagination?.hasMore || defaults.pagination?.nextCursor || !roots.some(root=>root.id?.element===value.element_id))throw new Error('Element does not belong to this slot');
+      }
+    } else {
+      if(value.scope_component_id)component(value.scope_component_id);
+      if(value.element_id.component!==pageId)component(value.element_id.component);
+      // An exact element ID pair must occur in a tree rooted in this verified
+      // page/component. Never trust the context page to scope a foreign ID.
+      const contains = tree => {
+        if(!tree || typeof tree!=='object')return false;
+        if(tree.id?.component===value.element_id.component && tree.id?.element===value.element_id.element)return true;
+        return Object.values(tree).some(contains);
+      };
+      const tree=await read('data_element_tool','get_all_elements',{depth:-1,...(value.scope_component_id?{scope_component_id:value.scope_component_id}:{})});
+      let found=contains(tree);
+      if(!found && !value.scope_component_id && value.element_id.component!==pageId)found=contains(await read('data_element_tool','get_all_elements',{depth:-1,scope_component_id:value.element_id.component}));
+      if(!found)throw new Error('Element does not belong to this project');
+    }
+  }
   if(value.site_branch_id) {
     const result=resultOf(await client.call('data_pages_tool',{actions:[{label:'Verify project Release ownership',list_site_branches:{site_id:siteId}}]}),'list_site_branches');
     const branches=Array.isArray(result)?result:result.branches || result.siteBranches;

@@ -1,6 +1,6 @@
 // Run with: npx electron scripts/capture-readme.mjs
 // Renders the current UI against fictional data, never the router or saved accounts.
-import { app, BrowserWindow, nativeTheme, Tray, nativeImage, Menu, screen, ipcMain } from 'electron';
+import { app, BrowserWindow, nativeTheme, Tray, nativeImage, Menu, screen, ipcMain, shell } from 'electron';
 import { createServer } from 'vite';
 import { writeFile, mkdir, readdir, readFile } from 'node:fs/promises';
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -17,8 +17,9 @@ import nativeMenusApi from '../src/native-menu.cjs';
 
 async function main() {
 const recording = process.argv.includes('--record');
+const verifyDirect = process.argv.includes('--verify-direct');
 const verifyAttention = process.argv.includes('--verify-attention');
-const attentionPreview = process.argv.includes('--attention') || verifyAttention;
+const attentionPreview = process.argv.includes('--attention') || verifyAttention || verifyDirect;
 const root = fileURLToPath(new URL('../', import.meta.url));
 const temporary = mkdtempSync(join(tmpdir(), 'mcp-router-screenshots-'));
 // Keep Chromium's profile until shutdown; quit handlers must be synchronous.
@@ -63,6 +64,8 @@ try {
     integratedTitleBar: true,
     showNativeMenu: request => ipcRenderer.invoke('demo-native-menu', request),
     openMainWindow: () => ipcRenderer.invoke('demo-open-main-window'),
+    openRepository: () => ipcRenderer.invoke('demo-open-repository'),
+    openIssues: () => ipcRenderer.invoke('demo-open-issues'),
     openOAuth: async url => { if (url !== "demo:authorized") throw new Error("Only simulated demo authorization is available."); },
     clientStatus: async () => [],
     setTheme: async () => {},
@@ -96,6 +99,13 @@ try {
     event.senderFrame?.url === `${origin}/`;
   const showMain = () => { popover?.hide(); if (window.isMinimized()) window.restore(); window.show(); window.focus(); };
   ipcMain.handle('demo-open-main-window', event => { if (!allowed(event)) throw new Error('Denied'); showMain(); });
+  const {updateRepository} = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'));
+  for (const [channel, suffix] of [['demo-open-repository', ''], ['demo-open-issues', '/issues']]) {
+    ipcMain.handle(channel, async event => {
+      if (!allowed(event)) throw new Error('Denied');
+      await shell.openExternal(`https://github.com/${updateRepository}${suffix}`);
+    });
+  }
   const icons = {};
   const iconDirectory = join(root, 'assets/icons/menu');
   for (const file of await readdir(iconDirectory)) {
@@ -152,7 +162,7 @@ try {
   }
   const click = selector => evaluate(`document.querySelector(${JSON.stringify(selector)}).click()`);
   async function capture(name) {
-    if (verifyAttention) return;
+    if (verifyAttention || verifyDirect && !name.startsWith('/')) return;
     await evaluate('document.fonts.ready');
     app.focus({ steal: true });
     window.focus();
@@ -161,7 +171,17 @@ try {
     const path = name.startsWith('/') ? name : join(root, 'docs/images', name);
     await mkdir(dirname(path), { recursive: true });
     const windowId = window.getMediaSourceId().split(':')[1];
-    await promisify(execFile)('/usr/sbin/screencapture', ['-x', '-T', '1', '-l', windowId, path]);
+    let captured = false;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      window.show(); window.focus();
+      await promisify(execFile)('/usr/sbin/screencapture', ['-x', '-T', '1', '-l', windowId, path]);
+      const pixels = nativeImage.createFromPath(path).toBitmap();
+      let visible = 0;
+      for (let i = 3; i < pixels.length; i += 4) if (pixels[i] > 0) visible++;
+      if (visible > 10000) { captured = true; break; }
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+    if (!captured) throw new Error('Window capture was blank: ' + name);
     await new Promise(resolve => setTimeout(resolve, 1500));
     console.log(`Saved ${path}`);
   }
@@ -231,6 +251,39 @@ try {
     if(demo.state.connections[0].connectionPermissions?.['workspace_discovery:read']!==true)throw new Error('Account-wide grant must save independently');
     demo.state.connections[0].connectionPermissions={};
     demo.state.connections[0].workspacePermissions={};
+    const projectsBeforeDirect=JSON.stringify(demo.state.projects);
+    verificationMenuSelection='access-mode';
+    await click('[aria-label="More options for Example Studio"]');
+    await waitFor('input[name="accessMode"][value="managed"]');
+    await assertUI(`document.querySelector('input[value="managed"]').checked`, 'connections must default to Managed');
+    await click('input[name="accessMode"][value="direct"]');
+    await assertUI(`document.querySelector('[role="dialog"]').textContent.includes('Project permissions don’t apply') && document.querySelector('[role="dialog"]').textContent.includes('other projects or workspaces')`, 'Direct scope must be explicit before saving');
+    await evaluate(`document.querySelectorAll('[data-sonner-toast] [data-close-button]').forEach(button=>button.click()); document.activeElement.blur()`);
+    await capture('/tmp/mcp-router-direct-dialog.png');
+    window.setWindowButtonVisibility(false);
+    window.setSize(400,420);
+    await new Promise(resolve=>setTimeout(resolve,300));
+    await capture('/tmp/mcp-router-direct-compact.png');
+    await assertUI(`(()=>{const footer=document.querySelector('[role="dialog"] [data-slot="dialog-footer"]').getBoundingClientRect(); const scroller=document.querySelector('[role="dialog"] .dialog-scroll'); return footer.bottom<=innerHeight && footer.top>=0 && scroller.clientHeight>0 && scroller.scrollHeight>scroller.clientHeight;})()`, 'compact Direct dialog must scroll and keep its save action visible');
+    window.setSize(860,640);
+    window.setWindowButtonVisibility(true);
+    await evaluate(`Array.from(document.querySelectorAll('[role="dialog"] button')).find(button=>button.textContent==='Enable Direct Webflow').click()`);
+    for(let attempt=0;attempt<50&&await evaluate(`!!document.querySelector('[role="dialog"]')`);attempt++)await new Promise(resolve=>setTimeout(resolve,100));
+    if(demo.state.connections[0].accessMode!=='direct')throw new Error('Direct mode did not save');
+    await assertUI(`document.querySelector('[aria-label="Enable Juniper & Kite"]').disabled && document.querySelector('[aria-label="Settings for Juniper & Kite"]').disabled`, 'project controls must be inactive in Direct mode');
+    await assertUI(`document.querySelector('[aria-label="Direct Webflow — settings for Archive Concept"]') !== null`, 'disabled managed projects must show Direct access');
+    await evaluate(`document.querySelectorAll('[data-sonner-toast] [data-close-button]').forEach(button=>button.click()); document.activeElement.blur()`);
+    await capture('/tmp/mcp-router-direct-overview.png');
+    verificationMenuSelection='access-mode';
+    await click('[aria-label="More options for Example Studio"]');
+    await waitFor('input[name="accessMode"][value="managed"]');
+    await click('input[name="accessMode"][value="managed"]');
+    await evaluate(`Array.from(document.querySelectorAll('[role="dialog"] button')).find(button=>button.textContent==='Save changes').click()`);
+    for(let attempt=0;attempt<50&&await evaluate(`!!document.querySelector('[role="dialog"]')`);attempt++)await new Promise(resolve=>setTimeout(resolve,100));
+    await assertUI(`!document.querySelector('[aria-label="Enable Juniper & Kite"]').disabled`, 'Managed controls must return');
+    if(JSON.stringify(demo.state.projects)!==projectsBeforeDirect)throw new Error('Mode switch changed saved project settings');
+    if (verifyDirect) { console.log('Verified: default Managed mode, explicit Direct scope, native menu, responsive dialog, inactive project controls and unchanged restored settings.'); return; }
+
     window.setWindowButtonVisibility(false);
     window.setSize(400, 560);
     await loadDemo();

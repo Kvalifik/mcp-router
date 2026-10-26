@@ -50,11 +50,11 @@ test('real MCP stdio client enforces live policy through the daemon', async t =>
   assert.match(instructions, /Webflow websites and projects/);
   assert.match(instructions, /list_projects.*prepare_project.*get_project_operations/s);
   assert.match(instructions, /without bypassing it or switching grants/);
-  assert.match(instructions.slice(0,512), /list_projects.*prepare_project.*get_project_operations/s);
-  assert.match(instructions.slice(0,512), /Missing direct Webflow tools/);
+  assert.match(instructions.slice(0,512), /Managed.*list_direct_connections.*get_direct_tools.*call_direct_tool/s);
+  assert.match(instructions, /Missing direct Webflow tools/);
   assert.doesNotMatch(instructions, /Webflow server guidance revision/);
   const { tools } = await client.listTools();
-  assert.deepEqual(tools.map(t => t.name).sort(), ['get_project_guidance', 'get_project_operations', 'list_projects', 'prepare_project', 'read_project_site', 'read_webflow', 'request_reauthorization', 'write_webflow']);
+  assert.deepEqual(tools.map(t => t.name).sort(), ['call_direct_tool', 'get_direct_tools', 'get_project_guidance', 'get_project_operations', 'list_direct_connections', 'list_projects', 'prepare_project', 'read_project_site', 'read_webflow', 'request_reauthorization', 'write_webflow']);
   assert.match(tools.find(t => t.name === 'list_projects').description, /Start here for Webflow/);
   assert.match(tools.find(t => t.name === 'get_project_operations').description, /CMS.*SEO.*Designer/);
   assert.match(tools.find(t => t.name === 'prepare_project').description, /including read-only/);
@@ -103,6 +103,28 @@ test('real MCP stdio client enforces live policy through the daemon', async t =>
   assert.equal((await client.callTool({name:'get_project_guidance',arguments:{projectId:'a'}})).isError,true);
   assert.equal((await client.callTool({ name: 'read_project_site', arguments: { projectId: 'a' } })).isError, true);
   assert.equal((await client.callTool({ name: 'publish_site', arguments: { projectId: 'a' } })).isError, true);
+  // Direct tools use the same stdio/IPC boundary and preserve MCP content blocks.
+  const directArgs={connectionId:id,channel:'stable'};
+  assert.equal((await client.callTool({name:'get_direct_tools',arguments:directArgs})).isError,true);
+  router.setConnection(id,true);
+  store.connection(id).tokens={access_token:'synthetic-direct'};
+  router.edit('connections',id,{accessMode:'direct'});
+  const direct=JSON.parse((await client.callTool({name:'list_direct_connections',arguments:{}})).content[0].text);
+  assert.equal(direct[0].connectionId,id);
+  const directTools=JSON.parse((await client.callTool({name:'get_direct_tools',arguments:directArgs})).content[0].text);
+  assert.ok(directTools.tools.some(tool=>tool.name==='new_unreviewed_tool'));
+  const payload={nested:{values:[1,false,null,'synthetic']}};
+  const directResponse={content:[{type:'text',text:'Synthetic response'},{type:'image',data:'c3ludGhldGlj',mimeType:'image/png'}],structuredContent:{ok:true}};
+  router.open=async()=>({listTools:async()=>[{name:'new_unreviewed_tool',inputSchema:{type:'object'}}],call:async(name,args)=>{assert.equal(name,'new_unreviewed_tool');assert.deepEqual(args,payload);return directResponse;},close:async()=>{}});
+  const forwarded=await client.callTool({name:'call_direct_tool',arguments:{...directArgs,toolName:'new_unreviewed_tool',arguments:payload}});
+  assert.deepEqual(forwarded,directResponse);
+  const directTool=tools.find(tool=>tool.name==='call_direct_tool');
+  assert.equal(directTool.annotations.readOnlyHint,false);
+  assert.equal(directTool.annotations.destructiveHint,true);
+  assert.equal((await client.listResources()).resources.length,0);
+  router.edit('connections',id,{accessMode:'managed'});
+  assert.equal((await client.callTool({name:'call_direct_tool',arguments:{...directArgs,toolName:'new_unreviewed_tool',arguments:{}}})).isError,true);
+
 });
 
 // A daemon that accepts requests but never answers simulates stalled upstream
