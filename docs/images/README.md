@@ -13,7 +13,8 @@ The script starts a temporary Vite server on an available loopback port, supplie
 read-only demo API data, and captures the overview and project permissions dialog
 in Electron. It uses an isolated temporary profile and blocks external requests.
 The demo desktop bridge supports native dropdown menus and opening the main
-window from the menu bar panel; external account and integration actions remain simulated; no OAuth grants or client configurations are read
+window from the menu bar panel. The GitHub repository and feedback links open
+their fixed public destinations in the default browser; external account and integration actions remain simulated; no OAuth grants or client configurations are read
 or changed. The script briefly shows an 860 × 640 demo window and uses macOS
 `screencapture` to include native window controls and the window shadow. Screen
 Recording permission may be required. Two demo projects use authorized Beta
@@ -27,7 +28,8 @@ Successful captures close the Vite server and use `app.quit()` for normal window
 shutdown, then remove the temporary profile on the `quit` event. Do not kill the
 capture process or remove its profile while Chromium is still using it.
 
-Review both PNGs after regenerating them, especially when layout or permission
+The capture retries fully transparent window images up to three times and fails
+if macOS still returns a blank capture. Review both PNGs after regenerating them, especially when layout or permission
 groups change. Demo names and presets live in `scripts/capture-readme.mjs`.
 
 For a screen recording, run `npm run demo`. This opens the same isolated,
@@ -59,3 +61,14 @@ For the same interaction checks without replacing screenshots, use
 `npx electron scripts/capture-readme.mjs --verify-attention`.
 This also verifies the connection menu's Workspace permissions dialog, its
 default-off state and scope explanation, and saving without changing project grants.
+
+The attention verification also exercises connection access modes: Managed is the
+default, Direct shows its authorization-wide scope before saving, project controls
+become inactive, and switching back preserves all saved project settings.
+`--attention` saves temporary Direct dialog and overview previews under
+`/tmp/mcp-router-direct-*.png`; these do not add README assets.
+
+For focused Direct-mode UI verification, run
+`npx electron scripts/capture-readme.mjs --verify-direct`. It checks the native menu,
+mode round-trip and compact dialog scrolling, saves temporary previews under
+`/tmp/mcp-router-direct-*.png`, and leaves README screenshots unchanged.

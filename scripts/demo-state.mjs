@@ -54,6 +54,10 @@ export function createDemoState(seed) {
         if (body.useDefaultName) update.name = item.sourceName || item.name;
         if (body.dismissNaming) update.needsName = false;
         for (const key of ['enabled', 'favourite']) if (body[key] !== undefined) update[key] = boolean(body[key]);
+        if (body.accessMode !== undefined) {
+          if (kind !== 'connections' || !['managed','direct'].includes(body.accessMode)) throw new Error('Invalid access mode');
+          update.accessMode = body.accessMode;
+        }
         if (body.permissions !== undefined) update.permissions = validatePermissions(body.permissions);
         if (body.connectionPermissions !== undefined) {
           if(kind!=='connections')throw new Error('Connection permissions belong to a connection');

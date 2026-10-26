@@ -333,7 +333,7 @@ test('CMS creation accepts custom fields only inside fieldData for both request 
 
 test('site Releases use distinct permissions, verify ownership and stay unavailable on Stable',async t=>{
  const {router,store,calls}=fixture(t);
- const actions={list_site_branches:'read',create_site_branch:'write',stage_site_branch:'publish',discard_site_branch:'delete'};
+ const actions={list_site_branches:'read',create_site_branch:'write',stage_site_branch:'publish',discard_site_branch:'delete',get_site_branch_freshness:'read',update_site_branch_details:'write'};
  grant(router,{'pages:read':true,'pages:write':true,'pages:publish':true,'pages:delete':true});
  for(const [action,mode] of Object.entries(actions)){
   const id='data_pages_tool.'+action;
@@ -363,6 +363,9 @@ test('site Releases use distinct permissions, verify ownership and stay unavaila
   assert.equal(calls.at(-1).args.actions[0][action].site_id,site);
   await assert.rejects(router.call(mode==='read'?'read_webflow':'write_webflow',request(id,{...params,site_id:other},mode==='read'?{}:{preparationId})),/Cross-project/);
  }
+ await router.call('read_webflow',request('data_pages_tool.list_pages',{site_branch_id:'owned-release'}));
+ assert.equal(calls.at(-1).args.actions[0].list_pages.site_branch_id,'owned-release');
+ await assert.rejects(router.call('read_webflow',request('data_pages_tool.list_pages',{site_branch_id:'foreign'})),/does not belong/);
  const pageId='data_pages_tool.create_page', page={title:'Synthetic',slug:'synthetic',draft:true,site_branch_id:'owned-release'};
  const betaSchema=(await router.call('get_project_operations',{projectId:'p',operationId:pageId})).schema;
  assert(betaSchema.properties.site_branch_id);
@@ -382,6 +385,7 @@ test('site Releases use distinct permissions, verify ownership and stay unavaila
  }
  router.edit('projects','p',{channel:'stable'});grant(router,{'pages:write':true});
  assert(!(await router.call('get_project_operations',{projectId:'p',operationId:pageId})).schema.properties.site_branch_id);
+ assert.throws(()=>prepareArguments(operation('data_pages_tool.list_pages'),{site_branch_id:'owned-release'},site),/schema/);
  // Compiling the Beta schema first must not pollute Stable validation.
  assert.throws(()=>prepareArguments(operation(pageId),page,site),/schema/);
  assert.doesNotThrow(()=>prepareArguments(operation(pageId),{title:'Synthetic',slug:'synthetic'},site));
@@ -488,4 +492,28 @@ test('GSAP ownership reads every interaction page and rejects incomplete or malf
   setIntercept(async(tool,args)=>args.actions[0].list_interactions?envelope('list_interactions',result):undefined);
   await assert.rejects(router.call('read_webflow',request('data_interactions_tool.get_interaction',{id:'last-interaction'},{pageId:'owned-page'})));
  }
+});
+
+
+test('Beta slot dispatch rejects Stable and withheld permissions before reaching upstream mutations',async t=>{
+ const {router,store,calls,setIntercept}=fixture(t);
+ const id='data_component_props_tool.clear_slot';
+ grant(router,{'component_props:delete':true,'scripts:write':true});
+ await assert.rejects(router.call('get_project_operations',{projectId:'p',operationId:id}),/selected MCP channel/);
+ const connection=store.connection(router.project('p',null).connectionId);
+ connection.beta={tokens:{access_token:'synthetic-beta'},sites:[{id:site}]};router.edit('projects','p',{channel:'beta'});
+ setIntercept(async(tool,args)=>{
+  const action=Object.keys(args.actions?.[0]||{}).find(k=>k!=='label');
+  if(action==='get_all_components')return envelope(action,{components:[{id:'owned-component',props:[]}]});
+  if(action==='get_all_elements')return envelope(action,{elements:[{id:{component:'owned-component',element:'instance'}}]});
+ });
+ const {preparationId}=await router.call('prepare_project',{projectId:'p'});
+ const params={element_id:{component:'owned-component',element:'instance'},slot_name:'Content'};
+ const args=request(id,params,{pageId:'owned-page',preparationId});
+ await router.call('write_webflow',args);assert(calls.at(-1).args.actions[0].clear_slot);
+ const count=()=>calls.filter(c=>c.args.actions?.[0]?.clear_slot).length;
+ const before=count();
+ await assert.rejects(router.call('write_webflow',{...args,params:{...params,element_id:{component:'foreign',element:'instance'}}}),/does not belong/);
+ grant(router,{'component_props:delete':false});await assert.rejects(router.call('write_webflow',args),/Missing project permissions/);
+ assert.equal(count(),before);
 });

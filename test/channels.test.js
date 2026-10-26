@@ -108,3 +108,29 @@ test('switching off during OAuth does not cancel owner authorization',async t=>{
  assert.equal(await oauth.complete(id,{...pending,code:'code'}),'beta');
  assert.equal(store.connection(id).enabled,false);
 });
+
+test('owner manual sync works while off and preserves access and grant isolation',async t=>{
+ for(const channel of ['stable','beta']) {
+  const {store,router,id,opened}=fixture(t);
+  await router.sites(id);
+  const project=Object.values(store.data.projects)[0];
+  router.edit('projects',project.id,{enabled:true});
+  const permissions=structuredClone(project.permissions);
+  router.setConnection(id,false);
+  if(channel==='beta') store.connection(id).beta={tokens:{access_token:'beta-token'}};
+  await router.sites(id,{channel,ownerInitiated:true});
+  assert.equal(opened.at(-1),channel);
+  assert.equal(store.connection(id).enabled,false);
+  assert.equal(project.enabled,true);
+  assert.deepEqual(project.permissions,permissions);
+  const count=opened.length;
+  await assert.rejects(router.call('read_project_site',{projectId:project.id}),/denied/);
+  await assert.rejects(router.sites(id,{channel}),/disabled/);
+  await router.resyncDueProjects();
+  assert.equal(opened.length,count);
+  const grant=channel==='stable'?store.connection(id):store.connection(id).beta;
+  delete grant.tokens;
+  await assert.rejects(router.sites(id,{channel,ownerInitiated:true}));
+  assert.equal(opened.length,count);
+ }
+});

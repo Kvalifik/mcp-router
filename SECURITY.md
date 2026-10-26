@@ -23,15 +23,15 @@ guaranteed support period.
   All OAuth and MCP requests, including legacy credentials without an issuer,
   remain restricted to `https://mcp.webflow.com` and cannot follow redirects.
 - OAuth uses PKCE and browser-bound, one-use state; Stable and Beta grants are
-  separate. Owner-initiated authorization and its project inventory check can run
-  while a connection is off; AI calls and background sync remain blocked.
+  separate. Owner-initiated authorization, its project inventory check, and manual
+  inventory sync can run while a connection is off; AI calls and background sync remain blocked.
 - AI project-name searches expose matching disabled project names by default,
   but no IDs, permissions, or content. The owner can disable this in Settings.
   Disabled connections and unavailable or deleted projects remain hidden.
   Discovery uses local inventory and does not grant execution access.
-- Router permissions restrict calls independently of Webflow authorization. The
+- In Managed mode, router permissions restrict calls independently of Webflow authorization. The
   router cannot inspect the full upstream permission grant; Webflow enforces it.
-- The pinned operation catalog and project ownership checks reject unknown or
+- In Managed mode, the pinned operation catalog and project ownership checks reject unknown or
   disallowed operations. These controls require ongoing review as Webflow evolves.
 - Webflow server instructions and tool descriptions are fetched live for enabled
   projects with instruction-read access, using each project's selected grant.
@@ -161,3 +161,37 @@ on the context project as well as preparation. It does not enable the new projec
 in the router. Use `data_apps_tool.create_standalone_app` for this path; regular
 `create_app` always attaches to the approved project. Existing saved project or
 workspace-member permissions never grant these account-wide capabilities.
+
+### Optional Direct Webflow connections
+
+Managed access remains the default for new and existing connections. Only the
+owner-authenticated, CSRF-protected management API can select Direct mode.
+Direct explicitly bypasses all Router project enable switches, project/workspace/
+account permission settings, pinned schemas, ownership checks and preparation
+proofs. It exposes live tool definitions and forwards tools under the explicitly
+selected Stable or Beta OAuth grant; Webflow authorization is the scope boundary.
+This can reach other projects and workspaces, including projects disabled locally.
+There is no automatic fallback from Managed access and no grant fallback.
+
+The existing local authentication, loopback/Host/Origin/CSRF controls, Electron
+isolation, endpoint restrictions and credential handling remain in force. Direct
+calls require an enabled, undeleted Direct connection and tokens for the selected
+grant. Tool existence is checked against the live upstream list before dispatch;
+Webflow validates its live input schema. Connection changes increment a revision,
+preventing dispatch or result delivery across disable/enable and mode round-trips.
+A write already sent cannot be recalled. Mode changes invalidate Managed preparation
+proofs without changing saved permissions. Audit events contain no upstream tool
+names, arguments or response bodies; errors use the existing sanitized categories.
+Direct forwards successful MCP content and structured results, not arbitrary
+upstream resource requests. Agent guidance still requires reading project rules
+and relevant skills, but Direct does not enforce their preparation mechanically.
+
+
+Beta slot operations verify the context page, component membership, slot prop
+membership and (for removals) the exact default root. Instance slot mutations
+verify an exact element ID pair in a tree rooted in an owned page/component.
+Clear/removal require Component properties Delete; reset requires Write and
+Delete. All slot mutations retain Custom code Write and instruction preparation.
+New Release reads/writes verify site-branch membership. Stable rejects Beta-only
+actions and branch-scoped page-list parameters. Incomplete ownership listings
+fail closed; no new permission category or automatic grant is introduced.

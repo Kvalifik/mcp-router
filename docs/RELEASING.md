@@ -371,3 +371,36 @@ The release review in `docs/release-review.json` binds both channel outcomes to
 the staged release source. No open Dependabot PRs were present. No UI or dependency
 changes are included in this follow-up; native prototype and manual resync work
 remain separate from this release.
+
+### 0.9.0 release review (2026-10-26)
+
+Complete, separately authorized Stable (37 tools) and Beta (39 tools) inventories,
+top-level envelopes, tool descriptions and guides were reviewed. Stable is
+unchanged. Beta adds five component-slot actions and two Release actions; its
+stage/discard descriptions and branch-scoped page-list schema were refreshed.
+The explicit `--refresh-site-branches STABLE.json BETA.json` generator allowlist
+now includes these seven Beta actions. Component-slot operations require owned
+components, slot definitions/default roots and exact instance element pairs;
+Release operations use existing branch ownership checks. Clear/removal require
+Delete, and reset requires both Write and Delete. No new permission category.
+The only accepted schema difference remains the narrow CMS fieldData correction.
+Utility tools and owner inventory remain excluded by design in Managed mode.
+Direct is separately owner-enabled and intentionally exposes live tools under
+the selected grant; no Managed failure switches modes or channels.
+
+Dependency review: include Dependabot #38's compatible React/Radix/Lucide/Vite
+updates and #36's Hono 4.13.13 patch. Lockfile inspection found no new install-script
+flags or non-npm registries. Changes are UI behavior/type fixes, build fixes, and
+Hono's static-path security correction; this app uses its own HTTP server rather
+than Hono's static middleware. Refresh notices and verify dialogs and packaged
+runtimes. Keep #37 (TOML, Zod, notarization) separate for configuration/schema and
+signed-updater integration validation; its notarization update also changes
+package preparation metadata. Keep #35 (Motion 14) and #32 (setup-node 7) separate
+as major upgrades. Native demo and read-code prototype are development work,
+not production release candidates. No dependency PR is closed until its
+replacement has merged.
+
+Validation uses synthetic fixtures and fictional UI captures. New Beta mutations
+have not been exercised against live customer content or an entitled Releases
+site. Installed signed Mac login-item enable/disable and app-restart persistence
+were checked; actual sign-in launch and Windows login require manual validation.

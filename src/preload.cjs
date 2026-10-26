@@ -1,6 +1,8 @@
 const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('routerDesktop', {
   showNativeMenu: request => ipcRenderer.invoke('show-native-menu', request),
+  startupSettings: () => ipcRenderer.invoke('startup-settings'),
+  setStartupSettings: enabled => ipcRenderer.invoke('set-startup-settings', enabled),
   menuBarMode: () => ipcRenderer.invoke('menu-bar-mode'),
   setMenuBarMode: mode => ipcRenderer.invoke('set-menu-bar-mode', mode),
   openMainWindow: () => ipcRenderer.invoke('open-main-window'),
@@ -9,6 +11,8 @@ contextBridge.exposeInMainWorld('routerDesktop', {
   onUpdateStatus: callback => { const handler = (_event,state) => callback(state); ipcRenderer.on('update-status',handler); return () => ipcRenderer.removeListener('update-status',handler); },
   downloadUpdate: () => ipcRenderer.invoke('download-update'),
   openPublisher: () => ipcRenderer.invoke('open-publisher'),
+  openRepository: () => ipcRenderer.invoke('open-repository'),
+  openIssues: () => ipcRenderer.invoke('open-issues'),
   openLicenses: () => ipcRenderer.invoke('open-licenses'),
   onPopoverOpen: callback => { const handler = () => callback(); ipcRenderer.on('focus-popover', handler); return () => ipcRenderer.removeListener('focus-popover', handler); },
   onShowAbout: callback => { const handler = () => callback(); ipcRenderer.on('show-about', handler); return () => ipcRenderer.removeListener('show-about', handler); },

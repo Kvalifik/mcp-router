@@ -150,7 +150,8 @@ and client-specific restrictions remain relevant.
 
 *Choose a permission preset or control individual actions for each project.*
 
-Router permissions apply only to calls passing through MCP Router. They do not
+In the default **Managed** mode, router permissions apply only to calls passing
+through MCP Router. They do not
 reduce permissions in Webflow itself or in separate integrations. The app
 cannot prevent the same OS user or an agent with local filesystem access from
 changing its code or stored settings.
@@ -162,6 +163,13 @@ project names by default, without accessing their content. Turn this off in
 remain hidden. **No publishing** blocks explicit
 publish/unpublish operations. Some writes can affect live settings without a
 publish call. A sent write cannot be rolled back by disabling the project.
+
+For an optional compatibility fallback, choose a connection’s **More options →
+Access mode → Direct Webflow**. Direct uses live upstream tools and Webflow’s
+authorization scope; **project permissions and switches do not apply**, and neither
+do router workspace or account permission settings. It may reach other projects
+or workspaces. Saved settings return when switching back to Managed. Turning off
+the connection blocks access. See [connection access modes](docs/USAGE.md#connection-access-modes).
 
 Each user needs their own provider authorization. OAuth scopes, account roles,
 plan limits, and Designer session requirements still apply. Stable and Beta

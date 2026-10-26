@@ -4,6 +4,11 @@ MCP Router brings projects from multiple Webflow workspaces into one MCP
 connection for your AI tools. Add the Webflow authorizations you need, then
 enable the projects and permissions you want available at the same time.
 
+Select **Settings → About MCP Router → View on GitHub** to open the MCP Router repository in your
+default browser, where you can find the source code, documentation, and issues.
+**Report a bug or suggest a feature** is available in both Settings and About MCP
+Router and opens the repository’s GitHub Issues page.
+
 ## Authorizing a connection
 
 After a new connection successfully discovers its projects, MCP Router asks for a
@@ -26,11 +31,52 @@ When reconnecting, include all projects that should retain access. The router ca
 inspect the full Webflow permission grant. Its restrictions apply only to calls
 passing through MCP Router; Webflow still enforces its own access restrictions.
 
+## Connection access modes
+
+Connections default to **Managed access**, including existing connections. Open a
+connection’s **More options → Access mode** to choose **Direct Webflow** and select
+**Enable Direct Webflow** after reviewing the scope explanation.
+
+In Direct mode, **project permissions do not apply**. Project enable switches and
+project, workspace and account permission settings are inactive. Webflow’s selected
+OAuth authorization determines access, potentially including other projects and
+workspaces, even projects disabled in the router. A connection is not necessarily
+limited to one workspace. Stable and Beta grants remain separate; Direct does not
+add Webflow authorization or switch grants on failure. Turning the connection off
+blocks new calls and delivery of in-flight results; it cannot undo a write already
+sent to Webflow.
+
+Saved Managed settings remain unchanged and resume when switching back. Access mode
+is owner-managed in the app, never enabled by an AI call or automatic fallback.
+
+For agents, `list_projects` identifies known Direct projects with `connectionId`
+and `siteId`. `list_direct_connections` also discovers Direct connections without
+any project inventory. Call `get_direct_tools` with the connection ID and explicit
+`stable` or `beta` channel to retrieve live tool names, descriptions and Webflow guidance. Supply `toolName`
+to fetch one complete live schema without loading every schema into AI context. Read
+enabled project rules and relevant skills using the upstream instruction tools,
+then use `call_direct_tool` with the upstream tool name and full arguments. The
+router supplies Webflow session identity. Direct calls do not use Managed operation
+IDs, project ownership checks or preparation proofs. Successful MCP content blocks
+and structured results are preserved; errors remain sanitized and writes are not
+automatically retried. Reauthorize the selected channel through **Reconnect Webflow**
+when explicitly required.
+
+Live discovery and forwarding allow new tool names and input schemas without a
+catalog release. This is a tool bridge, not a general proxy for arbitrary upstream
+resources, prompts, server-to-client requests or future MCP protocol features.
+Changes to Webflow session initialization or MCP transport may still need app updates.
+The menu-bar project count describes ready Managed projects; Direct connections are
+included in the connection count without implying a verified project scope.
+
 ## Automatic project resync
 
 While the router is running, it checks once a minute for project inventories whose
 last successful sync is at least an hour old, including at startup. Enabled,
-authorized Stable and Beta grants sync independently. Manual resync remains available.
+authorized Stable and Beta grants sync independently. Manual resync is available from
+the connection’s **More options → Re-sync projects** menu. The action stays visible
+and works while the connection is off, provided the selected MCP channel is authorized.
+Manual resync does not enable the connection or grant AI access.
 Busy connections and pending browser authorizations are skipped until a later check.
 Pending and failed access checks bypass the hourly freshness rule. Routine token
 refreshes preserve an already verified connection's ready state. Failures retry
@@ -51,6 +97,8 @@ Projects slide into their new positions when this order changes, making toggles
 and pinning easier to follow. The animation respects reduced-motion preferences.
 
 ## Project permissions
+
+These settings apply in Managed mode.
 
 Permission toggles and presets remain editable even when Webflow authorization
 is missing. They define the user's Router policy; the table does not display
@@ -287,6 +335,17 @@ If checking or downloading fails, the app shows a safe error message and does no
 install an unverified update. Check again to retry, or use GitHub Releases. If a
 download times out but remains pending, restart the app before retrying.
 
+### Launch at startup
+
+In the installed macOS or Windows app, enable **Settings → Launch at startup**
+to open MCP Router automatically when you sign in. Turn it off in the same menu
+to remove the login item. The checkbox reads the operating system setting and
+refreshes when the app regains focus. If macOS requests approval, allow MCP Router
+in **System Settings → General → Login Items**.
+This option is unavailable in the browser dashboard and development builds.
+On Windows, keep the app in a permanent location before enabling it; after moving
+the app, disable and re-enable the option from its new location.
+
 ### macOS menu bar
 
 Choose **Settings → Menu bar → Icon only**, **Connections**, **Projects**, or **Connections and
@@ -393,3 +452,20 @@ on the context project as well as preparation. It does not enable the new projec
 in the router. Use `data_apps_tool.create_standalone_app` for this path; regular
 `create_app` always attaches to the approved project. Existing saved project or
 workspace-member permissions never grant these account-wide capabilities.
+
+### Beta slot defaults and Release details
+
+Beta adds `get_site_branch_freshness` under Pages Read and
+`update_site_branch_details` under Pages Write, with Release ownership checks.
+Beta `list_pages` accepts `site_branch_id` after verifying that Release belongs
+to the project. These capabilities remain unavailable on Stable.
+
+The Beta component-slot actions require a verified site page and site-owned
+components. `get_slot_default` uses Component properties Read;
+`add_to_slot_default` uses Write; `remove_from_slot_default` and `clear_slot`
+use Delete. `reset_slot_to_default` requires both Write and Delete because it
+replaces overridden content. All mutations also require Instructions Read and
+Custom code Write. Slot props, default roots and target element pairs are checked
+against the selected component or page. Unknown or incomplete ownership responses
+fail closed. Library components absent from the site's component inventory cannot
+be verified. Slot-default feature availability is enforced upstream.

@@ -153,7 +153,7 @@ export function createDashboard(router, oauth, origin, { managementToken = nonce
           return json(res, { url: `${origin}/oauth/launch/${ticket}` });
         }
         if (action === 'toggle') { router.setConnection(id, data.enabled); return json(res, { ok: true }); }
-        return json(res, { sites: await router.sites(id, { refresh: action === 'refresh', channel:data.channel || router.store.data.settings.defaultChannel || 'stable' }) });
+        return json(res, { sites: await router.sites(id, { ownerInitiated: true, refresh: action === 'refresh', channel:data.channel || router.store.data.settings.defaultChannel || 'stable' }) });
       }
       if (url.pathname === '/api/read-project') return json(res, await router.testProject(data));
       return json(res, { error: 'Unknown route' }, 404);

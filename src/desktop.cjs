@@ -30,13 +30,16 @@ else {
     let trayUpdateState = {state:'current'};
     const showMain = () => { popover?.hide(); if(win.isMinimized())win.restore(); win.show(); win.focus(); };
     const mode = () => menuBarMode(router.store.data.settings?.menuBar);
+    const startup = require('./startup.cjs').createStartupSettings(app, process.platform);
+    ipcMain.handle('startup-settings', event => { if(!allowed(event))throw new Error('Denied'); return startup.read(); });
+    ipcMain.handle('set-startup-settings', (event, enabled) => { if(!allowed(event))throw new Error('Denied'); return startup.set(enabled); });
     ipcMain.handle('menu-bar-mode', event => { if(!allowed(event))throw new Error('Denied'); return mode(); });
     ipcMain.handle('set-menu-bar-mode', (event, value) => {
       if(!allowed(event) || process.platform !== 'darwin' || !MODES.includes(value))throw new Error('Denied');
       router.store.data.settings ||= {}; router.store.data.settings.menuBar = value; router.store.save(); return value;
     });
     ipcMain.handle('open-main-window', event => { if(!allowed(event))throw new Error('Denied'); showMain(); });
-    const nativeMenuIcons = Object.fromEntries(['SunMoon','PanelTop','Monitor','Server','ArrowDownUp','ShieldCheck','Activity','RefreshCw','Info','Pencil','Trash2','MessageSquare','Code2','Terminal','Plus','Copy','Check','TriangleAlert','CloudOff','Eye','Ban','CheckCheck','Unplug'].map(name=>{
+    const nativeMenuIcons = Object.fromEntries(['SunMoon','PanelTop','Monitor','Server','ArrowDownUp','ShieldCheck','Activity','RefreshCw','Info','Pencil','Trash2','MessageSquare','Code2','Terminal','Plus','Copy','Check','TriangleAlert','CloudOff','Eye','Ban','CheckCheck','Unplug','Split','Power'].map(name=>{
       const icon=nativeImage.createEmpty();
       icon.addRepresentation({scaleFactor:2,buffer:require('node:fs').readFileSync(path.join(__dirname,`../assets/icons/menu/${name}.png`))});
       icon.setTemplateImage(true);
@@ -144,6 +147,8 @@ else {
       await licensesWindow.loadFile(file);
     };
     ipcMain.handle('open-publisher', async event => { if (!allowed(event)) throw new Error('Denied'); await openPublisher(); });
+    ipcMain.handle('open-repository', async event => { if (!allowed(event)) throw new Error('Denied'); await shell.openExternal(`https://github.com/${require('../package.json').updateRepository}`); });
+    ipcMain.handle('open-issues', async event => { if (!allowed(event)) throw new Error('Denied'); await shell.openExternal(`https://github.com/${require('../package.json').updateRepository}/issues`); });
     ipcMain.handle('open-licenses', async event => { if (!allowed(event)) throw new Error('Denied'); await openLicenses(); });
     ipcMain.handle('set-theme', (event,theme) => { if(allowed(event) && ['system','light','dark'].includes(theme)) nativeTheme.themeSource=theme; });
     const { projectUrl } = require('./project-links.cjs');

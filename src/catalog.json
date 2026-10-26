@@ -3618,6 +3618,39 @@
       ],
       "additionalProperties": false,
       "description": "List a site's pages: IDs, titles, and slugs."
+    },
+    "channelSchemas": {
+      "beta": {
+        "type": "object",
+        "properties": {
+          "site_id": {
+            "type": "string",
+            "description": "Webflow site ID. Use list_sites to discover site IDs."
+          },
+          "localeId": {
+            "description": "Locale ID to read, when using localization.",
+            "type": "string"
+          },
+          "limit": {
+            "description": "Max records to return (up to 100).",
+            "type": "number"
+          },
+          "offset": {
+            "description": "Pagination offset.",
+            "type": "number"
+          },
+          "site_branch_id": {
+            "description": "Releases only. Site-branch id from list_site_branches. Lists that site branch's working pages instead of main. Omit to list main-site pages.",
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "site_id"
+        ],
+        "additionalProperties": false,
+        "description": "List a site's pages: IDs, titles, and slugs."
+      }
     }
   },
   {
@@ -14829,183 +14862,6 @@
     }
   },
   {
-    "id": "data_pages_tool.list_site_branches",
-    "tool": "data_pages_tool",
-    "action": "list_site_branches",
-    "area": "pages",
-    "title": "Pages",
-    "mode": "read",
-    "permission": "pages:read",
-    "extraPermissions": [],
-    "topSite": null,
-    "page": false,
-    "builder": false,
-    "direct": false,
-    "channels": [
-      "beta"
-    ],
-    "schema": {
-      "type": "object",
-      "properties": {
-        "site_id": {
-          "type": "string",
-          "description": "Webflow site ID. Use list_sites to discover site IDs."
-        },
-        "statusGroup": {
-          "description": "Filter by status group. Omit for the default in-progress group. Use merged to page through merged history.",
-          "type": "string",
-          "enum": [
-            "inProgress",
-            "merged"
-          ]
-        },
-        "limit": {
-          "description": "Page size for merged history only (1-100). Requires statusGroup=merged; do not pass for in-progress.",
-          "type": "number",
-          "minimum": 1,
-          "maximum": 100
-        },
-        "cursor": {
-          "description": "Opaque cursor from pagination.nextCursor. Requires statusGroup=merged.",
-          "type": "string",
-          "minLength": 1
-        }
-      },
-      "required": [
-        "site_id"
-      ],
-      "additionalProperties": false,
-      "description": "List Releases (site-scope branches) for a site. Use when the user asks to list Releases or site branches. Each row's id is the site_branch_id for discard_site_branch and later lifecycle actions. Supports statusGroup filtering; limit and cursor require statusGroup=merged (in-progress is returned in full). Distinct from list_branches, which returns page branches."
-    }
-  },
-  {
-    "id": "data_pages_tool.create_site_branch",
-    "tool": "data_pages_tool",
-    "action": "create_site_branch",
-    "area": "pages",
-    "title": "Pages",
-    "mode": "write",
-    "permission": "pages:write",
-    "extraPermissions": [
-      "agent_instructions:read"
-    ],
-    "topSite": null,
-    "page": false,
-    "builder": false,
-    "direct": false,
-    "channels": [
-      "beta"
-    ],
-    "schema": {
-      "type": "object",
-      "properties": {
-        "site_id": {
-          "type": "string",
-          "description": "Webflow site ID. Use list_sites to discover site IDs."
-        },
-        "name": {
-          "type": "string",
-          "minLength": 1,
-          "description": "User-facing name for the new site branch."
-        },
-        "description": {
-          "description": "Optional description for the site branch (max 300 chars).",
-          "type": "string",
-          "maxLength": 300
-        },
-        "origin_page_id": {
-          "description": "Optional main-site page id (from list_pages) the user was viewing; used to choose the destination working page after create. Omit to use the site index page.",
-          "type": "string",
-          "minLength": 1
-        }
-      },
-      "required": [
-        "site_id",
-        "name"
-      ],
-      "additionalProperties": false,
-      "description": "Create a site-scope branch (Releases) for a site. Sync \u2014 returns the new site-branch id and destinationPageId for create-and-enter. Distinct from create_branch, which enqueues an async page-branch create."
-    }
-  },
-  {
-    "id": "data_pages_tool.stage_site_branch",
-    "tool": "data_pages_tool",
-    "action": "stage_site_branch",
-    "area": "pages",
-    "title": "Pages",
-    "mode": "publish",
-    "permission": "pages:publish",
-    "extraPermissions": [
-      "agent_instructions:read"
-    ],
-    "topSite": null,
-    "page": false,
-    "builder": false,
-    "direct": false,
-    "channels": [
-      "beta"
-    ],
-    "schema": {
-      "type": "object",
-      "properties": {
-        "site_id": {
-          "type": "string",
-          "description": "Webflow site ID. Use list_sites to discover site IDs."
-        },
-        "site_branch_id": {
-          "type": "string",
-          "minLength": 1,
-          "description": "Releases / site-branch id from list_site_branches. Stages that live Release to its staging domain."
-        }
-      },
-      "required": [
-        "site_id",
-        "site_branch_id"
-      ],
-      "additionalProperties": false,
-      "description": "Stage (publish to staging) a Releases site-scope branch. Returns { taskId, stagingDomain } \u2014 poll get_branch_task_status (taskType \"branch_publish\") for completion; stagingDomain is the preview host once it succeeds. Distinct from publish_branch (page branch staging) and publish_site (production). 409 conflict when another publish is already in progress for the site \u2014 tell the user and try again later."
-    }
-  },
-  {
-    "id": "data_pages_tool.discard_site_branch",
-    "tool": "data_pages_tool",
-    "action": "discard_site_branch",
-    "area": "pages",
-    "title": "Pages",
-    "mode": "delete",
-    "permission": "pages:delete",
-    "extraPermissions": [
-      "agent_instructions:read"
-    ],
-    "topSite": null,
-    "page": false,
-    "builder": false,
-    "direct": false,
-    "channels": [
-      "beta"
-    ],
-    "schema": {
-      "type": "object",
-      "properties": {
-        "site_id": {
-          "type": "string",
-          "description": "Webflow site ID. Use list_sites to discover site IDs."
-        },
-        "site_branch_id": {
-          "type": "string",
-          "minLength": 1,
-          "description": "Releases / site-branch id from list_site_branches. Hard-deletes that live Release."
-        }
-      },
-      "required": [
-        "site_id",
-        "site_branch_id"
-      ],
-      "additionalProperties": false,
-      "description": "Discard (hard-delete) a live Releases branch (site-scope). Use this when the user asks to delete, remove, discard, or cancel a Release \u2014 there is no separate delete_release action. Sync \u2014 succeeds with an empty body. Merged Releases cannot be discarded (409). Distinct from delete_branch, which deletes a page branch asynchronously."
-    }
-  },
-  {
     "id": "data_analyze_tool.get_browser_window_height_report",
     "tool": "data_analyze_tool",
     "action": "get_browser_window_height_report",
@@ -21017,5 +20873,518 @@
     },
     "scope": "connection",
     "upstreamAlias": true
+  },
+  {
+    "id": "data_pages_tool.list_site_branches",
+    "tool": "data_pages_tool",
+    "action": "list_site_branches",
+    "area": "pages",
+    "title": "Pages",
+    "mode": "read",
+    "permission": "pages:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Webflow site ID. Use list_sites to discover site IDs."
+        },
+        "statusGroup": {
+          "description": "Filter by status group. Omit for the default in-progress group. Use merged to page through merged history.",
+          "type": "string",
+          "enum": [
+            "inProgress",
+            "merged"
+          ]
+        },
+        "limit": {
+          "description": "Page size for merged history only (1-100). Requires statusGroup=merged; do not pass for in-progress.",
+          "type": "number",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "cursor": {
+          "description": "Opaque cursor from pagination.nextCursor. Requires statusGroup=merged.",
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "site_id"
+      ],
+      "additionalProperties": false,
+      "description": "List Releases (site-scope branches) for a site. Use when the user asks to list Releases or site branches. Each row's id is the site_branch_id for discard_site_branch and later lifecycle actions. Supports statusGroup filtering; limit and cursor require statusGroup=merged (in-progress is returned in full). Distinct from list_branches, which returns page branches."
+    }
+  },
+  {
+    "id": "data_pages_tool.create_site_branch",
+    "tool": "data_pages_tool",
+    "action": "create_site_branch",
+    "area": "pages",
+    "title": "Pages",
+    "mode": "write",
+    "permission": "pages:write",
+    "extraPermissions": [
+      "agent_instructions:read"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Webflow site ID. Use list_sites to discover site IDs."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "User-facing name for the new site branch."
+        },
+        "description": {
+          "description": "Optional description for the site branch (max 300 chars).",
+          "type": "string",
+          "maxLength": 300
+        },
+        "origin_page_id": {
+          "description": "Optional main-site page id (from list_pages) the user was viewing; used to choose the destination working page after create. Omit to use the site index page.",
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "site_id",
+        "name"
+      ],
+      "additionalProperties": false,
+      "description": "Create a site-scope branch (Releases) for a site. Sync \u2014 returns the new site-branch id and destinationPageId for create-and-enter. Distinct from create_branch, which enqueues an async page-branch create."
+    }
+  },
+  {
+    "id": "data_pages_tool.stage_site_branch",
+    "tool": "data_pages_tool",
+    "action": "stage_site_branch",
+    "area": "pages",
+    "title": "Pages",
+    "mode": "publish",
+    "permission": "pages:publish",
+    "extraPermissions": [
+      "agent_instructions:read"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Webflow site ID. Use list_sites to discover site IDs."
+        },
+        "site_branch_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Releases / site-branch id from list_site_branches. Stages that live Release to its staging domain."
+        }
+      },
+      "required": [
+        "site_id",
+        "site_branch_id"
+      ],
+      "additionalProperties": false,
+      "description": "Stage (publish to staging) a Releases site-scope branch. Returns { taskId, stagingDomain } \u2014 poll get_branch_task_status (taskType \"branch_publish\") for completion; stagingDomain is the preview host once it succeeds. Distinct from publish_branch (page branch staging) and publish_site (production). 409 conflict when another publish is already in progress for the site \u2014 tell the user and try again later. 409 branch_merge_in_progress while the branch is being merged \u2014 retry after the wait in the message."
+    }
+  },
+  {
+    "id": "data_pages_tool.discard_site_branch",
+    "tool": "data_pages_tool",
+    "action": "discard_site_branch",
+    "area": "pages",
+    "title": "Pages",
+    "mode": "delete",
+    "permission": "pages:delete",
+    "extraPermissions": [
+      "agent_instructions:read"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Webflow site ID. Use list_sites to discover site IDs."
+        },
+        "site_branch_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Releases / site-branch id from list_site_branches. Hard-deletes that live Release."
+        }
+      },
+      "required": [
+        "site_id",
+        "site_branch_id"
+      ],
+      "additionalProperties": false,
+      "description": "Discard (hard-delete) a live Releases branch (site-scope). Use this when the user asks to delete, remove, discard, or cancel a Release \u2014 there is no separate delete_release action. Sync \u2014 succeeds with an empty body. Merged Releases cannot be discarded (409). 409 branch_merge_in_progress while the branch is being merged \u2014 retry after the wait in the message. Distinct from delete_branch, which deletes a page branch asynchronously."
+    }
+  },
+  {
+    "id": "data_pages_tool.get_site_branch_freshness",
+    "tool": "data_pages_tool",
+    "action": "get_site_branch_freshness",
+    "area": "pages",
+    "title": "Pages",
+    "mode": "read",
+    "permission": "pages:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Webflow site ID. Use list_sites to discover site IDs."
+        },
+        "site_branch_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Releases / site-branch id from list_site_branches."
+        }
+      },
+      "required": [
+        "site_id",
+        "site_branch_id"
+      ],
+      "additionalProperties": false,
+      "description": "Read-only. Check whether a Releases branch (site-scope) is up to date with main. Returns { status, coverage }: status \"ready\" (up to date), \"needs_update\" (main has newer changes), \"updating\" (an update is running; includes activeTaskId), or \"unknown\" (freshness could not be read; includes reason). Returns 409 branch_merge_in_progress while the branch is being merged."
+    }
+  },
+  {
+    "id": "data_pages_tool.update_site_branch_details",
+    "tool": "data_pages_tool",
+    "action": "update_site_branch_details",
+    "area": "pages",
+    "title": "Pages",
+    "mode": "write",
+    "permission": "pages:write",
+    "extraPermissions": [
+      "agent_instructions:read"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Webflow site ID. Use list_sites to discover site IDs."
+        },
+        "site_branch_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Releases / site-branch id from list_site_branches."
+        },
+        "name": {
+          "description": "New name for the Release. Omit to keep the current name.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "description": {
+          "description": "New description (max 300 chars). Omit to keep the current one; \"\" clears it.",
+          "type": "string",
+          "maxLength": 300
+        }
+      },
+      "required": [
+        "site_id",
+        "site_branch_id"
+      ],
+      "additionalProperties": false,
+      "description": "Rename a Releases branch (site-scope) or change its description. Pass name, description, or both \u2014 fields left out stay the same; description \"\" clears it. Sync \u2014 returns { id, name, description }. Merged Releases cannot be updated (409)."
+    }
+  },
+  {
+    "id": "data_component_props_tool.get_slot_default",
+    "tool": "data_component_props_tool",
+    "action": "get_slot_default",
+    "area": "component_props",
+    "title": "Component properties",
+    "mode": "read",
+    "permission": "component_props:read",
+    "extraPermissions": [],
+    "topSite": "siteId",
+    "page": true,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "component_id": {
+          "type": "string",
+          "description": "The id of the component."
+        },
+        "slot_prop_id": {
+          "type": "string",
+          "description": "The id of a prop with type `slot` on the component (from get_component with includeProps)."
+        }
+      },
+      "required": [
+        "component_id",
+        "slot_prop_id"
+      ],
+      "additionalProperties": false,
+      "description": "List the root elements of a Slot prop's default content (what instances show when they don't override the slot), each with its component. Needs slot defaults enabled."
+    }
+  },
+  {
+    "id": "data_component_props_tool.add_to_slot_default",
+    "tool": "data_component_props_tool",
+    "action": "add_to_slot_default",
+    "area": "component_props",
+    "title": "Component properties",
+    "mode": "write",
+    "permission": "component_props:write",
+    "extraPermissions": [
+      "agent_instructions:read",
+      "scripts:write"
+    ],
+    "topSite": "siteId",
+    "page": true,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "component_id": {
+          "type": "string",
+          "description": "The id of the component."
+        },
+        "slot_prop_id": {
+          "type": "string",
+          "description": "The id of a prop with type `slot` on the component (from get_component with includeProps)."
+        },
+        "child_component_id": {
+          "type": "string",
+          "description": "The id of the component to insert as a new instance."
+        },
+        "position": {
+          "type": "string",
+          "enum": [
+            "append",
+            "prepend"
+          ],
+          "description": "Insert at the end (append, default) or start (prepend)."
+        }
+      },
+      "required": [
+        "component_id",
+        "slot_prop_id",
+        "child_component_id"
+      ],
+      "additionalProperties": false,
+      "description": "Add a component instance to a Slot prop's default content. Returns the updated defaults. Needs slot defaults enabled."
+    }
+  },
+  {
+    "id": "data_component_props_tool.remove_from_slot_default",
+    "tool": "data_component_props_tool",
+    "action": "remove_from_slot_default",
+    "area": "component_props",
+    "title": "Component properties",
+    "mode": "delete",
+    "permission": "component_props:delete",
+    "extraPermissions": [
+      "agent_instructions:read",
+      "scripts:write"
+    ],
+    "topSite": "siteId",
+    "page": true,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "component_id": {
+          "type": "string",
+          "description": "The id of the component."
+        },
+        "slot_prop_id": {
+          "type": "string",
+          "description": "The id of a prop with type `slot` on the component (from get_component with includeProps)."
+        },
+        "element_id": {
+          "type": "string",
+          "description": "The `id.element` of a root element returned by get_slot_default."
+        }
+      },
+      "required": [
+        "component_id",
+        "slot_prop_id",
+        "element_id"
+      ],
+      "additionalProperties": false,
+      "description": "Remove one root element from a Slot prop's default content. Returns the updated defaults. Needs slot defaults enabled."
+    }
+  },
+  {
+    "id": "data_component_props_tool.reset_slot_to_default",
+    "tool": "data_component_props_tool",
+    "action": "reset_slot_to_default",
+    "area": "component_props",
+    "title": "Component properties",
+    "mode": "write",
+    "permission": "component_props:write",
+    "extraPermissions": [
+      "agent_instructions:read",
+      "scripts:write",
+      "component_props:delete"
+    ],
+    "topSite": "siteId",
+    "page": true,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "element_id": {
+          "type": "object",
+          "properties": {
+            "component": {
+              "type": "string",
+              "description": "The component id portion of an element id pair."
+            },
+            "element": {
+              "type": "string",
+              "description": "The element id portion of an element id pair."
+            }
+          },
+          "required": [
+            "component",
+            "element"
+          ],
+          "additionalProperties": false,
+          "description": "Element id of the component instance that owns the slot."
+        },
+        "slot_name": {
+          "type": "string",
+          "description": "The display name of the slot."
+        },
+        "scope_component_id": {
+          "type": "string",
+          "description": "Id of the component definition the element lives inside. When set, lookup walks that component's tree instead of the page; if omitted, the page is searched first, then the element id's component portion."
+        }
+      },
+      "required": [
+        "element_id",
+        "slot_name"
+      ],
+      "additionalProperties": false,
+      "description": "Make a component instance's slot show the component's default content again. Needs slot defaults enabled."
+    }
+  },
+  {
+    "id": "data_component_props_tool.clear_slot",
+    "tool": "data_component_props_tool",
+    "action": "clear_slot",
+    "area": "component_props",
+    "title": "Component properties",
+    "mode": "delete",
+    "permission": "component_props:delete",
+    "extraPermissions": [
+      "agent_instructions:read",
+      "scripts:write"
+    ],
+    "topSite": "siteId",
+    "page": true,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "element_id": {
+          "type": "object",
+          "properties": {
+            "component": {
+              "type": "string",
+              "description": "The component id portion of an element id pair."
+            },
+            "element": {
+              "type": "string",
+              "description": "The element id portion of an element id pair."
+            }
+          },
+          "required": [
+            "component",
+            "element"
+          ],
+          "additionalProperties": false,
+          "description": "Element id of the component instance that owns the slot."
+        },
+        "slot_name": {
+          "type": "string",
+          "description": "The display name of the slot."
+        },
+        "scope_component_id": {
+          "type": "string",
+          "description": "Id of the component definition the element lives inside. When set, lookup walks that component's tree instead of the page; if omitted, the page is searched first, then the element id's component portion."
+        }
+      },
+      "required": [
+        "element_id",
+        "slot_name"
+      ],
+      "additionalProperties": false,
+      "description": "Empty a component instance's slot, hiding the component's default content. Needs slot defaults enabled."
+    }
   }
 ]

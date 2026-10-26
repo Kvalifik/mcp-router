@@ -31,7 +31,7 @@ export async function openUpstream(provider) {
   });
   try {
     await client.connect(transport);
-    const identity = { agent_id: `router|local-poc|${randomUUID().slice(0, 6)}`, session_id: 'start', context: 'The local router is reading authorized site metadata to validate OAuth isolation and enforce explicit project access permissions.' };
+    const identity = { agent_id: `router|local-poc|${randomUUID().slice(0, 6)}`, session_id: 'start', context: 'The local MCP Router is connecting to Webflow using the user-selected connection and authorization channel.' };
     const guide = await client.callTool({ name: 'webflow_guide_tool', arguments: identity });
     checkUpstreamResponse(guide);
     const session = JSON.stringify(guide).match(/ses_[A-Za-z0-9]+/);
@@ -127,18 +127,21 @@ export class Router {
     if (autoName) name = `Connection ${Object.keys(this.store.data.connections).length + 1}`;
     if (typeof name !== 'string' || !name.trim() || name.length > 60) throw new Error('Use a connection name of 1–60 characters');
     const id = randomUUID();
-    this.store.data.connections[id] = { id, name: name.trim(), namingPending: autoName, sourceName:null, nameOverride:autoName ? null : name.trim(), enabled: true, status: 'needs_authorization', sites: [] };
+    this.store.data.connections[id] = { id, name: name.trim(), namingPending: autoName, sourceName:null, nameOverride:autoName ? null : name.trim(), enabled: true, accessMode: 'managed', status: 'needs_authorization', sites: [] };
     this.store.audit('connection_created', { connectionId: id }); return id;
   }
   setConnection(id, enabled) {
     if (typeof enabled !== 'boolean') throw new Error('enabled must be boolean');
-    const c = this.store.connection(id); c.enabled = enabled;
+    const c = this.store.connection(id);
+    if (c.enabled !== enabled) c.accessRevision = (c.accessRevision || 0) + 1;
+    c.enabled = enabled;
     this.store.audit('connection_toggled', { connectionId: id, enabled });
   }
   project(id, capability = 'site:read', recovery = false) {
     const p = Object.hasOwn(this.store.data.projects, id) ? this.store.data.projects[id] : null;
     if (!p || p.deletedAt || !p.enabled || !this.store.connection(p.connectionId).enabled) throw new AgentError('project_access_denied', 'Project access denied. Enable the project and its connection in MCP Router.');
     if (p.available === false && !recovery) throw authorizationRequired('Project is no longer available. Reauthorize if access should be restored; deleted sites cannot be recovered this way.');
+    if (this.store.connection(p.connectionId).accessMode === 'direct') throw new AgentError('direct_mode_required', 'This connection uses Direct Webflow mode. Use list_direct_connections, get_direct_tools and call_direct_tool; managed project permissions do not apply.');
     if (capability) requirePermissions(p, [capability]);
     return p;
   }
@@ -155,8 +158,9 @@ export class Router {
     if (!['connections', 'projects'].includes(kind) || !Object.hasOwn(this.store.data[kind], id)) throw new Error('Unknown item');
     const item = this.store.data[kind][id];
     if (item.deletedAt) throw new Error('Item is deleted');
-    const allowed = kind === 'projects' ? ['name', 'enabled', 'read', 'permissions', 'useDefaultName', 'favourite', 'channel'] : ['name', 'useDefaultName', 'dismissNaming', 'workspacePermissions', 'connectionPermissions'];
+    const allowed = kind === 'projects' ? ['name', 'enabled', 'read', 'permissions', 'useDefaultName', 'favourite', 'channel'] : ['name', 'useDefaultName', 'dismissNaming', 'workspacePermissions', 'connectionPermissions', 'accessMode'];
     if (!updates || Object.keys(updates).some(k => !allowed.includes(k))) throw new Error('Unsupported permission or field');
+    if ('accessMode' in updates && !['managed', 'direct'].includes(updates.accessMode)) throw new Error('Invalid access mode');
     if ('channel' in updates && !(kind==='projects'?['inherit','stable','beta']:['stable','beta']).includes(updates.channel)) throw new Error('Invalid MCP channel');
     if ('name' in updates && (typeof updates.name !== 'string' || !updates.name.trim() || updates.name.length > 80)) throw new Error('Invalid name');
     if ('dismissNaming' in updates && updates.dismissNaming !== true) throw new Error('Invalid naming dismissal');
@@ -174,6 +178,10 @@ export class Router {
     if (kind === 'connections' && ('name' in updates || updates.useDefaultName || updates.dismissNaming)) item.namingPending = false;
     delete updates.dismissNaming;
     delete updates.useDefaultName;
+    if ('accessMode' in updates && updates.accessMode !== (item.accessMode || 'managed')) {
+      item.accessRevision = (item.accessRevision || 0) + 1;
+      for (const [key, proof] of this.preparations) if (this.store.data.projects[proof.projectId]?.connectionId === id) this.preparations.delete(key);
+    }
     Object.assign(item, updates, 'name' in updates ? { name: updates.name.trim() } : {});
     this.store.audit('item_edited', { kind, id });
   }
@@ -184,7 +192,7 @@ export class Router {
     this.store.audit('connection_deleted_permanently', {id});
   }
   restore() { throw new Error('Deleted connections cannot be restored'); }
-  async sites(id, { refresh = false, channel = this.store.data.settings.defaultChannel || 'stable', automatic = false, afterAuthorization = false, now = Date.now() } = {}) {
+  async sites(id, { refresh = false, channel = this.store.data.settings.defaultChannel || 'stable', automatic = false, afterAuthorization = false, ownerInitiated = false, now = Date.now() } = {}) {
     return this.serial(id, async () => {
       const key = `${id}:${channel}`;
       if (automatic) {
@@ -199,14 +207,14 @@ export class Router {
         if (grant.status === 'connected' && !grant.inventoryPending && Number.isFinite(checked) && now - checked < 60 * 60_000) return;
       }
       const c = this.store.connection(id), auth=session(this.store,id,channel);
-      if (!c.enabled && !afterAuthorization) throw new AgentError('project_access_denied', 'Connection disabled. Enable it in MCP Router.');
+      if (!c.enabled && !afterAuthorization && !ownerInitiated) throw new AgentError('project_access_denied', 'Connection disabled. Enable it in MCP Router.');
       if (!auth.tokens) throw authorizationRequired();
       let client;
       try {
         if (refresh) await this.oauth.refresh(id,channel);
         client = await this.open(this.oauth.provider(id,false,channel));
         const sites = await client.listSites();
-        if ((!c.enabled && !afterAuthorization) || c.deletedAt) throw new Error('Connection was disabled during the request');
+        if ((!c.enabled && !afterAuthorization && !ownerInitiated) || c.deletedAt) throw new Error('Connection was disabled during the request');
         if(channel==='stable')c.stableSites=sites; else {c.stableSites ||= c.sites || []; auth.sites=sites;}
         c.sites=[...new Map([...(c.stableSites||[]),...(c.beta?.sites||[])].map(s=>[s.id,s])).values()];
         auth.lastChecked=new Date().toISOString(); auth.inventoryPending=false; auth.status='connected'; auth.lastError=null; auth.status = 'connected'; c.lastError = null;
@@ -294,7 +302,7 @@ export class Router {
       const c=this.store.connection(p.connectionId),channel=this.channel(p);
       const sites=channel==='beta'?c.beta?.sites:(c.stableSites||c.sites);
       const workspaceId=sites?.find(site=>site.id===p.siteId)?.workspaceId;
-      return {connectionPermissions:c.connectionPermissions||{},workspaceId,permissions:workspaceId&&Object.hasOwn(c.workspacePermissions||{},workspaceId)?c.workspacePermissions[workspaceId]:{}};
+      return {accessRevision:c.accessRevision||0,connectionPermissions:c.connectionPermissions||{},workspaceId,permissions:workspaceId&&Object.hasOwn(c.workspacePermissions||{},workspaceId)?c.workspacePermissions[workspaceId]:{}};
     };
     const signature=()=>JSON.stringify([this.project(p.id,null),this.channel(p),workspacePolicy()]);
     const initial=signature();
@@ -404,8 +412,58 @@ export class Router {
       } finally {await client?.close().catch(()=>{});}
     });
   }
+  listDirectConnections() {
+    return Object.values(this.store.data.connections)
+      .filter(c => !c.deletedAt && c.enabled && c.accessMode === 'direct')
+      .map(c => ({connectionId:c.id, name:c.name, accessMode:'direct',
+        channels:['stable','beta'].map(channel=>({channel, authorized:!!(channel==='stable'?c:c.beta)?.tokens})),
+        notice:'Webflow authorization determines access. Router project switches and project, workspace and account permission settings do not apply. This may include other sites and workspaces.'}));
+  }
+  async directCall(name, args) {
+    const fields = name === 'get_direct_tools' ? ['connectionId','channel','toolName'] : ['connectionId','channel','toolName','arguments'];
+    if (Object.keys(args).some(key=>!fields.includes(key)) || typeof args.connectionId !== 'string' || !['stable','beta'].includes(args.channel) || ('toolName' in args && (typeof args.toolName !== 'string' || !args.toolName)) ||
+        (name === 'call_direct_tool' && (typeof args.toolName !== 'string' || !args.toolName || !args.arguments || typeof args.arguments !== 'object' || Array.isArray(args.arguments)))) throw new Error('Invalid arguments');
+    const check = () => {
+      const c = this.store.connection(args.connectionId);
+      if (!c.enabled || c.accessMode !== 'direct') throw new AgentError('direct_access_denied','Direct Webflow access is not enabled for this connection. The user must choose its access mode in MCP Router.');
+      if (!(args.channel === 'stable' ? c : c.beta)?.tokens) throw new AgentError('reauthorization_required','Webflow authorization is required for the selected MCP channel.',{nextStep:'Open this connection’s Reconnect Webflow menu in MCP Router and authorize the selected channel. Do not switch grants.'});
+      return c.accessRevision || 0;
+    };
+    const revision = check();
+    const recheck = () => { if (check() !== revision) throw new AgentError('connection_policy_changed','Connection access changed during the request. Discover tools again before continuing.'); };
+    let client;
+    try {
+      client = await this.open(this.oauth.provider(args.connectionId, false, args.channel));
+      recheck();
+      const tools = await client.listTools();
+      recheck();
+      if (args.toolName && !tools.some(tool=>tool.name === args.toolName)) throw new AgentError('invalid_operation','This tool is not in the current Webflow tool list. Call get_direct_tools again.');
+      if (name === 'get_direct_tools') return {connectionId:args.connectionId, channel:args.channel, accessMode:'direct',
+        ...(args.toolName ? {tool:tools.find(tool=>tool.name===args.toolName)} : {tools:tools.map(({name,title,description})=>({name,...(title?{title}:{}),...(description?{description}:{})}))}),
+        instructions:client.instructions, guide:client.guide,
+        notice:'Pass toolName to get_direct_tools to retrieve its full live input schema, then use call_direct_tool. The router supplies agent_id, session_id and context. Read Webflow guidance and use the instruction tools to load enabled project rules and relevant skills before work. No router project, workspace or account permission settings or ownership checks apply. Webflow authorization is the boundary. Never switch channels to bypass a failure; never automatically retry an ambiguous write.'};
+      // Forward current upstream arguments without the managed catalog or project injection.
+      // Webflow validates its live schema; identity fields remain controlled by openUpstream.
+      recheck();
+      this.store.audit('direct_operation_started',{connectionId:args.connectionId,channel:args.channel});
+      const response = await client.call(args.toolName, args.arguments);
+      recheck();
+      checkUpstreamResponse(response);
+      this.store.audit('direct_operation_completed',{connectionId:args.connectionId,channel:args.channel});
+      return response;
+    } catch (error) {
+      const safe = upstreamError(error);
+      this.store.audit('direct_operation_failed',{connectionId:args.connectionId,channel:args.channel,errorCode:safe.feedback.code});
+      if (safe.feedback.code === 'reauthorization_required') throw new AgentError(safe.feedback.code,safe.feedback.message,{nextStep:'Open this connection’s Reconnect Webflow menu in MCP Router and authorize the selected channel. Do not switch grants or automatically replay a write.'});
+      if (safe.feedback.code === 'upstream_failure') throw new AgentError('upstream_failure','Direct Webflow request failed.',{...upstreamDiagnostics(safe),nextStep:'Refresh the live schema with get_direct_tools and check the selected connection in MCP Router. Inspect whether a write completed before retrying; do not automatically replay it.'});
+      if (safe.feedback.code === 'upstream_access_denied') throw new AgentError('upstream_access_denied','Webflow denied Direct access.',{nextStep:'Check the Webflow role and selected authorization. A denial does not prove reauthorization is needed. Do not switch grants.'});
+      throw safe;
+    } finally { await client?.close().catch(()=>{}); }
+  }
   async call(name, args = {}) {
     if (!args || typeof args !== 'object' || Array.isArray(args)) throw new Error('Invalid arguments');
+    if (name === 'list_direct_connections' && !Object.keys(args).length) return this.listDirectConnections();
+    if (['get_direct_tools','call_direct_tool'].includes(name)) return this.directCall(name,args);
     if (name === 'request_reauthorization') {
       if (Object.keys(args).length !== 1 || typeof args.projectId !== 'string') throw new Error('Invalid arguments');
       const p = this.project(args.projectId, null, true);
@@ -422,13 +480,15 @@ export class Router {
         return !p.deletedAt && (p.available !== false || p.enabled) && connection?.enabled && !connection.deletedAt &&
           (!query || p.name.toLowerCase().includes(query));
       });
-      const approved = projects.filter(p => p.enabled && Object.values(permissions(p)).some(Boolean))
+      const direct = projects.filter(p=>this.store.connection(p.connectionId).accessMode==='direct').map(p=>({id:p.id,name:p.name,siteId:p.siteId,connectionId:p.connectionId,accessMode:'direct',capabilities:[],nextStep:'Use list_direct_connections, get_direct_tools and call_direct_tool. Saved project permissions and enable switches do not apply.'}));
+      const managed = projects.filter(p=>this.store.connection(p.connectionId).accessMode!=='direct');
+      const approved = managed.filter(p => p.enabled && Object.values(permissions(p)).some(Boolean))
         .map(p => ({ id:p.id, name:p.name, capabilities: Object.entries(permissions(p)).filter(([,v])=>v).map(([k])=>k) }));
       const disabled = query && this.store.data.settings.discoverDisabledProjects !== false
-        ? projects.filter(p => !p.enabled).sort((a,b) => a.name.localeCompare(b.name)).slice(0, 20)
+        ? managed.filter(p => !p.enabled).sort((a,b) => a.name.localeCompare(b.name)).slice(0, 20)
           .map(p => ({ name:p.name, status:'disabled', nextStep:'Ask the user to enable this project in MCP Router before accessing it.' }))
         : [];
-      return [...approved, ...disabled];
+      return [...approved, ...direct, ...disabled];
     }
     if (['get_project_guidance','get_project_operations','prepare_project','read_webflow','write_webflow'].includes(name)) return this.extendedCall(name,args);
     if (name !== 'read_project_site' || Object.keys(args).length !== 1 || typeof args.projectId !== 'string') {
