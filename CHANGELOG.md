@@ -10,6 +10,7 @@
 - Add seven reviewed Beta actions: component slot defaults, reset/clear slots, Release freshness and Release detail updates. Verify component, slot, element and Release ownership; retain separate destructive permissions and Stable/Beta isolation.
 - Refresh existing Beta Release schemas, including branch-scoped page listing.
 - Update React, Radix, Lucide and Vite with reviewed compatible updates; patch the transitive Hono dependency to 4.13.13.
+- Patch Electron to 44.9.3 and Zod to 4.6.7; update body-parser, fast-uri, ip-address, undici and qs to address security advisories and parsing defects.
 - Refresh fictional README screenshots and reject blank screenshot captures.
 
 Validation: installed signed Mac startup setting added/removed the system login

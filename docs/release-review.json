@@ -1,7 +1,7 @@
 {
   "version": "0.9.0",
-  "reviewedAt": "2026-10-26T08:49:59.361Z",
-  "sourceDigest": "cbe93fe09d160ca188632aafe0ffad4adf438ada9b09a86b34a491e337a4fb3d",
+  "reviewedAt": "2026-10-26T09:00:42.964Z",
+  "sourceDigest": "84855ccbd15af730ab5aa46b4dc021a3f79f5bc7227feb9e40e67aa24d2758cb",
   "channels": {
     "stable": {
       "status": "reviewed",
