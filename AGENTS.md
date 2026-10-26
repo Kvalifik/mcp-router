@@ -100,3 +100,13 @@ risk. Keep major upgrades and runtime/security-sensitive changes separate, run
 the additional checks described in the guide, and report any deferrals with a
 specific reason. Close superseded PRs only after verifying the replacement is
 merged. Never bypass branch protections or expose signing secrets to PR jobs.
+
+## Public release notes
+
+Use the user-facing format in [the release guide](docs/RELEASING.md#public-release-notes):
+a short introduction, **What’s new**, then **Install or update**. Describe benefits
+and actions in plain language. Keep test counts, CI/signing incidents, schema
+review evidence, internal experiments and deferred work in PRs or release-review
+documentation. Preserve relevant permission warnings, known user-facing problems,
+migration steps and accurate platform/signing information. Review generated notes
+before publication; do not paste internal handoffs into GitHub releases.

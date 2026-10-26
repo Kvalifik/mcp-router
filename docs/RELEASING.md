@@ -27,6 +27,35 @@ The workflow never overwrites an existing release. Choose a new version for subs
 
 Standard GitHub-hosted runners are used throughout. Release publication runs only when this workflow is manually started; there are no scheduled builds. Dependency, build, and workflow PRs also run credential-free packaging checks. Windows builds remain unsigned. The release workflow defaults to Developer ID signing. Local builds without signing settings, or workflow runs with signing disabled, use ad-hoc signing for credential-free validation. Developer ID mode signs with hardened runtime after all bundle resources are written, notarizes with Apple, and staples the ticket. Missing credentials or failed notarization stop that build; it never falls back to ad-hoc signing. Signing and strict recursive verification failures stop the build; release packaging also verifies the extracted ZIP. Ad-hoc verification checks bundle integrity, not Gatekeeper approval. Developer ID mode additionally verifies the expected signing identity, stapled ticket, and Gatekeeper acceptance after ZIP extraction. Test a browser-downloaded ZIP on a separate Mac before publication, including the Privacy & Security approval flow. Windows distributes a portable app folder rather than an installer.
 
+## Public release notes
+
+Write for people installing or using MCP Router. Use this format for every release:
+
+1. One short introductory sentence explaining the main benefit.
+2. **What’s new**: a short list with bold feature labels and plain-language
+   descriptions of changes users can notice or act on. Summarize dependency work
+   as security or reliability improvements unless a specific version matters.
+3. **Install or update**: platform choices, installation/update steps, accurate
+   signing status, settings preservation and the checksum filename.
+
+Keep material permission changes, migration requirements and known problems that
+users need to act on. Do not substitute testing limitations for known product
+problems or imply testing that did not happen. Test counts, fixture details,
+compatibility inventories, build/CI incidents, internal prototypes, unfinished work
+and dependency deferrals belong in the PR and release-review records, not the
+public release description. Those records remain required.
+
+The version section in CHANGELOG.md supplies the public introduction and feature
+list. Start it with the introductory sentence and a `### What’s new` heading;
+packaging promotes that heading and appends installation guidance. Keep engineering
+review details in this guide or the PR. Inspect the generated release-notes.md
+before publishing; generated text still needs editorial review. Version 0.9.0's
+published notes are the reference for tone and structure.
+
+When correcting historical descriptions, preserve what actually shipped and that
+version's platform/signing/update limitations. Edit release text only: never replace
+published binaries, checksums or feeds as part of an editorial cleanup.
+
 ## Webflow MCP compatibility review before each release
 
 Aim for parity with upstream Webflow workflows while preserving router permissions

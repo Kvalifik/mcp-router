@@ -88,16 +88,21 @@ if platform == 'darwin' and signing_mode == 'developer-id':
         }}],
     }, indent=2) + '\n', encoding='utf-8')
 changelog = (root / 'CHANGELOG.md').read_text(encoding='utf-8')
-section = re.search(r'^## ' + re.escape(version) + r' — (.*?)(?=^## |\Z)', changelog, re.M | re.S)
+section = re.search(r'^## ' + re.escape(version) + r' — [^\n]+\n(.*?)(?=^## \d+\.\d+\.\d+ — |\Z)', changelog, re.M | re.S)
 assert section, 'Missing changelog entry'
 mac_install = ('On Mac, extract and move **MCP Router.app** to Applications. The Mac apps are Developer ID signed and notarized by Apple.'
                if signing_mode == 'developer-id' else
                'On Mac, extract and move **MCP Router.app** to Applications. Mac builds are ad-hoc signed, without an Apple Developer ID or notarization. If blocked, first attempt to open the app, then use System Settings → Privacy & Security → Open Anyway for this trusted download. Managed Macs may require IT approval. If macOS says the app is damaged, download a fresh copy and report the release version if it persists; do not disable Gatekeeper.')
-notes = f'''{section.group(1).strip()}
+release_changes = section.group(1).strip().replace('### What’s new', '## What’s new', 1)
+notes = f'''{release_changes}
 
-## Install
+## Install or update
 
-Choose the ZIP for your computer: **mac-arm64** for Apple Silicon, **mac-x64** for Intel Mac, or **windows-x64** for Windows x64.
+Choose the ZIP for your computer:
+
+- **mac-arm64:** Mac with Apple Silicon
+- **mac-x64:** Mac with an Intel processor
+- **windows-x64:** Windows x64
 
 {mac_install}
 
