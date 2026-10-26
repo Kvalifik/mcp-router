@@ -2,22 +2,16 @@
 
 ## 0.9.0 — Startup preferences and explicit Direct Webflow access
 
-- Add a Launch at startup setting for installed macOS and Windows apps, reflecting OS login-item state.
-- Add opt-in Direct Webflow connections with live schema discovery. Managed remains the default; Direct bypasses router project/workspace/account permissions under the explicitly selected Webflow grant.
-- Preserve saved Managed settings when switching modes and revoke in-flight access after connection policy changes.
-- Allow owner-initiated project resync while a connection is disabled without enabling AI access.
-- Add repository and feedback links in Settings and About.
-- Add seven reviewed Beta actions: component slot defaults, reset/clear slots, Release freshness and Release detail updates. Verify component, slot, element and Release ownership; retain separate destructive permissions and Stable/Beta isolation.
-- Refresh existing Beta Release schemas, including branch-scoped page listing.
-- Update React, Radix, Lucide and Vite with reviewed compatible updates; patch the transitive Hono dependency to 4.13.13.
-- Patch Electron to 44.9.3 and Zod to 4.6.7; update body-parser, fast-uri, ip-address, undici and qs to address security advisories and parsing defects.
-- Refresh fictional README screenshots and reject blank screenshot captures.
+MCP Router can now launch when you sign in, and you can choose how each connection works with Webflow.
 
-Validation: installed signed Mac startup setting added/removed the system login
-item and survived an app restart; actual sign-in launch and Windows login remain
-manual checks. Beta changes have schema and synthetic ownership/permission
-coverage; live slot and Release mutations were not performed. Native preview and
-read-code experiments are not included.
+### What’s new
+
+- **Launch at startup:** enable it in Settings on macOS or Windows.
+- **Direct Webflow mode:** use Webflow’s tools directly with a connection’s selected Stable or Beta authorization. Managed remains the default. Direct mode bypasses MCP Router’s project and permission restrictions; your saved Managed settings are retained when you switch back.
+- **Resync disabled connections:** refresh a connection’s project list without enabling AI access.
+- **More Webflow Beta support:** work with component slot defaults, reset or clear slots, check Release freshness, and update Release details.
+- **Quick feedback:** open the repository or report an issue from Settings and About.
+- **Security updates:** updated Electron and dependencies with security and reliability fixes.
 
 ## 0.8.12 — Reliable reconnects, Optimize guidance and release cleanup
 
