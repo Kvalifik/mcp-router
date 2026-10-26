@@ -312,8 +312,11 @@ Applications** before setup starts. Accepting moves and restarts the app;
 **Not Now** continues and asks again next launch. Check **Don’t ask again** to
 save your preference and suppress future installation prompts, even after an
 app update. You can still move the app manually using Finder. Development runs and apps
-already in Applications do not prompt. If another copy is installed, it is
-never replaced automatically: quit the app and use Finder to replace it manually.
+already in Applications do not prompt. If another copy is installed, the prompt shows the installed and downloaded
+versions and offers **Replace and Relaunch**. Replacement requires explicit
+confirmation, including when reinstalling the same version or an older one;
+connections and settings are retained. Quit a running installed copy first using
+**MCP Router → Quit**. Closing its window does not quit the app.
 If moving fails or authorization is cancelled, you can continue using the current copy.
 
 Use **Settings → Check for updates** to check the latest public GitHub release.
