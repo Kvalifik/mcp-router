@@ -404,3 +404,33 @@ Validation uses synthetic fixtures and fictional UI captures. New Beta mutations
 have not been exercised against live customer content or an entitled Releases
 site. Installed signed Mac login-item enable/disable and app-restart persistence
 were checked; actual sign-in launch and Windows login require manual validation.
+
+### 0.9.0 security follow-up (2026-10-26)
+
+The refreshed advisory scan identified additional fixes before publication. The
+user included them in scope: Electron 44.9.3, Zod 4.6.7, body-parser 2.4.0,
+fast-uri 3.1.9, ip-address 10.7.5, undici 7.30.1 and qs 6.16.1. The prior build
+was cancelled before creating a release; the version remains 0.9.0.
+
+Electron stays on major 44 and includes upstream browser/runtime security fixes
+and the eMudhra certificate mitigation. Zod bounds constrained collection error
+work. Body-parser fixes compressed input handling and adds zstd support when the
+runtime supports it; the router's owner HTTP server uses its own body limits.
+Fast-uri rejects ambiguous schemes/hosts and corrects relative normalization.
+IP parsing now rejects pathological zones in linear time, with additional Teredo
+flag corrections. Undici includes decompression, streaming and integrity fixes;
+qs corrects parsing/encoding and bounds nested conflict handling. Review covered
+upstream release notes and the lockfile diff: only these seven package versions
+changed, all npm registry URLs and licenses remain consistent, and no new install
+lifecycle flag was introduced. Electron exposes explicit binary installation
+instead of a postinstall script; packaging downloads its exact pinned runtime.
+Node 22.14 locally and Node 22 CI satisfy the new minimum of 22.12.
+
+The complete Stable/Beta inventories and guide review above remain current; no
+catalog or permission changes were needed for this follow-up. Refresh the source-
+bound attestation after the dependency and documentation changes. npm audit reports
+zero known vulnerabilities. Validate the full suite, UI build, packaged runtime,
+Developer ID signing/notarization and isolated signed updater before publication.
+Zod from #37 is included; its TOML and notarization updates remain deferred pending
+separate review, so that mixed PR is not fully superseded. Major upgrades #35 and
+#32 remain separate. No advisory is deliberately left unresolved in this lockfile.
