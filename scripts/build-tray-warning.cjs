@@ -6,7 +6,7 @@ app.setPath('userData',fs.mkdtempSync('/tmp/router-tray-icons-'));
 app.whenReady().then(async()=>{
   const window=new BrowserWindow({show:false,webPreferences:{sandbox:true,contextIsolation:true,nodeIntegration:false}});
   await window.loadURL('about:blank');
-  const mark=fs.readFileSync(path.join(__dirname,'../assets/icons/mark-black.svg'),'utf8').replace('<svg ','<svg x="2" y="2" ').replace('width="672" height="672"','width="18" height="18"');
+  const mark=fs.readFileSync(path.join(__dirname,'../assets/icons/mark-menubar.svg'),'utf8').replace(/<svg\b[^>]*>/, tag=>tag.replace(/\bwidth="[^"]+"/, 'width="18"').replace(/\bheight="[^"]+"/, 'height="18"').replace('<svg ', '<svg x="2" y="2" '));
   const triangle='M 17 10.5 L 23 20.5 Q 23.5 21.5 22.3 21.5 L 11.7 21.5 Q 10.5 21.5 11.2 20.3 L 16 10.5 Q 16.5 9.6 17 10.5 Z';
   const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="25" height="24" viewBox="0 0 25 24"><defs><mask id="gap"><rect width="25" height="24" fill="white"/><path d="${triangle}" fill="black" stroke="black" stroke-width="3.8" stroke-linejoin="round"/></mask></defs><g mask="url(#gap)">${mark}</g><path d="${triangle}" fill="none" stroke="black" stroke-width="1.35" stroke-linejoin="round"/><path d="M16.6 14.1v3.2" stroke="black" stroke-width="1.3" stroke-linecap="round"/><circle cx="16.6" cy="19.2" r=".75"/></svg>`;
   for(const scale of [1,2,3]) {

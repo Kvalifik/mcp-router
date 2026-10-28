@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.9.1 — Refreshed app branding
+
+MCP Router has a refreshed look with a new purple app icon and clearer menu-bar symbols.
+
+### What’s new
+
+- **New app icon:** updated purple artwork across macOS and Windows.
+- **Clearer menu-bar icons:** stronger outlines and spacing make the normal, warning and update indicators easier to read.
+- **Updated Kvalifik wordmark:** simplified branding in the app header and About panel.
+
 ## 0.9.0 — Startup preferences and explicit Direct Webflow access
 
 MCP Router can now launch when you sign in, and you can choose how each connection works with Webflow.
