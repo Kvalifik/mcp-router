@@ -463,3 +463,50 @@ Developer ID signing/notarization and isolated signed updater before publication
 Zod from #37 is included; its TOML and notarization updates remain deferred pending
 separate review, so that mixed PR is not fully superseded. Major upgrades #35 and
 #32 remain separate. No advisory is deliberately left unresolved in this lockfile.
+
+### 0.9.1 branding and Beta history review (2026-10-28)
+
+The release contains the purple app icon, stronger menu-bar variants with a gap
+above workspace nodes, and the wordmark without the standalone symbol. README
+screenshots were recaptured from the release source using fictional data.
+
+Fresh, completely paginated captures contain 37 Stable tools and 39 Beta tools.
+Stable schemas and tool descriptions are unchanged from the reviewed baseline.
+Beta adds `data_pages_tool.list_site_branch_changes` and refreshes the
+`list_site_branches` description with change summaries. Full envelope comparison
+found no new top-level targeting or constraints. The guides also clarify campaign
+name length (10–24 characters); Beta explains Release change history and existing
+branch lifecycle behavior. Existing Beta slot/freshness/detail schemas match the
+0.9.0 catalog. No additional changes were found.
+
+The explicitly approved Beta addition is read-only metadata (resource names, IDs,
+types, locales and contributors), uses existing Pages Read, and stays site-pinned.
+Branch membership is verified in the selected site's in-progress Releases or,
+for change history only, paginated merged history. Foreign branches, malformed
+responses, repeated/missing cursors and pagination exhaustion fail closed.
+Merged history does not authorize branch mutations or working-page reads. List
+pagination parameters require the merged status group. The generator was updated
+and the catalog regenerated; no new permission category or automatic grant was
+introduced. Synthetic tests cover permission denial, Stable isolation, site
+injection, ownership, short/empty pages, malformed pagination and loop bounds.
+Live lifecycle operations on entitled customer sites were not exercised.
+
+Coverage: Stable supports 304 operations and Beta 324. Neither channel has missing,
+removed, unclassified or unexpectedly outdated actions after this refresh. The
+only accepted schema difference is the existing narrow CMS fieldData export
+correction. Guidance/discovery utility tools and owner-only site inventory remain
+excluded by design in Managed mode. No capability is deferred or unverified at
+the schema-review level. The source-bound report records the final tree.
+
+Open dependency PRs were reviewed by manifest/lockfile/workflow diff. Keep #47
+(TOML 3.3.1 and notarize 3.1.2) separate: it changes configuration editing and
+notarization behavior, including upstream prepare metadata, and needs focused
+configuration and signed-updater validation. Its lockfile changes only those two
+packages, retains MIT licensing and npm registry URLs, and adds no transitive
+packages. Keep #35 (Motion 14.6.0 and its three runtime packages) separate for major
+animation migration/UI checks. Keep #32 (setup-node 7.1.0) separate for action
+migration and credential-free packaging validation. Neither major is needed for
+this branding release. No dependency was changed; npm ci reports zero known
+vulnerabilities for the retained lockfile. None of these PRs is superseded or
+closed. The separate Mac installation PR and local development prototypes are
+outside this release.
