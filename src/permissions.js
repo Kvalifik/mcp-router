@@ -51,6 +51,7 @@ export function prepareArguments(op, params, siteId, pageId) {
   inject(op.schema);
   let validate=validators.get(op.schema);if(!validate){validate=ajv.compile(op.schema);validators.set(op.schema,validate);}
   if(!validate(value)) throw new Error('Parameters do not match the operation schema');
+  if(op.id==='data_pages_tool.list_site_branches' && value.statusGroup!=='merged' && (value.limit!==undefined || value.cursor!==undefined))throw new Error('Release history pagination requires statusGroup=merged');
   const args = op.direct ? value : {actions:[op.builder ? value : {label:'Project operation', [op.action]:value}]};
   if(op.topSite)args[op.topSite]=siteId;
   if(op.page){if(typeof pageId!=='string'||!pageId)throw new Error('pageId is required');args.pageId=pageId;}
@@ -177,10 +178,31 @@ export async function checkOwnership(client, op, value, siteId, pageId) {
     }
   }
   if(value.site_branch_id) {
-    const result=resultOf(await client.call('data_pages_tool',{actions:[{label:'Verify project Release ownership',list_site_branches:{site_id:siteId}}]}),'list_site_branches');
-    const branches=Array.isArray(result)?result:result.branches || result.siteBranches;
-    if(!Array.isArray(branches) || result.pagination?.hasMore || result.pagination?.nextCursor)throw new Error('Cannot verify resource ownership');
-    if(!branches.some(branch=>branch.id===value.site_branch_id))throw new Error('Resource does not belong to this project');
+    const readBranches = async params => {
+      const result=resultOf(await client.call('data_pages_tool',{actions:[{label:'Verify project Release ownership',list_site_branches:{site_id:siteId,...params}}]}),'list_site_branches');
+      const branches=Array.isArray(result)?result:result.branches || result.siteBranches;
+      if(!Array.isArray(branches) || branches.some(branch=>typeof branch?.id!=='string'))throw new Error('Cannot verify resource ownership');
+      return {branches,pagination:result.pagination};
+    };
+    const current=await readBranches({});
+    if(current.pagination?.hasMore || current.pagination?.nextCursor)throw new Error('Cannot verify resource ownership');
+    let found=current.branches.some(branch=>branch.id===value.site_branch_id);
+    // Only the read-only change history supports merged Releases. Never make
+    // archived branches eligible for working-page or lifecycle mutations.
+    if(!found && op.id==='data_pages_tool.list_site_branch_changes') {
+      let cursor;const seen=new Set();
+      for(let page=0;page<100;page++) {
+        const {branches,pagination}=await readBranches({statusGroup:'merged',limit:100,...(cursor?{cursor}:{})});
+        const more=pagination?.hasMore===true;
+        const next=pagination?.nextCursor;
+        if((more && (typeof next!=='string' || !next || seen.has(next))) || (!more && next))throw new Error('Release ownership listing incomplete');
+        found=branches.some(branch=>branch.id===value.site_branch_id);
+        if(found || !more)break;
+        if(page===99)throw new Error('Release ownership listing incomplete');
+        seen.add(next);cursor=next;
+      }
+    }
+    if(!found)throw new Error('Resource does not belong to this project');
   }
   const filterResponse=await checkProjectResources(client,op,value,siteId,owns,resultOf);
   async function walk(node,parent='') {

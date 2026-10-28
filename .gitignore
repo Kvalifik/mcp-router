@@ -243,3 +243,5 @@ public/
 !/assets/icons/menu/Split.png
 
 !/test/beta-slots.test.js
+
+!/test/beta-releases.test.js

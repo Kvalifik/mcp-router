@@ -20921,7 +20921,7 @@
         "site_id"
       ],
       "additionalProperties": false,
-      "description": "List Releases (site-scope branches) for a site. Use when the user asks to list Releases or site branches. Each row's id is the site_branch_id for discard_site_branch and later lifecycle actions. Supports statusGroup filtering; limit and cursor require statusGroup=merged (in-progress is returned in full). Distinct from list_branches, which returns page branches."
+      "description": "List Releases (site-scope branches) for a site. Use when the user asks to list Releases or site branches. Each row's id is the site_branch_id for discard_site_branch and later lifecycle actions. Each row's changeSummary counts the pages, components, styles, and CMS items it touched and lists contributors. changeSummary is left out when it could not be read, so do not treat a missing one as no changes. Use list_site_branch_changes for the changes themselves. Supports statusGroup filtering; limit and cursor require statusGroup=merged (in-progress is returned in full). Distinct from list_branches, which returns page branches."
     }
   },
   {
@@ -21136,6 +21136,54 @@
       ],
       "additionalProperties": false,
       "description": "Rename a Releases branch (site-scope) or change its description. Pass name, description, or both \u2014 fields left out stay the same; description \"\" clears it. Sync \u2014 returns { id, name, description }. Merged Releases cannot be updated (409)."
+    }
+  },
+  {
+    "id": "data_pages_tool.list_site_branch_changes",
+    "tool": "data_pages_tool",
+    "action": "list_site_branch_changes",
+    "area": "pages",
+    "title": "Pages",
+    "mode": "read",
+    "permission": "pages:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Webflow site ID. Use list_sites to discover site IDs."
+        },
+        "site_branch_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Releases / site-branch id from list_site_branches."
+        },
+        "limit": {
+          "description": "Page size (1-100, default 25).",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "cursor": {
+          "description": "Opaque cursor from pagination.nextCursor of a previous call for the same site branch.",
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "site_id",
+        "site_branch_id"
+      ],
+      "additionalProperties": false,
+      "description": "Read-only. List the pages, components, styles, and CMS items a Releases branch (site-scope) touched, most recently changed first. Returns { changes, pagination }; while pagination.hasMore is true, pass pagination.nextCursor as cursor for the next page (a page can hold fewer than limit changes). A resource edited while you page moves to the front and can be missed; list again from the start for a full view. Each change has resourceType, resourceId, action (\"added\", \"changed\", or \"removed\"), name, the locales edited, and contributors. A change means it was written in the branch, not that it still differs from main. Works for merged branches too."
     }
   },
   {

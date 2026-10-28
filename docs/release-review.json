@@ -1,7 +1,7 @@
 {
-  "version": "0.9.0",
-  "reviewedAt": "2026-10-26T09:00:42.964Z",
-  "sourceDigest": "84855ccbd15af730ab5aa46b4dc021a3f79f5bc7227feb9e40e67aa24d2758cb",
+  "version": "0.9.1",
+  "reviewedAt": "2026-10-28T15:16:20.000Z",
+  "sourceDigest": "b57ab4bfdb9636981be961caaede47772ed887260769e7979d5047bd89b8ac3e",
   "channels": {
     "stable": {
       "status": "reviewed",
@@ -25,8 +25,8 @@
     "beta": {
       "status": "reviewed",
       "toolCount": 39,
-      "snapshotSha256": "26bb09ad2c54da97036e4ef6ca45adaf21e45924af80ec6ae9396b378ae20d15",
-      "supportedOperations": 323,
+      "snapshotSha256": "6ab04f071f7574a72a1e4fc5477b1daa54e3cefad76c533b57b2be62db48a201",
+      "supportedOperations": 324,
       "missing": [],
       "outdated": [],
       "deferred": [],

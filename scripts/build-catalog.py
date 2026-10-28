@@ -126,7 +126,7 @@ if sys.argv[1] in ['--refresh-compatible','--refresh-site-branches','--refresh-s
   Path('src/catalog.json').write_text(json.dumps(catalog,indent=2)+'\n')
   print(len(catalog),'reviewed operations');sys.exit(0)
  if sys.argv[1]=='--refresh-site-branches':
-  for action,mode in [('list_site_branches','read'),('create_site_branch','write'),('stage_site_branch','publish'),('discard_site_branch','delete'),('get_site_branch_freshness','read'),('update_site_branch_details','write')]:
+  for action,mode in [('list_site_branches','read'),('create_site_branch','write'),('stage_site_branch','publish'),('discard_site_branch','delete'),('get_site_branch_freshness','read'),('update_site_branch_details','write'),('list_site_branch_changes','read')]:
    key='data_pages_tool.'+action;schema,props=preview[key]
    if key in shared or 'siteId' in props or 'pageId' in props or 'site_id' not in schema.get('required',[]):raise ValueError('Review branch targeting/channel: '+key)
    op={'id':key,'tool':'data_pages_tool','action':action,'area':'pages','title':'Pages','mode':mode,'permission':'pages:'+mode,'extraPermissions':[] if mode=='read' else ['agent_instructions:read'],'topSite':None,'page':False,'builder':False,'direct':False,'channels':['beta'],'schema':schema}

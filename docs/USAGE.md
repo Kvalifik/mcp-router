@@ -439,6 +439,8 @@ only the Release preview; it does not merge or publish the production site.
 Discard hard-deletes a Release and requires explicit user intent. All writes
 require project preparation. The router verifies branch membership in the
 selected site's in-progress Releases and verifies an optional origin page.
+`list_site_branch_changes` also verifies merged Releases through paginated
+site-scoped history. Merged Releases remain unavailable to lifecycle mutations.
 These actions and the `create_page.site_branch_id` parameter are unavailable on
 Stable. Page branches remain separate operations.
 
@@ -455,10 +457,15 @@ workspace-member permissions never grant these account-wide capabilities.
 
 ### Beta slot defaults and Release details
 
-Beta adds `get_site_branch_freshness` under Pages Read and
+Beta adds `get_site_branch_freshness` and `list_site_branch_changes` under Pages Read and
 `update_site_branch_details` under Pages Write, with Release ownership checks.
 Beta `list_pages` accepts `site_branch_id` after verifying that Release belongs
-to the project. These capabilities remain unavailable on Stable.
+to the project. `list_site_branches` supports `statusGroup: "merged"` with
+`limit` and `cursor` for merged history. Change listings return names, IDs,
+resource types, locales and contributors for resources touched by a Release;
+they are not a diff against main. Follow `pagination.nextCursor` while
+`pagination.hasMore` is true, even for short pages. These capabilities remain
+unavailable on Stable.
 
 The Beta component-slot actions require a verified site page and site-owned
 components. `get_slot_default` uses Component properties Read;
