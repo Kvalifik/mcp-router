@@ -510,3 +510,48 @@ this branding release. No dependency was changed; npm ci reports zero known
 vulnerabilities for the retained lockfile. None of these PRs is superseded or
 closed. The separate Mac installation PR and local development prototypes are
 outside this release.
+
+### Code-mode release review (2026-10-29)
+
+Recommended scope: read-only code mode, its default-on owner preference, and its
+regression/packaging checks. Existing OAuth grants, permissions, pinned operations
+and ownership logic are retained. No upstream operation or grant is added.
+
+Fresh read-only metadata captures fully paginated 37 Stable and 39 Beta tools
+through the existing application provider, separately per grant, without refreshing
+or exporting credentials. Both comparisons against this release's catalog report
+no added, removed or unclassified actions. The only schema difference on either
+channel is the existing deliberate CMS create_collection_items fieldData export
+correction. It remains intentionally different. Utility tools and owner list_sites
+remain excluded by design. No channel was unavailable.
+
+Compared with the October 16 capture, top-level schema constraints and Stable tool
+descriptions are unchanged. Beta's Pages description now mentions Release change
+history and site-branch targets, already covered by the 0.9.1 catalog and ownership
+checks. The current guide preserves the read-only CMS listing workflow used here.
+This is metadata compatibility, not a claim to have live-tested every operation.
+
+Open dependency PR diffs were reviewed. #51 changes only TOML patch 3.3.0→3.3.1,
+MCP SDK 1.32.1→1.32.2 and notarize 3.1.1→3.1.2 entries, with no transitive lockfile
+changes. It is deferred as a separate runtime/signing-sensitive update requiring
+configuration, MCP and signed-package validation. #35 (Motion 13→14) and #32
+(setup-node 6→7) are major upgrades deferred for separate migration review.
+No dependency PR is merged or closed as part of code mode. QuickJS 0.32.0 is pinned
+and its MIT license notices regenerated. npm audit reports an existing moderate
+@hono/node-server serveStatic advisory; the router and MCP SDK server do not use
+that static-serving function. This is not a code-mode dependency or a newly
+introduced reachable path; track its patch independently rather than claim a
+clean dependency audit.
+
+Local source checks pass 228 tests with the Windows ACL check skipped on macOS;
+the UI build passes with the existing chunk-size warning. Code-mode preference
+coverage includes persistence, owner authentication, Origin/CSRF protection,
+non-boolean rejection, denied MCP setting changes, and disabling/re-enabling during
+an in-flight read. The CI package matrix now runs smoke-read-code.mjs after the
+ordinary packaged daemon smoke on macOS arm64, macOS x64 and Windows x64.
+
+The setting only changes an unopened menu and is not visible in either existing
+README screenshot; those screenshots do not need regeneration for this change.
+Final release publication still requires the normal CI, packaged runtime, signing
+and platform checks above. See CODE_MODE_BENCHMARK.md for bounded live evidence
+and its limits; no measured model-token or guaranteed speedup claim is made.

@@ -122,6 +122,7 @@ jobs:
             "$SIGNING_IDENTITY" "$keychain" >> "$GITHUB_ENV"
       - run: npm run build:desktop
       - run: node scripts/smoke-package.mjs
+      - run: node scripts/smoke-read-code.mjs
       - run: python3 scripts/package-release.py
       - name: Remove temporary signing credentials
         if: always() && inputs.sign_mac && matrix.platform == 'darwin'

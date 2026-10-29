@@ -11,7 +11,7 @@ import {excludeFromPackage} from '../packaging.mjs';
 
 async function dashboard(t, options={}) {
  const origin='http://127.0.0.1:43138';
- const router={store:{summary:()=>({connections:[],projects:[]})},createConnection:()=> 'synthetic'};
+ const router={store:{summary:()=>({connections:[],projects:[]})},createConnection:()=> 'synthetic',setReadCodeEnabled:enabled=>{if(typeof enabled!=='boolean')throw new Error('Invalid settings');}};
  const server=createDashboard(router,{},origin,{managementToken:'owner-secret',loginTicket:'one-time-ticket',...options});
  server.listen(43138,'127.0.0.1');await once(server,'listening');
  t.after(()=>new Promise(resolve=>{server.closeAllConnections();server.close(resolve);}));
@@ -69,3 +69,13 @@ test('packaging includes runtime and legal files, excludes unexpected files and 
  for(const name of ['', '/', '/src/server.js','\\src\\server.js','/public/assets/index.js','/node_modules/zod/index.js','/assets/icons/MCPRouter.icns','/licenses/shadcn-ui.txt','/LICENSE','/THIRD_PARTY_NOTICES.md','/package.json'])assert.equal(excludeFromPackage(name),false,name);
  for(const name of ['/test/test.js','/dist/app.zip','/.private-release/notes.md','/.local/vault.enc','/notes.txt','/.env','/src/.env.production','/src/debug.log','/assets/private.key','/packaging.mjs'])assert.equal(excludeFromPackage(name),true,name);
 });
+
+ test('code-mode preference requires owner session, Origin and CSRF',async t=>{
+ const {origin,request}=await dashboard(t);
+ const Cookie='router_session=owner-secret';
+ const {csrf}=JSON.parse((await request('/api/state',{Cookie})).body);
+ const headers={Cookie,Origin:origin,'Content-Type':'application/json','X-Router-CSRF':csrf};
+ assert.equal((await request('/api/settings/read-code',headers,'POST','{"enabled":false}')).status,200);
+ for(const changed of [{Cookie:''},{Origin:'https://evil.example'},{'X-Router-CSRF':'wrong'}])assert.equal((await request('/api/settings/read-code',{...headers,...changed},'POST','{"enabled":true}')).status,403);
+ assert.equal((await request('/api/settings/read-code',headers,'POST','{"enabled":"false"}')).status,400);
+ });
