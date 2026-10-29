@@ -195,3 +195,28 @@ Delete. All slot mutations retain Custom code Write and instruction preparation.
 New Release reads/writes verify site-branch membership. Stable rejects Beta-only
 actions and branch-scoped page-list parameters. Incomplete ownership listings
 fail closed; no new permission category or automatic grant is introduced.
+
+### Experimental read-only code execution
+
+`read_webflow_code` executes snippets in QuickJS/WASM in a dedicated Node worker,
+not Node eval or node:vm. The guest receives only a JSON read bridge and JSON-line
+output; it has no host filesystem, network, process, module loader or credentials.
+The parent fixes the project, restricts operations to reviewed project-scoped
+catalog reads, and dispatches each through the existing `read_webflow` path.
+Permissions, channel restrictions, argument validation, resource ownership and
+upstream response filtering remain authoritative. Unknown tools, writes and
+workspace/account scopes are rejected. Direct connections are not supported.
+
+The run checks policy before each bridge call and before releasing final output;
+policy changes or failed reads discard accumulated output. Resource limits bound
+source, output, reads, response bytes, guest memory and wall time. A timeout
+terminates the worker, but an upstream read already dispatched may drain; its
+result is discarded and the daemon rejects another code run until it settles.
+No snippet source or result content is persisted in audit logs. Existing operation
+audit events remain in place. The sandbox is an additional containment measure,
+not protection against the OS owner or software able to edit router files.
+
+The default-on read-code preference is owner-managed through the existing
+authenticated, CSRF-protected settings route. Disabling it denies new runs.
+Every setting change increments a revision, invalidating active-run output even
+if the preference is disabled and re-enabled before a pending read completes.

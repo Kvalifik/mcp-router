@@ -1,6 +1,6 @@
 {
   "name": "mcp-router",
-  "version": "0.9.1",
+  "version": "0.10.0",
   "main": "src/desktop.cjs",
   "private": true,
   "type": "module",
@@ -30,6 +30,7 @@
     "jsonc-parser": "^3.3.1",
     "lucide-react": "^1.61.0",
     "motion": "13.5.0",
+    "quickjs-emscripten": "0.32.0",
     "radix-ui": "^1.8.1",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",

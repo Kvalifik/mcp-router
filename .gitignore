@@ -245,3 +245,13 @@ public/
 !/test/beta-slots.test.js
 
 !/test/beta-releases.test.js
+
+# Read-only code execution and validation.
+!/src/read-code.js
+!/src/read-code-worker.js
+!/test/read-code.test.js
+!/test/fixtures/code-mode.js
+!/scripts/benchmark-read-code.mjs
+!/scripts/benchmark-read-code-live.mjs
+!/scripts/smoke-read-code.mjs
+!/docs/CODE_MODE_BENCHMARK.md
