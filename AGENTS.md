@@ -13,6 +13,45 @@
   [security policy](SECURITY.md) when changing the behavior they describe.
   Follow [the release guide](docs/RELEASING.md) for release work.
 
+## Workspace and branch hygiene
+
+- Before starting independent work, inspect the current branch, working-tree
+  changes, worktrees, and relevant open PRs. Fetch current remote references when
+  network access is available. Base shipping work on current `origin/main`, not
+  a leftover release branch. Continue an existing feature branch when its work
+  is still relevant; do not duplicate an existing PR. If offline, state that the
+  base and remote PR status are unverified.
+- Keep shipping JavaScript/Electron work separate from `native/` experiments.
+  Preserve unfinished native work and its supporting changes in an identified
+  branch or recoverable local snapshot; never fold it into a shipping PR merely
+  because it shares the directory. Do not hide unfinished work just to obtain
+  a clean status.
+- Before switching a dirty checkout, identify what belongs to the current task.
+  Preserve unrelated edits and untracked files with a named recovery snapshot
+  and record how to restore them. Include private/ignored artifacts in the
+  preservation assessment, but never commit them or expose their contents.
+  Do not blindly apply an old mixed-work stash onto a newer release.
+- Before replacing an installed app, compare its version and source baseline
+  with the proposed build. Preserve newer shipped features; do not install an
+  older checkout unless the user explicitly chooses a downgrade. Build and
+  verify the intended source, retain a rollback copy, preserve application data,
+  and report the installed version, signing/update behavior, and validation.
+- After a PR merges or work is superseded, review its local branch and worktree.
+  Remove them only after verifying the exact work is merged or safely preserved,
+  checking for additional commits, dirty files, private artifacts, and active
+  sessions. A squash merge may not satisfy Git ancestry checks; verify the PR's
+  merged head. Preserve recovery references before deleting unique history.
+- Delete a remote feature branch only when its current head still matches the
+  verified merged head, using an exact-head lease to protect concurrent pushes.
+  Never delete default/protected branches or work attached to an open PR.
+  Close a superseded PR only after its intended replacement is merged and covers
+  the original scope. Old or failing PRs are not automatically obsolete.
+- Keep a short private handoff when work remains: branch/commit, PR, validation,
+  pending decisions, blockers, and recovery locations. At handback, distinguish
+  merged, locally committed, waiting on checks, deferred, and released work.
+  Keep the active checkout's purpose clear; do not claim cleanup is complete
+  merely because unfinished work was moved into a stash.
+
 ## UI icons
 
 - When neighboring menu items have icons, every comparable item must have an
