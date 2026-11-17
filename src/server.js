@@ -127,6 +127,10 @@ export function createDashboard(router, oauth, origin, { managementToken = nonce
         if(Object.keys(data).length!==1||!Object.hasOwn(data,'ids'))throw new Error('Invalid order');
         router.reorderConnections(data.ids);return json(res,{ok:true});
       }
+      if (url.pathname === '/api/settings/read-code') {
+        if(Object.keys(data).length!==1 || !Object.hasOwn(data,'enabled'))throw new Error('Invalid settings');
+        router.setReadCodeEnabled(data.enabled);return json(res,{ok:true});
+      }
       if (url.pathname === '/api/settings/disabled-project-discovery') {
         if(Object.keys(data).length!==1 || !Object.hasOwn(data,'enabled'))throw new Error('Invalid settings');
         router.setDisabledProjectDiscovery(data.enabled);return json(res,{ok:true});

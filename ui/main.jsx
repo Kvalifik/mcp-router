@@ -505,6 +505,7 @@ function App() {
     })},{separator:true}]:[]),
     {label:'Default MCP version',icon:'Server',children:['stable','beta'].map(channel=>({id:`channel-${channel}`,label:channel==='beta'?'β Beta':'Stable',checked:(data.settings.defaultChannel||'stable')===channel,onSelect:()=>action(()=>perform('/api/settings/default-channel',{channel}),'Default MCP version updated.')}))},
     {separator:true},
+    {id:'read-code',label:'Read-only code mode',icon:'Code2',checked:data.settings.readCodeEnabled!==false,onSelect:()=>action(()=>perform('/api/settings/read-code',{enabled:data.settings.readCodeEnabled===false}),'Read-only code mode setting saved.')},
     {id:'disabled-project-discovery',label:'Let AI discover disabled project names',icon:'Eye',checked:data.settings.discoverDisabledProjects!==false,onSelect:()=>action(()=>perform('/api/settings/disabled-project-discovery',{enabled:data.settings.discoverDisabledProjects===false}),'Project discovery setting saved.')},
     ...[['order','Reorder connections'],['defaults','Default permissions'],['diagnostics','Diagnostics']].map(([type,label])=>({id:type,label,icon:{order:'ArrowDownUp',defaults:'ShieldCheck',diagnostics:'Activity'}[type],onSelect:()=>setModal({type})})),
     {separator:true},

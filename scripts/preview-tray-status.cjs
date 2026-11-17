@@ -13,7 +13,7 @@ app.whenReady().then(async () => {
   const root = path.join(__dirname, '..');
   const render = new BrowserWindow({ show: false, webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false } });
   await render.loadURL('about:blank');
-  const mark = fs.readFileSync(path.join(root, 'assets/icons/mark-black.svg'), 'utf8').replace('<svg ', '<svg x="2" y="2" ').replace('width="672" height="672"', 'width="18" height="18"');
+  const mark = fs.readFileSync(path.join(root, 'assets/icons/mark-menubar.svg'), 'utf8').replace(/<svg\b[^>]*>/, tag => tag.replace(/\bwidth="[^"]+"/, 'width="18"').replace(/\bheight="[^"]+"/, 'height="18"').replace('<svg ', '<svg x="2" y="2" '));
   const arrow = '<circle cx="17" cy="16.5" r="5.5" fill="none" stroke="black" stroke-width="1.35"/><path d="M17 19.5v-6m-2.5 2.5 2.5-2.5 2.5 2.5" fill="none" stroke="black" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"/>';
   const updateSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="25" height="24"><defs><mask id="gap"><rect width="25" height="24" fill="white"/><circle cx="17" cy="16.5" r="7.3" fill="black"/></mask></defs><g mask="url(#gap)">${mark}</g>${arrow}</svg>`;
   async function imageFromSvg(svg, width) {

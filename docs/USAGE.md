@@ -442,6 +442,8 @@ only the Release preview; it does not merge or publish the production site.
 Discard hard-deletes a Release and requires explicit user intent. All writes
 require project preparation. The router verifies branch membership in the
 selected site's in-progress Releases and verifies an optional origin page.
+`list_site_branch_changes` also verifies merged Releases through paginated
+site-scoped history. Merged Releases remain unavailable to lifecycle mutations.
 These actions and the `create_page.site_branch_id` parameter are unavailable on
 Stable. Page branches remain separate operations.
 
@@ -458,10 +460,15 @@ workspace-member permissions never grant these account-wide capabilities.
 
 ### Beta slot defaults and Release details
 
-Beta adds `get_site_branch_freshness` under Pages Read and
+Beta adds `get_site_branch_freshness` and `list_site_branch_changes` under Pages Read and
 `update_site_branch_details` under Pages Write, with Release ownership checks.
 Beta `list_pages` accepts `site_branch_id` after verifying that Release belongs
-to the project. These capabilities remain unavailable on Stable.
+to the project. `list_site_branches` supports `statusGroup: "merged"` with
+`limit` and `cursor` for merged history. Change listings return names, IDs,
+resource types, locales and contributors for resources touched by a Release;
+they are not a diff against main. Follow `pagination.nextCursor` while
+`pagination.hasMore` is true, even for short pages. These capabilities remain
+unavailable on Stable.
 
 The Beta component-slot actions require a verified site page and site-owned
 components. `get_slot_default` uses Component properties Read;
@@ -472,3 +479,49 @@ Custom code Write. Slot props, default roots and target element pairs are checke
 against the selected component or page. Unknown or incomplete ownership responses
 fail closed. Library components absent from the site's component inventory cannot
 be verified. Slot-default feature availability is enforced upstream.
+
+## Experimental read-only code mode
+
+`read_webflow_code({projectId, code})` runs a short JavaScript snippet for one
+Managed project. Follow the normal `list_projects` → `prepare_project` workflow,
+read relevant skills, and discover exact schemas with `get_project_operations`
+first. This prototype adds no permissions and cannot use Direct connections.
+
+The sandbox exposes synchronous `read(operationId, params, pageId?)`, which
+returns the same response envelope as `read_webflow`, and `print(value)`, which
+appends one JSON line to the result's `output` string. Use ordinary loops, not
+async/await. There are no imports, timers, network, filesystem or Node globals.
+For example, after discovering the collection-list operation:
+
+```js
+const response = read('data_cms_tool.get_collection_list', {});
+const result = JSON.parse(response.content[0].text).result;
+print(result.collections.map(collection => ({id: collection.id, name: collection.name})));
+```
+
+Each read uses the existing schema, grant, project and resource ownership checks.
+Only catalog-classified reads with project scope are accepted; workspace/account
+operations and all writes are excluded. The project cannot be changed by the
+snippet. Output is withheld until completion and discarded on failure or a
+policy change. Read failures stop the run, even if the snippet tries to catch them.
+Normal instruction preparation remains an agent workflow requirement, as with
+`read_webflow`; a read-code call is not proof that instructions were read.
+
+Limits: one run per daemon, 30 seconds, 100 reads, 32 KiB source, 20,000 output
+bytes, 4 MiB per response and 32 MiB total response bytes. QuickJS has a 32 MiB
+heap and 256 KiB stack limit inside a resource-limited worker. Already-dispatched
+reads may finish after timeout; no further reads are dispatched, results are
+ignored, and the run slot remains occupied until the read drains. No automatic
+retries, file exports, persistent scripts or session pooling are implemented.
+The response includes call, response-byte, output-byte and elapsed-time statistics.
+
+Use this for pagination and local filtering of large responses. Ordinary
+`read_webflow` remains simpler for a single item. Run the synthetic comparison
+with `node scripts/benchmark-read-code.mjs`; methodology and measured results are
+in [CODE_MODE_BENCHMARK.md](CODE_MODE_BENCHMARK.md).
+
+Code mode is enabled by default. Turn off **Read-only code mode** in Settings to
+block new runs and withhold active-run output. Ordinary reads remain available.
+Only the owner-authenticated settings interface can change this preference.
+
+Prefer ordinary reads unless code mode is likely to substantially reduce intermediate data returned to the conversation or simplify a known, repetitive workflow. Multiple calls alone are not a reason to use code mode. Consider response size, how much data the answer actually needs, and whether the relevant schemas and fields are already understood. Use upstream filtering where possible. When uncertain, start with a small ordinary read and reassess.

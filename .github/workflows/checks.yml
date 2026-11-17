@@ -27,7 +27,7 @@ jobs:
           # PR checkout is GitHub's merge commit; its first parent is the base.
           package=true
           if [ "$EVENT_NAME" != workflow_dispatch ] && git diff --name-only HEAD^ HEAD > "$RUNNER_TEMP/changed-files"; then
-            if ! grep -Eq '^(package(-lock)?\.json|build\.mjs|packaging\.mjs|scripts/(sign-mac|smoke-package)\.mjs|scripts/package-release\.py|\.github/workflows/[^/]+\.ya?ml)$' "$RUNNER_TEMP/changed-files"; then
+            if ! grep -Eq '^(package(-lock)?\.json|build\.mjs|packaging\.mjs|scripts/(sign-mac|smoke-package|smoke-read-code)\.mjs|scripts/package-release\.py|\.github/workflows/[^/]+\.ya?ml)$' "$RUNNER_TEMP/changed-files"; then
               package=false
             fi
           fi
@@ -65,6 +65,7 @@ jobs:
           MAC_SIGNING_MODE: adhoc
         run: |
           node scripts/smoke-package.mjs
+          node scripts/smoke-read-code.mjs
           python3 scripts/package-release.py
       - run: git diff --exit-code
   required-checks:

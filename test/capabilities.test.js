@@ -333,7 +333,7 @@ test('CMS creation accepts custom fields only inside fieldData for both request 
 
 test('site Releases use distinct permissions, verify ownership and stay unavailable on Stable',async t=>{
  const {router,store,calls}=fixture(t);
- const actions={list_site_branches:'read',create_site_branch:'write',stage_site_branch:'publish',discard_site_branch:'delete',get_site_branch_freshness:'read',update_site_branch_details:'write'};
+ const actions={list_site_branches:'read',create_site_branch:'write',stage_site_branch:'publish',discard_site_branch:'delete',get_site_branch_freshness:'read',update_site_branch_details:'write',list_site_branch_changes:'read'};
  grant(router,{'pages:read':true,'pages:write':true,'pages:publish':true,'pages:delete':true});
  for(const [action,mode] of Object.entries(actions)){
   const id='data_pages_tool.'+action;

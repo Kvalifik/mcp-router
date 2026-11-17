@@ -463,3 +463,95 @@ Developer ID signing/notarization and isolated signed updater before publication
 Zod from #37 is included; its TOML and notarization updates remain deferred pending
 separate review, so that mixed PR is not fully superseded. Major upgrades #35 and
 #32 remain separate. No advisory is deliberately left unresolved in this lockfile.
+
+### 0.9.1 branding and Beta history review (2026-10-28)
+
+The release contains the purple app icon, stronger menu-bar variants with a gap
+above workspace nodes, and the wordmark without the standalone symbol. README
+screenshots were recaptured from the release source using fictional data.
+
+Fresh, completely paginated captures contain 37 Stable tools and 39 Beta tools.
+Stable schemas and tool descriptions are unchanged from the reviewed baseline.
+Beta adds `data_pages_tool.list_site_branch_changes` and refreshes the
+`list_site_branches` description with change summaries. Full envelope comparison
+found no new top-level targeting or constraints. The guides also clarify campaign
+name length (10–24 characters); Beta explains Release change history and existing
+branch lifecycle behavior. Existing Beta slot/freshness/detail schemas match the
+0.9.0 catalog. No additional changes were found.
+
+The explicitly approved Beta addition is read-only metadata (resource names, IDs,
+types, locales and contributors), uses existing Pages Read, and stays site-pinned.
+Branch membership is verified in the selected site's in-progress Releases or,
+for change history only, paginated merged history. Foreign branches, malformed
+responses, repeated/missing cursors and pagination exhaustion fail closed.
+Merged history does not authorize branch mutations or working-page reads. List
+pagination parameters require the merged status group. The generator was updated
+and the catalog regenerated; no new permission category or automatic grant was
+introduced. Synthetic tests cover permission denial, Stable isolation, site
+injection, ownership, short/empty pages, malformed pagination and loop bounds.
+Live lifecycle operations on entitled customer sites were not exercised.
+
+Coverage: Stable supports 304 operations and Beta 324. Neither channel has missing,
+removed, unclassified or unexpectedly outdated actions after this refresh. The
+only accepted schema difference is the existing narrow CMS fieldData export
+correction. Guidance/discovery utility tools and owner-only site inventory remain
+excluded by design in Managed mode. No capability is deferred or unverified at
+the schema-review level. The source-bound report records the final tree.
+
+Open dependency PRs were reviewed by manifest/lockfile/workflow diff. Keep #47
+(TOML 3.3.1 and notarize 3.1.2) separate: it changes configuration editing and
+notarization behavior, including upstream prepare metadata, and needs focused
+configuration and signed-updater validation. Its lockfile changes only those two
+packages, retains MIT licensing and npm registry URLs, and adds no transitive
+packages. Keep #35 (Motion 14.6.0 and its three runtime packages) separate for major
+animation migration/UI checks. Keep #32 (setup-node 7.1.0) separate for action
+migration and credential-free packaging validation. Neither major is needed for
+this branding release. No dependency was changed; npm ci reports zero known
+vulnerabilities for the retained lockfile. None of these PRs is superseded or
+closed. The separate Mac installation PR and local development prototypes are
+outside this release.
+
+### Code-mode release review (2026-10-29)
+
+Recommended scope: read-only code mode, its default-on owner preference, and its
+regression/packaging checks. Existing OAuth grants, permissions, pinned operations
+and ownership logic are retained. No upstream operation or grant is added.
+
+Fresh read-only metadata captures fully paginated 37 Stable and 39 Beta tools
+through the existing application provider, separately per grant, without refreshing
+or exporting credentials. Both comparisons against this release's catalog report
+no added, removed or unclassified actions. The only schema difference on either
+channel is the existing deliberate CMS create_collection_items fieldData export
+correction. It remains intentionally different. Utility tools and owner list_sites
+remain excluded by design. No channel was unavailable.
+
+Compared with the October 16 capture, top-level schema constraints and Stable tool
+descriptions are unchanged. Beta's Pages description now mentions Release change
+history and site-branch targets, already covered by the 0.9.1 catalog and ownership
+checks. The current guide preserves the read-only CMS listing workflow used here.
+This is metadata compatibility, not a claim to have live-tested every operation.
+
+Open dependency PR diffs were reviewed. #51 changes only TOML patch 3.3.0→3.3.1,
+MCP SDK 1.32.1→1.32.2 and notarize 3.1.1→3.1.2 entries, with no transitive lockfile
+changes. It is deferred as a separate runtime/signing-sensitive update requiring
+configuration, MCP and signed-package validation. #35 (Motion 13→14) and #32
+(setup-node 6→7) are major upgrades deferred for separate migration review.
+No dependency PR is merged or closed as part of code mode. QuickJS 0.32.0 is pinned
+and its MIT license notices regenerated. npm audit reports an existing moderate
+@hono/node-server serveStatic advisory; the router and MCP SDK server do not use
+that static-serving function. This is not a code-mode dependency or a newly
+introduced reachable path; track its patch independently rather than claim a
+clean dependency audit.
+
+Local source checks pass 228 tests with the Windows ACL check skipped on macOS;
+the UI build passes with the existing chunk-size warning. Code-mode preference
+coverage includes persistence, owner authentication, Origin/CSRF protection,
+non-boolean rejection, denied MCP setting changes, and disabling/re-enabling during
+an in-flight read. The CI package matrix now runs smoke-read-code.mjs after the
+ordinary packaged daemon smoke on macOS arm64, macOS x64 and Windows x64.
+
+The setting only changes an unopened menu and is not visible in either existing
+README screenshot; those screenshots do not need regeneration for this change.
+Final release publication still requires the normal CI, packaged runtime, signing
+and platform checks above. See CODE_MODE_BENCHMARK.md for bounded live evidence
+and its limits; no measured model-token or guaranteed speedup claim is made.

@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.10.0 — Read-only code mode
+
+- Add sandboxed read-only JavaScript for filtering and summarizing Webflow data, while preserving project permissions and resource ownership checks.
+- Enable code mode by default with an owner-controlled **Read-only code mode** switch in Settings. Disabling it blocks new runs and invalidates active results.
+- Guide agents to prefer ordinary reads unless code mode offers a meaningful benefit; repeated calls alone are not a reason to use it.
+- Add packaged code-mode smoke checks on both Mac architectures and Windows.
+
+## 0.9.1 — Refreshed app branding
+
+MCP Router has a refreshed look with a new purple app icon and clearer menu-bar symbols.
+
+### What’s new
+
+- **New app icon:** updated purple artwork across macOS and Windows.
+- **Clearer menu-bar icons:** stronger outlines and spacing make the normal, warning and update indicators easier to read.
+- **Updated Kvalifik wordmark:** simplified branding in the app header and About panel.
+- **Webflow Beta Release history:** inspect changes in active or merged Releases, with project ownership checks.
+
 ## 0.9.0 — Startup preferences and explicit Direct Webflow access
 
 MCP Router can now launch when you sign in, and you can choose how each connection works with Webflow.

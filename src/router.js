@@ -1,3 +1,4 @@
+import { runReadCode } from './read-code.js';
 import { AgentError, authorizationRequired, upstreamError, checkUpstreamResponse, upstreamDiagnostics, transientUpstreamRead } from './agent-errors.js';
 import { initializeInventory, syncProjects, setDefaults, purgeConnection } from './discovery.js';
 import { CATALOG, permissions, validatePermissions, validateWorkspacePermissions, validateConnectionPermissions, operation, allowed, requirePermissions, prepareArguments, checkOwnership, resultOf } from './permissions.js';
@@ -110,6 +111,12 @@ export class Router {
     this.store.audit('connection_order_saved');
   }
   setDefaultChannel(channel) { endpoint(channel); this.store.data.settings.defaultChannel=channel; this.store.audit('default_channel_saved',{channel}); }
+  setReadCodeEnabled(enabled) {
+    if (typeof enabled !== 'boolean') throw new Error('Invalid settings');
+    this.store.data.settings.readCodeEnabled = enabled;
+    this.store.data.settings.readCodeRevision = (this.store.data.settings.readCodeRevision || 0) + 1;
+    this.store.audit('read_code_setting_saved', { enabled });
+  }
   setDisabledProjectDiscovery(enabled) {
     if (typeof enabled !== 'boolean') throw new Error('Invalid settings');
     this.store.data.settings.discoverDisabledProjects = enabled;
@@ -490,6 +497,7 @@ export class Router {
         : [];
       return [...approved, ...direct, ...disabled];
     }
+    if (name === 'read_webflow_code') return runReadCode(this,args);
     if (['get_project_guidance','get_project_operations','prepare_project','read_webflow','write_webflow'].includes(name)) return this.extendedCall(name,args);
     if (name !== 'read_project_site' || Object.keys(args).length !== 1 || typeof args.projectId !== 'string') {
       this.store.audit('tool_denied'); throw new Error('Tool or arguments denied; this POC supports project site reads only');

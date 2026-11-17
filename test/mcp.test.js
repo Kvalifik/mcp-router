@@ -54,7 +54,7 @@ test('real MCP stdio client enforces live policy through the daemon', async t =>
   assert.match(instructions, /Missing direct Webflow tools/);
   assert.doesNotMatch(instructions, /Webflow server guidance revision/);
   const { tools } = await client.listTools();
-  assert.deepEqual(tools.map(t => t.name).sort(), ['call_direct_tool', 'get_direct_tools', 'get_project_guidance', 'get_project_operations', 'list_direct_connections', 'list_projects', 'prepare_project', 'read_project_site', 'read_webflow', 'request_reauthorization', 'write_webflow']);
+  assert.deepEqual(tools.map(t => t.name).sort(), ['call_direct_tool', 'get_direct_tools', 'get_project_guidance', 'get_project_operations', 'list_direct_connections', 'list_projects', 'prepare_project', 'read_project_site', 'read_webflow', 'read_webflow_code', 'request_reauthorization', 'write_webflow']);
   assert.match(tools.find(t => t.name === 'list_projects').description, /Start here for Webflow/);
   assert.match(tools.find(t => t.name === 'get_project_operations').description, /CMS.*SEO.*Designer/);
   assert.match(tools.find(t => t.name === 'prepare_project').description, /including read-only/);
