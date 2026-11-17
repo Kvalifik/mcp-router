@@ -10,13 +10,14 @@ const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'router-install-test-'));
 after(() => fs.rmSync(temp, { recursive: true, force: true }));
 let nextFixture = 0;
 function fixture({ platform = 'darwin', packaged = true, installed = false, response = 0, checkboxChecked = false, userData = path.join(temp, String(nextFixture++)), move = () => true } = {}) {
+  const applicationsDirectory = path.join(temp, 'Applications-' + nextFixture++);
   const messages = [], errors = [];
   let moves = 0;
   return {
-    messages, errors, userData, get moves() { return moves; },
+    messages, errors, userData, applicationsDirectory, get moves() { return moves; },
     options: {
-      platform,
-      app: { isPackaged: packaged, getPath: () => userData, isInApplicationsFolder: () => installed,
+      platform, applicationsDirectory,
+      app: { isPackaged: packaged, getVersion: () => '0.9.1', getPath: name => name === 'exe' ? '/Downloads/MCP Router.app/Contents/MacOS/MCP Router' : userData, isInApplicationsFolder: () => installed,
         moveToApplicationsFolder: options => { moves++; return move(options); } },
       dialog: { showMessageBox: async options => { messages.push(options); return { response, checkboxChecked }; },
         showErrorBox: (...args) => errors.push(args) },
@@ -75,16 +76,53 @@ test('successful relocation stops startup while Electron relaunches', async () =
   assert.equal(f.moves, 1);
 });
 
-test('existing installations are never replaced, including running copies', async () => {
-  for (const conflictType of ['exists', 'existsAndRunning']) {
-    const f = fixture({ move: ({ conflictHandler }) => {
-      assert.equal(conflictHandler(conflictType), false);
-      return false;
-    } });
-    assert.equal(await offerApplicationMove(f.options), false);
-    assert.equal(f.messages.length, 2);
-    assert.equal(f.errors.length, 0);
+function install(f, version = '0.9.0') {
+  const folder = path.join(f.applicationsDirectory, 'MCP Router.app/Contents/Resources/app');
+  fs.mkdirSync(folder, { recursive: true });
+  fs.writeFileSync(path.join(folder, 'package.json'), JSON.stringify({ name: 'mcp-router', version }));
+}
+
+test('replacement shows both versions and explicitly authorizes native replacement', async () => {
+  for (const version of ['0.9.0', '0.9.1', '0.10.0']) {
+    const f = fixture({ move: ({ conflictHandler }) => conflictHandler('exists') });
+    install(f, version);
+    assert.equal(await offerApplicationMove(f.options), true);
+    assert.match(f.messages[0].detail, new RegExp(`Installed version: ${version}`));
+    assert.match(f.messages[0].detail, /This copy: 0.9.1/);
+    assert.equal(f.messages[0].buttons[0], 'Replace and Relaunch');
+    assert.equal(f.messages[0].defaultId, 1);
+    assert.equal(f.messages[0].checkboxLabel, undefined);
   }
+});
+
+test('declining replacement leaves the installed app untouched', async () => {
+  const f = fixture({ response: 1 }); install(f);
+  assert.equal(await offerApplicationMove(f.options), false);
+  assert.equal(f.moves, 0);
+});
+
+test('a running installed copy is never silently focused instead of replaced', async () => {
+  const f = fixture({ move: ({ conflictHandler }) => {
+    assert.equal(conflictHandler('existsAndRunning'), false); return false;
+  } }); install(f);
+  assert.equal(await offerApplicationMove(f.options), false);
+  assert.match(f.messages[1].message, /Quit the installed app/);
+});
+
+test('unknown or changed installations are not replaced', async () => {
+  const unknown = fixture(); install(unknown, 'invalid');
+  assert.equal(await offerApplicationMove(unknown.options), false);
+  assert.equal(unknown.moves, 0);
+  const changed = fixture(); install(changed);
+  changed.options.dialog.showMessageBox = async () => {
+    install(changed, '0.10.0'); return { response: 0 };
+  };
+  assert.equal(await offerApplicationMove(changed.options), false);
+  assert.equal(changed.moves, 0);
+  const appeared = fixture({ move: ({ conflictHandler }) => {
+    install(appeared); assert.equal(conflictHandler('exists'), false); return false;
+  } });
+  assert.equal(await offerApplicationMove(appeared.options), false);
 });
 
 test('cancelled authorization and failed moves allow startup; errors stay private', async () => {
