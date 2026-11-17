@@ -202,6 +202,7 @@ export class Router {
   async sites(id, { refresh = false, channel = this.store.data.settings.defaultChannel || 'stable', automatic = false, afterAuthorization = false, ownerInitiated = false, now = Date.now() } = {}) {
     return this.serial(id, async () => {
       const key = `${id}:${channel}`;
+      let inventoryFresh = false;
       if (automatic) {
         const connection = this.store.data.connections[id];
         const grant = channel === 'stable' ? connection : connection?.beta;
@@ -211,7 +212,10 @@ export class Router {
         if (retry && retry.lastChecked !== grant.lastChecked) this.inventoryRetries.delete(key);
         else if (retry && now < retry.nextAttempt) return;
         const checked = Date.parse(grant.lastChecked);
-        if (grant.status === 'connected' && !grant.inventoryPending && Number.isFinite(checked) && now - checked < 60 * 60_000) return;
+        inventoryFresh = grant.status === 'connected' && !grant.inventoryPending && Number.isFinite(checked) && now - checked < 60 * 60_000;
+        const expires = Date.parse(grant.expiresAt);
+        refresh = !!grant.tokens.refresh_token && Number.isFinite(expires) && expires <= now + 5 * 60_000;
+        if (inventoryFresh && !refresh) return;
       }
       const c = this.store.connection(id), auth=session(this.store,id,channel);
       if (!c.enabled && !afterAuthorization && !ownerInitiated) throw new AgentError('project_access_denied', 'Connection disabled. Enable it in MCP Router.');
@@ -219,6 +223,10 @@ export class Router {
       let client;
       try {
         if (refresh) await this.oauth.refresh(id,channel);
+        if (automatic && inventoryFresh) {
+          this.inventoryRetries.delete(key);
+          return;
+        }
         client = await this.open(this.oauth.provider(id,false,channel));
         const sites = await client.listSites();
         if ((!c.enabled && !afterAuthorization && !ownerInitiated) || c.deletedAt) throw new Error('Connection was disabled during the request');
@@ -236,9 +244,11 @@ export class Router {
             nextAttempt: Date.now() + Math.min(60_000 * 2 ** (failures - 1), 15 * 60_000) });
         }
         auth.status = 'check_failed';
-        c.lastError = 'Connection check failed. Retry or reconnect; credentials were not copied to another connection.';
+        c.lastError = upstreamError(error).feedback.code === 'reauthorization_required'
+          ? 'Webflow authorization is required for this channel.'
+          : 'Connection check failed. Retry later; reauthorization is not confirmed.';
         const category = ['InvalidGrantError', 'InvalidClientError', 'UnauthorizedError', 'StreamableHTTPError', 'InvalidScopeError'].includes(error.constructor?.name) ? error.constructor.name : 'upstream_or_transport_error';
-        this.store.audit('connection_read_failed', { connectionId: id, category });
+        this.store.audit('connection_read_failed', { connectionId: id, channel, category });
         throw upstreamError(error);
       } finally { await client?.close().catch(() => {}); }
     });
@@ -427,6 +437,9 @@ export class Router {
         notice:'Webflow authorization determines access. Router project switches and project, workspace and account permission settings do not apply. This may include other sites and workspaces.'}));
   }
   async directCall(name, args) {
+    return this.serial(args.connectionId, () => this.directCallLocked(name, args));
+  }
+  async directCallLocked(name, args) {
     const fields = name === 'get_direct_tools' ? ['connectionId','channel','toolName'] : ['connectionId','channel','toolName','arguments'];
     if (Object.keys(args).some(key=>!fields.includes(key)) || typeof args.connectionId !== 'string' || !['stable','beta'].includes(args.channel) || ('toolName' in args && (typeof args.toolName !== 'string' || !args.toolName)) ||
         (name === 'call_direct_tool' && (typeof args.toolName !== 'string' || !args.toolName || !args.arguments || typeof args.arguments !== 'object' || Array.isArray(args.arguments)))) throw new Error('Invalid arguments');
