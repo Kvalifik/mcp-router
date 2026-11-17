@@ -67,3 +67,33 @@ test('OAuth transport rejects foreign credential destinations before fetching', 
     method: 'POST', body: 'refresh_token=synthetic-legacy-token'
   }), /Unexpected OAuth or MCP origin/);
 });
+
+for (const failure of ['network', 'server_error', 'invalid_grant']) {
+  test(`real SDK refresh ${failure}: temporary failures retain credentials`, async t => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'wfr-refresh-'));
+    t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+    const store = new Store(dir);
+    const reply = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
+    const fetchFn = async input => {
+      const url = new URL(input);
+      if (url.pathname.startsWith('/.well-known/oauth-protected-resource')) return reply({ resource: 'https://mcp.webflow.com/mcp', authorization_servers: ['https://mcp.webflow.com'] });
+      if (url.pathname.startsWith('/.well-known/oauth-authorization-server')) return reply({ issuer: 'https://mcp.webflow.com', authorization_endpoint: 'https://mcp.webflow.com/oauth/authorize', token_endpoint: 'https://mcp.webflow.com/oauth/token', response_types_supported: ['code'], code_challenge_methods_supported: ['S256'] });
+      if (url.pathname === '/oauth/token') {
+        if (failure === 'network') throw new TypeError('synthetic-private-network-detail');
+        return reply({ error: failure, error_description: 'synthetic-private-provider-detail' }, failure === 'server_error' ? 503 : 400);
+      }
+      throw new Error('Unexpected fixture request');
+    };
+    const oauth = new OAuthManager(store, 'http://127.0.0.1:43127', { fetchFn });
+    const router = new Router(store, oauth), id = router.createConnection('Synthetic');
+    const c = store.connection(id);
+    c.client = { client_id: 'synthetic-client', issuer: 'https://mcp.webflow.com' };
+    c.tokens = { access_token: 'synthetic-access', refresh_token: 'synthetic-refresh', token_type: 'Bearer', issuer: 'https://mcp.webflow.com' };
+    await assert.rejects(oauth.refresh(id), error => error.feedback?.code === (failure === 'invalid_grant' ? 'reauthorization_required' : 'upstream_failure'));
+    assert.equal(!!c.tokens, failure !== 'invalid_grant');
+    assert.ok(!JSON.stringify(store.data.audit).includes('synthetic-private'));
+    const event = store.data.audit.at(-1);
+    assert.equal(event.channel, 'stable');
+    assert.equal(event.event, failure === 'invalid_grant' ? 'oauth_credentials_rejected' : 'oauth_refresh_failed');
+  });
+}

@@ -146,3 +146,21 @@ test('direct readiness does not report inactive project permission or channel pr
   const status=access.accessStatus(f.store.summary());
   assert.deepEqual(status.issues,[]);assert.equal(status.enabledProjects,0);
 });
+
+test('Direct requests share the refresh lock and recheck access after waiting', async t => {
+  const f = fixture(t);
+  f.router.edit('connections', f.id, { accessMode: 'direct' });
+  let release, entered;
+  const started = new Promise(resolve => { entered = resolve; });
+  const barrier = new Promise(resolve => { release = resolve; });
+  const maintenance = f.router.serial(f.id, async () => { entered(); await barrier; });
+  await started;
+  const request = f.router.call('get_direct_tools', f.args);
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(f.opened.length, 0);
+  f.c.enabled = false;
+  release();
+  await maintenance;
+  await assert.rejects(request, error => error.feedback?.code === 'direct_access_denied');
+  assert.equal(f.opened.length, 0);
+});
