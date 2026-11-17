@@ -1,4 +1,4 @@
-import { authorizationRequired } from './agent-errors.js';
+import { AgentError, authorizationRequired } from './agent-errors.js';
 import { randomBytes } from 'node:crypto';
 import { auth } from '@modelcontextprotocol/sdk/client/auth.js';
 
@@ -39,7 +39,19 @@ export class Provider {
     };
   }
   state() {
-    if (!this.interactive || !this.c.pending) throw authorizationRequired();
+    if (!this.interactive) {
+      // The SDK can fall through here after a temporary refresh failure. Only
+      // invalid_grant/client responses clear credentials; retained tokens are
+      // not evidence that the user needs to authorize again.
+      if (this.c.tokens?.refresh_token) {
+        this.store.audit('oauth_refresh_failed', { connectionId: this.id, channel: this.channel, category: 'refresh_unavailable' });
+        throw new AgentError('upstream_failure', 'Webflow token refresh could not complete. Saved credentials were retained.', {
+          failureKind: 'unknown', nextStep: 'Retry later. Reauthorization is not confirmed; do not automatically replay writes.'
+        });
+      }
+      throw authorizationRequired();
+    }
+    if (!this.c.pending) throw authorizationRequired();
     return this.c.pending.state;
   }
   clientInformation() { return this.c.client; }
@@ -62,7 +74,7 @@ export class Provider {
     // Rotating tokens does not invalidate an already verified site inventory.
     if (!old || this.c.status !== 'connected' || this.c.inventoryPending) this.c.status = 'authorized';
     this.c.lastError = null;
-    this.store.audit('oauth_tokens_saved', { connectionId: this.id, tokenVersion: this.c.tokenVersion });
+    this.store.audit('oauth_tokens_saved', { connectionId: this.id, channel: this.channel, tokenVersion: this.c.tokenVersion });
   }
   redirectToAuthorization(url) {
     if (!this.interactive) throw authorizationRequired();
@@ -79,6 +91,9 @@ export class Provider {
     return this.c.pending.verifier;
   }
   invalidateCredentials(scope) {
+    if (scope === 'all' || scope === 'tokens') this.store.audit('oauth_credentials_rejected', {
+      connectionId: this.id, channel: this.channel, category: scope === 'all' ? 'client_rejected' : 'grant_rejected'
+    });
     if (scope === 'all' || scope === 'client') delete this.c.client;
     if (scope === 'all' || scope === 'tokens') { delete this.c.tokens; this.c.status = 'needs_authorization'; }
     if (scope === 'all' || scope === 'verifier') delete this.c.pending;

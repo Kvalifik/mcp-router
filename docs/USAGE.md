@@ -83,6 +83,21 @@ refreshes preserve an already verified connection's ready state. Failures retry
 after 1, 2, 4, 8 minutes, then every 15 minutes. Retry delays reset on restart or
 a successful sync.
 
+The shipping Electron/JavaScript router also checks token expiry on this minute
+timer (and at startup). Enabled grants with refresh tokens are refreshed within
+five minutes of access-token expiry, or on the next tick after the computer wakes.
+When the inventory is still fresh, this only refreshes the token; it does not
+read projects. Disabled connections and pending browser authorizations are skipped.
+Stable and Beta remain separate, and refresh shares the connection lock with
+Managed and Direct requests to prevent concurrent token rotation.
+
+Temporary refresh failures retain saved credentials and report an upstream failure,
+not a confirmed need to reconnect. Background failures use the retry delays above.
+Explicit grant/client rejection requires authorization again. Activity records
+include channel, timestamp and fixed outcome categories without tokens or provider
+error text. Unknown expiry still uses request-driven refresh. This does not promise
+to extend Webflow's refresh-token lifetime while Router is closed or disabled.
+
 Resync reads project summaries, not pages, CMS content, or assets. New projects
 remain disabled; existing permissions and local names are preserved. Projects
 absent from the combined successful Stable/Beta inventory become unavailable and
