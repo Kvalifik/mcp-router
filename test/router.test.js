@@ -410,3 +410,63 @@ test('owner diagnostics withhold results after grant or read-permission revocati
     await assert.rejects(f.router.testProject({projectId:'owner-test'}),/authorization|denied/i);
   }
 });
+
+test('expiry maintenance refreshes fresh inventories without site reads and backs off failures', async t => {
+  let refreshes = 0, fail = true;
+  const { router, store, a, b } = fixture(t, { authFn: async provider => {
+    refreshes++;
+    if (fail) return provider.state();
+    provider.saveTokens({ access_token: 'synthetic-rotated', expires_in: 3600 });
+    return 'AUTHORIZED';
+  } });
+  const now = Date.now(), c = store.connection(a);
+  store.connection(b).enabled = false;
+  c.status = 'connected'; c.lastChecked = new Date(now).toISOString();
+  c.expiresAt = new Date(now + 60_000).toISOString();
+  let reads = 0;
+  router.open = async () => { reads++; return { listSites: async () => [], close: async () => {} }; };
+  await router.resyncDueProjects(now);
+  assert.equal(refreshes, 1);
+  assert.ok(c.tokens.refresh_token);
+  await router.resyncDueProjects(now + 10_000);
+  assert.equal(refreshes, 1);
+  fail = false;
+  await router.resyncDueProjects(now + 120_000);
+  assert.equal(refreshes, 2);
+  // A failed check revalidates inventory on recovery.
+  assert.equal(reads, 1);
+  c.expiresAt = new Date(now + 150_000).toISOString();
+  await router.resyncDueProjects(now + 120_000);
+  assert.equal(refreshes, 3);
+  assert.equal(reads, 1);
+  c.enabled = false;
+  c.expiresAt = new Date(now).toISOString();
+  await router.resyncDueProjects(now + 240_000);
+  assert.equal(refreshes, 3);
+});
+
+test('expiry maintenance isolates Beta and skips pending authorization or unknown expiry', async t => {
+  const channels = [];
+  const { router, store, a, b } = fixture(t, { authFn: async provider => {
+    channels.push(provider.channel);
+    provider.saveTokens({ access_token: 'synthetic-beta-rotated', expires_in: 3600 });
+    return 'AUTHORIZED';
+  } });
+  const now = Date.now(), c = store.connection(a);
+  store.connection(b).enabled = false;
+  c.status = 'connected'; c.lastChecked = new Date(now).toISOString();
+  c.expiresAt = null;
+  c.beta = { status: 'connected', lastChecked: c.lastChecked, expiresAt: new Date(now - 1).toISOString(),
+    tokens: { access_token: 'synthetic-beta', refresh_token: 'synthetic-beta-refresh' } };
+  const original = JSON.stringify(c.tokens);
+  router.open = async () => { throw new Error('Fresh inventory must not be read'); };
+  c.pending = { state: 'synthetic' };
+  await router.resyncDueProjects(now);
+  assert.deepEqual(channels, []);
+  delete c.pending;
+  await router.resyncDueProjects(now);
+  assert.deepEqual(channels, ['beta']);
+  assert.equal(JSON.stringify(c.tokens), original);
+  await router.resyncDueProjects(now);
+  assert.deepEqual(channels, ['beta']);
+});
