@@ -385,7 +385,7 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-## @hono/node-server 2.1.1
+## @hono/node-server 2.1.8
 
 License: MIT. Runtime dependency.
 
@@ -5369,7 +5369,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## hono 4.13.13
+## hono 4.13.18
 
 License: MIT. Runtime dependency.
 
