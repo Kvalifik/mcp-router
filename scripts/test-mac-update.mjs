@@ -77,7 +77,10 @@ try {
   feeds[`${kind}.json`]={currentRelease:'1.1.0',releases:[{version:'1.1.0',updateTo:{version:'1.1.0',name:'1.1.0',url:`${origin}/${kind}.zip`,sha256:createHash('sha256').update(bytes).digest('hex'),size:bytes.length}}]};
  }
  console.log('Testing signature rejection, download, install, and relaunch in isolated fixture…');
- child=spawn(path.join(apps[0],'Contents/MacOS/Router Update Test'),[],{stdio:'ignore'});
+ // Shells launched by Electron-based tooling may inherit Node-only mode.
+ // The updater fixture must launch the GUI runtime, including its relaunch.
+ const childEnv={...process.env};delete childEnv.ELECTRON_RUN_AS_NODE;
+ child=spawn(path.join(apps[0],'Contents/MacOS/Router Update Test'),[],{stdio:'ignore',env:childEnv});
  const deadline=Date.now()+180000;
  let outcome;
  while(Date.now()<deadline){

@@ -220,3 +220,26 @@ The default-on read-code preference is owner-managed through the existing
 authenticated, CSRF-protected settings route. Disabling it denies new runs.
 Every setting change increments a revision, invalidating active-run output even
 if the preference is disabled and re-enabled before a pending read completes.
+
+### November 2026 capability boundaries
+
+Live WAF operations have separate `firewall:read`, `firewall:write` and
+`firewall:delete` project grants. Existing Enterprise grants do not enable them.
+Targets are site-pinned; explicit current and previous domain lists are checked
+against that site's WAF inventory. Previews do not mutate traffic; apply actions
+retain upstream state hashes, preview tokens and high-risk confirmation contracts.
+
+Beta AEO brand operations require separately saved `workspace_aeo:read` or
+`workspace_aeo:write` grants, never project presets. The router verifies the site's
+workspace and the brand's workspace, then uses brand-scoped topic/prompt lookups.
+Bulk member removal uses the existing workspace Delete grant and validates every
+member and invitation. Both workspace families can affect disabled sibling sites.
+
+Beta Release ownership uses the new read tool, including CMS branch IDs. Merged
+history authorizes only history/detail reads. Conflict resolutions must appear in
+the owned Release's preview. New component page/asset links and CMS selections are
+checked against project resources. Channel-specific schemas stay separate.
+
+Merging a Release additionally requires default-off `release_merge:publish` plus
+Pages Publish because it promotes all resource types into main. Performance
+diagnostics require Custom code Read as well as Analytics Read for source details.

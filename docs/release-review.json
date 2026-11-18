@@ -1,13 +1,13 @@
 {
-  "version": "0.10.0",
-  "reviewedAt": "2026-10-29T10:43:03.796Z",
-  "sourceDigest": "5f38710fa4bf49e02f0aea841be4958b250c2faf61a819ec90fa6350199e1764",
+  "version": "0.11.0",
+  "reviewedAt": "2026-11-18T15:23:50.059Z",
+  "sourceDigest": "95f680b685bfbeca67a673a706c67875b009d2e558b0b5e03cdb4e4bffc01c7c",
   "channels": {
     "stable": {
       "status": "reviewed",
-      "toolCount": 37,
-      "snapshotSha256": "f6dd4922c9bffc4cb40be4aa438b567e8bc9af0c196fd5ecc0ddfb8317998715",
-      "supportedOperations": 304,
+      "toolCount": 38,
+      "snapshotSha256": "72fde1509cb38994e59d59e4d2e29210a0e0cf02a2e40c348b5da55d21da9e00",
+      "supportedOperations": 312,
       "missing": [],
       "outdated": [],
       "deferred": [],
@@ -24,9 +24,9 @@
     },
     "beta": {
       "status": "reviewed",
-      "toolCount": 39,
-      "snapshotSha256": "6ab04f071f7574a72a1e4fc5477b1daa54e3cefad76c533b57b2be62db48a201",
-      "supportedOperations": 324,
+      "toolCount": 44,
+      "snapshotSha256": "b65570064b7eef7635ffe716bb633dcb2f53eced77ec88f526f036cd42cbf2f2",
+      "supportedOperations": 350,
       "missing": [],
       "outdated": [],
       "deferred": [],
@@ -50,6 +50,12 @@
         "webflow_guide_tool"
       ],
       "reason": "Utility guidance/discovery is handled by the router, not exposed as arbitrary execution."
+    },
+    {
+      "tools": [
+        "webflow_home"
+      ],
+      "reason": "Account-wide home UI duplicates owner-managed inventory; agents use approved projects."
     },
     {
       "operation": "data_sites_tool.list_sites",

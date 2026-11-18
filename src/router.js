@@ -331,7 +331,7 @@ export class Router {
         if(workspacePolicy().connectionPermissions[op.permission]!==true)throw new AgentError('router_permission_denied','Enable the required account-wide connection permission in Workspace permissions. Project grants do not authorize this action.');
         requirePermissions(p,op.extraPermissions);
       }else if(op.scope==='workspace') {
-        if(workspacePolicy().permissions[op.permission]!==true)throw new AgentError('router_permission_denied','Enable the required Workspace Members permission in the connection’s Workspace permissions settings. Project permissions do not grant workspace access.');
+        if(workspacePolicy().permissions[op.permission]!==true)throw new AgentError('router_permission_denied',`Enable the required ${op.title} permission in the connection’s Workspace permissions settings. Project permissions do not grant workspace access.`);
         requirePermissions(p,op.extraPermissions);
       }else requirePermissions(p,[op.permission,...op.extraPermissions]);
     };

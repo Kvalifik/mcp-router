@@ -1,12 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {operation,prepareArguments,checkOwnership,allowed} from '../src/permissions.js';
-const op=operation('data_pages_tool.list_site_branch_changes','beta');
+const op=operation('data_releases_read_tool.list_site_branch_changes','beta');
 const envelope=result=>({content:[{type:'text',text:JSON.stringify({action:'list_site_branches',result})}]});
 function fixture(current,history=[]) {
  const calls=[];
  const client={call:async(tool,args)=>{
-  assert.equal(tool,'data_pages_tool');
+  assert.equal(tool,'data_releases_read_tool');
   const params=args.actions[0].list_site_branches;
   assert.equal(params.site_id,'site');calls.push(params);
   if(!params.statusGroup)return envelope(current);
@@ -24,7 +24,7 @@ test('Release history is Beta-only, read-only, site-pinned and schema constraine
  assert.deepEqual(args.actions[0].list_site_branch_changes,{site_branch_id:'owned',limit:25,cursor:'change-page',site_id:'site'});
  assert.throws(()=>prepareArguments(op,{site_branch_id:'owned',site_id:'foreign'},'site'),/Cross-project/);
  for(const params of [{},{site_branch_id:''},{site_branch_id:'owned',limit:101},{site_branch_id:'owned',limit:1.5},{site_branch_id:'owned',cursor:''}])assert.throws(()=>prepareArguments(op,params,'site'),/schema/);
- const list=operation('data_pages_tool.list_site_branches','beta');
+ const list=operation('data_releases_read_tool.list_site_branches','beta');
  assert.doesNotThrow(()=>prepareArguments(list,{statusGroup:'merged',limit:100,cursor:'page-1'},'site'));
  for(const params of [{limit:25},{cursor:'page-1'},{statusGroup:'inProgress',limit:25}])assert.throws(()=>prepareArguments(list,params,'site'),/requires statusGroup=merged/);
 });
@@ -44,7 +44,7 @@ test('Release ownership finds current and later merged branches with site-scoped
 test('merged history does not authorize working-page reads or lifecycle mutations',async()=>{
  for(const action of ['create_page','list_pages','stage_site_branch','discard_site_branch','update_site_branch_details','get_site_branch_freshness']) {
   const f=fixture({branches:[]},[{branches:[{id:'merged'}]}]);
-  await assert.rejects(checkOwnership(f.client,operation('data_pages_tool.'+action,'beta'),{site_branch_id:'merged'},'site'),/does not belong/);
+  await assert.rejects(checkOwnership(f.client,operation((['create_page','list_pages'].includes(action)?'data_pages_tool.':action==='get_site_branch_freshness'?'data_releases_read_tool.':'data_releases_write_tool.')+action,'beta'),{site_branch_id:'merged'},'site'),/does not belong/);
   assert.equal(f.calls.length,1);
  }
 });

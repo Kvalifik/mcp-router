@@ -555,3 +555,51 @@ README screenshot; those screenshots do not need regeneration for this change.
 Final release publication still requires the normal CI, packaged runtime, signing
 and platform checks above. See CODE_MODE_BENCHMARK.md for bounded live evidence
 and its limits; no measured model-token or guaranteed speedup claim is made.
+
+### November 18 compatibility and dependency review
+
+The approved scope includes the new Webflow capabilities. Complete independent
+captures contain 38 Stable and 44 Beta tools. Regenerate the explicitly reviewed
+schemas and additions with `python3 scripts/build-catalog.py --refresh-november
+STABLE.json BETA.json`. The generator preserves channel-specific schemas and the
+narrow CMS fieldData correction. Review guides and envelopes again for future
+captures; this command does not approve unknown additions.
+
+Included: eight WAF actions on both channels, nine workspace AEO actions on Beta,
+Beta performance diagnostics, bulk workspace member removal, page-folder listing,
+and thirteen actions in Beta's new Release read/write tools replacing seven old
+Pages actions. Release merging requires a new default-off Release merging Publish grant plus
+Pages Publish, because it promotes all resource types. Updates from main require
+Pages Write. New firewall and workspace AEO grants default off. WAF previews are
+read-only despite upstream requiring a write OAuth scope. WAF mutations retain
+upstream preview/state/confirmation controls. Workspace AEO is intentionally
+workspace-wide; project presets cannot grant it. Webflow Home remains excluded
+because it exposes account-wide inventory and UI, handled by the owner dashboard.
+Other guidance utilities and owner site inventory retain their existing exclusions.
+
+Refreshed schemas include component heading filters, typed page/file links,
+Collection List prop values, variable shorthand, builder element shapes, Cloud
+mount/deployment descriptions and Beta app paths, Release CMS branches, and IX3
+trigger guidance. CMS selection IDs, page/asset links, workspace chains, firewall
+domains, Release CMS membership and conflict references receive ownership checks.
+Both comparisons retain only the deliberate CMS export correction. Validation is
+metadata and synthetic fixtures, not live customer mutations or proof of every
+Enterprise entitlement.
+
+Dependencies include the reviewed #55 runtime/signing patches and #61 packaging
+security updates. Asar 4.3.2 brings glob 14.0.6/minimatch 11.0.9, path-scurry 3 and
+nonrecursive-glob-match 1.1.0; inspect platform packaging and regenerate notices.
+TOML patch 3.3.1, SDK 1.32.2, notarize 3.1.2 and osx-sign 2.7.2 retain their reviewed
+configuration/protocol/signing validation requirements. Registry origins remain
+npm; no new install lifecycle flag. Motion 14 and setup-node 7 remain deferred for
+separate major-upgrade validation. The remaining picomatch ReDoS advisory affects
+the dev/build dependency tree and had no published patch in the reviewed advisory;
+no forced Vite downgrade is accepted as a fix. Production audit is checked separately.
+
+Local validation: 244 tests pass, with the Windows ACL test skipped on macOS; UI
+build and the synthetic connection/workspace-permission UI checks pass. The signed
+updater fixture rejects a tampered archive and installs/relaunches the valid signed
+update. Its GUI launch now clears inherited ELECTRON_RUN_AS_NODE. An earlier run
+failed at Apple's timestamp service before reaching the updater; the retry passed.
+The production dependency audit has zero advisories; the full dev tree retains
+five high advisory entries in the picomatch dependency chain.

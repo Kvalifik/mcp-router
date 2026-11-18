@@ -1,6 +1,109 @@
 """Build a pinned action catalog from a reviewed Webflow tools/list snapshot."""
 import json,sys,copy
 from pathlib import Path
+# November compatibility refresh: explicit reviewed additions and schema IDs.
+# Unknown operations, removals and targeting changes still require a code review.
+if sys.argv[1]=='--refresh-november':
+ sources=[json.load(open(f)) for f in sys.argv[2:4]]
+ catalog=json.loads(Path('src/catalog.json').read_text())
+ reviewed={
+  'data_apps_tool.create_app',
+  'data_apps_tool.create_environment',
+  'data_apps_tool.redeploy',
+  'data_apps_tool.trigger_deployment',
+  'data_apps_tool.update_app',
+  'data_apps_tool.update_environment',
+  'data_cms_tool.create_collection_items',
+  'data_cms_tool.list_collection_items',
+  'data_cms_tool.update_collection_items',
+  'data_component_builder.build',
+  'data_component_props_tool.set_component_instance_prop_values',
+  'data_component_tool.get_all_components',
+  'data_component_tool.get_component',
+  'data_component_tool.query_components',
+  'data_element_builder.build',
+  'data_element_settings_tool.set_settings',
+  'data_element_tool.get_all_elements',
+  'data_element_tool.query_elements',
+  'data_interactions_tool.create_interaction',
+  'data_interactions_tool.list_interactions',
+  'data_interactions_tool.update_interaction',
+  'data_pages_tool.get_branch_task_status',
+  'data_pages_tool.merge_branch',
+  'data_pages_tool.update_branch',
+  'data_variable_tool.create_color_variable',
+  'data_variable_tool.create_font_family_variable',
+  'data_variable_tool.create_number_variable',
+  'data_variable_tool.create_percentage_variable',
+  'data_variable_tool.create_size_variable',
+  'data_variable_tool.update_color_variable',
+  'data_variable_tool.update_font_family_variable',
+  'data_variable_tool.update_number_variable',
+  'data_variable_tool.update_percentage_variable',
+  'data_variable_tool.update_size_variable',
+ }
+ moved={'create_site_branch','discard_site_branch','get_site_branch_freshness','list_site_branch_changes','list_site_branches','stage_site_branch','update_site_branch_details'}
+ catalog=[o for o in catalog if not (o['tool']=='data_pages_tool' and o['action'] in moved)]
+ additions={
+  'data_enterprise_tool':('firewall','Live firewall',None,{'read':['get_waf_rules','suggest_waf_changes','validate_waf_rule','test_waf_rules','test_waf_settings'],'write':['update_waf_rule','update_waf_settings'],'delete':['delete_waf_rule']}),
+  'data_aeo_brand_presences_tool':('workspace_aeo','Workspace AEO','workspace',{'read':['get_brand_presence','get_prompt','get_topic','list_brand_presences','list_prompts','list_topics'],'write':['bulk_create_prompts','create_prompt','create_topic']}),
+  'performance_audits_tool':('analyze','Analytics',None,{'read':['audit_site_performance']}),
+  'data_releases_read_tool':('pages','Pages',None,{'read':['get_branch_task_status','get_site_branch','get_site_branch_freshness','list_site_branch_changes','list_site_branches','preview_site_branch_update']}),
+  'data_releases_write_tool':('pages','Pages',None,{'read':['get_branch_task_status'],'write':['create_site_branch','update_site_branch_details','update_site_branch_from_main'],'publish':['stage_site_branch','merge_site_branch'],'delete':['discard_site_branch']}),
+  'data_members_tool':('workspace_members','Workspace Members','workspace',{'delete':['bulk_remove_workspace_members']}),
+  'data_pages_tool':('pages','Pages',None,{'read':['list_folders']})}
+ maps=[]
+ for channel,source in zip(['stable','beta'],sources):
+  entries={}
+  for tool in source:
+   props=tool['inputSchema'].get('properties',{});items=props.get('actions',{}).get('items')
+   if not items:continue
+   actions={'build':items} if tool['name'] in ['data_element_builder','data_component_builder','data_whtml_builder'] else {k:v for variant in items.get('anyOf',items.get('oneOf',[items])) for k,v in variant['properties'].items() if k!='label'}
+   for action,schema in actions.items():entries[tool['name']+'.'+action]=(schema,props,tool['inputSchema'].get('required',[]))
+  maps.append(entries)
+ for op in catalog:
+  if op['id'] not in reviewed:continue
+  schemas={}
+  for channel,entries in zip(['stable','beta'],maps):
+   if op.get('channels') and channel not in op['channels']:continue
+   schema,props,required=entries[op['id']]
+   if op['topSite']!=('siteId' if 'siteId' in props else None) or op['page']!=('pageId' in props):raise ValueError('Review changed targeting: '+op['id'])
+   schema=copy.deepcopy(schema)
+   if op['id']=='data_cms_tool.create_collection_items':
+    request=schema['properties']['request']['properties']
+    for field in [request['items']['items']['properties']['fieldData'],request['fieldData']['items']]:
+     record,closed=field['allOf']
+     if record.get('additionalProperties')!={} or set(closed.get('properties',{}))!={'name','slug'} or closed.get('additionalProperties') is not False:raise ValueError('CMS correction changed')
+     del closed['additionalProperties']
+   schemas[channel]=schema
+  op['schema']=schemas.get('stable',schemas.get('beta'));op.pop('channelSchemas',None)
+  if 'beta' in schemas and schemas['beta']!=op['schema']:op['channelSchemas']={'beta':schemas['beta']}
+ for tool,(area,title,scope,modes) in additions.items():
+  for mode,names in modes.items():
+   for action in names:
+    key=tool+'.'+action;schemas={}
+    for channel,entries in zip(['stable','beta'],maps):
+     if key not in entries:continue
+     schema,props,required=entries[key]
+     target='workspace_id' if scope=='workspace' else 'site_id'
+     if set(required)!={'actions','session_id','agent_id','context'} or 'siteId' in props or 'pageId' in props or target not in schema.get('required',[]):raise ValueError('Review new targeting: '+key)
+     schemas[channel]=schema
+    expected=['stable','beta'] if area=='firewall' else ['beta']
+    if list(schemas)!=expected:raise ValueError('Review channel availability: '+key)
+    extra=[] if mode=='read' else ['agent_instructions:read']
+    op={'id':key,'tool':tool,'action':action,'area':area,'title':title,'mode':mode,'permission':area+':'+mode,'extraPermissions':extra,'topSite':None,'page':False,'builder':False,'direct':False,'channels':expected,'schema':schemas[expected[0]]}
+    if tool=='performance_audits_tool':op['extraPermissions']=['scripts:read']
+    if action=='merge_site_branch':
+     op.update(area='release_merge',title='Release merging',permission='release_merge:publish')
+     op['extraPermissions']+=['pages:publish']
+    if scope:op['scope']=scope
+    if 'stable' in schemas and schemas['beta']!=op['schema']:op['channelSchemas']={'beta':schemas['beta']}
+    catalog=[o for o in catalog if o['id']!=key];catalog.append(op)
+ # Keep the explicitly account-wide alias in sync with Beta's reviewed app schema.
+ alias=next(o for o in catalog if o.get('upstreamAlias') and o['action']=='create_app')
+ alias['schema']=copy.deepcopy(maps[1]['data_apps_tool.create_app'][0]);del alias['schema']['properties']['site_id']
+ Path('src/catalog.json').write_text(json.dumps(catalog,indent=2)+'\n')
+ print(len(catalog),'reviewed operations');sys.exit(0)
 if sys.argv[1]=='--refresh-beta-tools':
  stable,beta=[json.load(open(f)) for f in sys.argv[2:4]]
  tools={t['name']:t for t in beta};shared={t['name']:t for t in stable}

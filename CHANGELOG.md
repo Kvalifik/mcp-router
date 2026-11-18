@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.11.0 — Reliable connections and expanded Webflow tools
+
+Keep connections ready for longer and use more Webflow capabilities with explicit access controls.
+
+### What’s new
+
+- **More reliable connections:** refresh tokens ahead of expiry and recover from temporary refresh failures without unnecessary reauthorization prompts.
+- **Live firewall controls:** inspect, preview and manage Webflow firewall rules with separate permissions. Changes can affect live visitors immediately.
+- **More Webflow Beta tools:** manage workspace AEO topics and tracked prompts, inspect script performance risks, and remove workspace members or invitations in bulk. Workspace permissions apply across all its sites.
+- **Updated Beta Releases:** work with Release history, staging, merging and branch CMS content through the current Webflow tools.
+- **Better Mac installation:** version-aware app replacement helps keep the intended version in Applications.
+- **Security and compatibility updates:** refreshed Webflow schemas and reviewed runtime and packaging dependencies.
+
+New firewall, Release merging and workspace AEO permissions start off. Enable only the access you intend to grant; existing project settings are preserved.
+
 ## 0.10.0 — Read-only code mode
 
 - Add sandboxed read-only JavaScript for filtering and summarizing Webflow data, while preserving project permissions and resource ownership checks.

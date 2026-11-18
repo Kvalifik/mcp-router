@@ -297,7 +297,7 @@ function WorkspacePermissionForm({connection,busy,perform,close}) {
     catch(error){toast.error(error.message);}
   }
   return <form className="dialog-form" onSubmit={submit}>
-    <p className="text-sm">Workspace Members permissions apply to the whole workspace, including sites that are disabled in this router. They are separate from each project’s Site Access permissions.</p>
+    <p className="text-sm">Workspace permissions apply to the whole workspace, including sites that are disabled in this router. They are separate from each project’s Site Access permissions.</p>
     <div className="dialog-scroll space-y-4">
       <fieldset className="rounded-md border p-3 space-y-3"><legend className="px-1 text-sm font-medium">Account-wide · Beta</legend>
         <p className="text-xs text-muted-foreground">These apply across the selected Webflow connection. Standalone creation creates a new site and attempts deployment in the workspace chosen by Webflow. It can set the new site’s access and folder; project permissions do not limit its destination.</p>
@@ -305,7 +305,7 @@ function WorkspacePermissionForm({connection,busy,perform,close}) {
       </fieldset>
       {!workspaces.length&&<p className="text-sm text-muted-foreground">Re-sync projects to discover workspace information before granting access.</p>}
       {workspaces.map(workspace=><fieldset key={workspace.id} className="rounded-md border p-3 space-y-3"><legend className="px-1 text-sm font-medium">{workspace.name}</legend>
-        {[['read','Read members, invitations and site roles'],['write','Invite members and change workspace roles'],['delete','Remove members from the workspace']].map(([mode,label])=><div key={mode} className="flex items-center justify-between gap-3"><Label htmlFor={`workspace-${workspace.id}-${mode}`} className="text-sm">{label}</Label><Switch id={`workspace-${workspace.id}-${mode}`} aria-label={`${workspace.name}: ${mode}`} disabled={busy} checked={grants[workspace.id]?.[`workspace_members:${mode}`]===true} onCheckedChange={value=>setGrants({...grants,[workspace.id]:{...grants[workspace.id],[`workspace_members:${mode}`]:value}})} /></div>)}
+        {[['workspace_members:read','Read members, invitations and site roles'],['workspace_members:write','Invite members and change workspace roles'],['workspace_members:delete','Remove members and cancel invitations, individually or in bulk'],['workspace_aeo:read','Read workspace AEO brands, topics and prompts · Beta'],['workspace_aeo:write','Create workspace AEO topics and tracked prompts · Beta']].map(([key,label])=><div key={key} className="flex items-center justify-between gap-3"><Label htmlFor={`workspace-${workspace.id}-${key}`} className="text-sm">{label}</Label><Switch id={`workspace-${workspace.id}-${key}`} aria-label={`${workspace.name}: ${label}`} disabled={busy} checked={grants[workspace.id]?.[key]===true} onCheckedChange={value=>setGrants({...grants,[workspace.id]:{...grants[workspace.id],[key]:value}})} /></div>)}
       </fieldset>)}
     </div>
     <p className="text-xs text-muted-foreground">All permissions start off. Webflow must also authorize the selected Stable or Beta connection. Role changes and invitations can consume seats; removing a member ends their access across the workspace.</p>

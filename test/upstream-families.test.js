@@ -44,7 +44,7 @@ function fixture(t) {
 
 test('all 56 reviewed actions are classified on both channels, and workspace grants stay out of project presets',()=>{
  const tools=['data_apps_tool','data_campaigns_tool','data_members_tool','data_optimize_tool'];
- const ops=CATALOG.filter(op=>tools.includes(op.tool)&&!op.upstreamAlias);assert.equal(ops.length,56);
+ const ops=CATALOG.filter(op=>tools.includes(op.tool)&&!op.upstreamAlias&&op.action!=='bulk_remove_workspace_members');assert.equal(ops.length,56);
  assert(ops.every(op=>op.channels.includes('stable')&&op.channels.includes('beta')));
  assert(!PERMISSIONS.some(k=>k.startsWith('workspace_members:')));assert(!GROUPS.some(g=>g.area==='workspace_members'));
  assert(ops.filter(op=>op.mode!=='read').every(op=>op.extraPermissions.includes('agent_instructions:read')));

@@ -255,3 +255,5 @@ public/
 !/scripts/benchmark-read-code-live.mjs
 !/scripts/smoke-read-code.mjs
 !/docs/CODE_MODE_BENCHMARK.md
+
+!test/november-capabilities.test.js

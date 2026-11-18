@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import { isDeepStrictEqual } from 'node:util';
 import { pathToFileURL } from 'node:url';
 
-const excluded = new Set(['ask_webflow_ai', 'get_more_tools', 'webflow_guide_tool']);
+const excluded = new Set(['ask_webflow_ai', 'get_more_tools', 'webflow_guide_tool', 'webflow_home']);
 const builders = new Set(['data_element_builder', 'data_component_builder', 'data_whtml_builder']);
 
 export function compareCatalog(snapshot, catalog, channel) {
