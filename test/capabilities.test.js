@@ -336,7 +336,7 @@ test('site Releases use distinct permissions, verify ownership and stay unavaila
  const actions={list_site_branches:'read',create_site_branch:'write',stage_site_branch:'publish',discard_site_branch:'delete',get_site_branch_freshness:'read',update_site_branch_details:'write',list_site_branch_changes:'read'};
  grant(router,{'pages:read':true,'pages:write':true,'pages:publish':true,'pages:delete':true});
  for(const [action,mode] of Object.entries(actions)){
-  const id='data_pages_tool.'+action;
+  const id=(action==='create_page'?'data_pages_tool.':actions[action]==='read'?'data_releases_read_tool.':'data_releases_write_tool.')+action;
   assert.equal(operation(id).permission,'pages:'+mode);
   await assert.rejects(router.call('get_project_operations',{projectId:'p',operationId:id}),/selected MCP channel/);
   await assert.rejects(router.call(mode==='read'?'read_webflow':'write_webflow',request(id)),/selected MCP channel/);
@@ -357,7 +357,7 @@ test('site Releases use distinct permissions, verify ownership and stay unavaila
  }};};
  const {preparationId}=await router.call('prepare_project',{projectId:'p'});
  for(const [action,mode] of Object.entries(actions)){
-  const id='data_pages_tool.'+action;
+  const id=(action==='create_page'?'data_pages_tool.':actions[action]==='read'?'data_releases_read_tool.':'data_releases_write_tool.')+action;
   const params=action==='list_site_branches'?{}:action==='create_site_branch'?{name:'Synthetic Release',origin_page_id:'owned-page'}:{site_branch_id:'owned-release'};
   await router.call(mode==='read'?'read_webflow':'write_webflow',request(id,params,mode==='read'?{}:{preparationId}));
   assert.equal(calls.at(-1).args.actions[0][action].site_id,site);
@@ -372,16 +372,16 @@ test('site Releases use distinct permissions, verify ownership and stay unavaila
  await router.call('write_webflow',request(pageId,page,{preparationId}));
  for(const action of ['stage_site_branch','discard_site_branch','create_page']){
   const params=action==='create_page'?{...page,site_branch_id:'foreign'}:{site_branch_id:'foreign'};
-  await assert.rejects(router.call('write_webflow',request('data_pages_tool.'+action,params,{preparationId})),/does not belong/);
+  await assert.rejects(router.call('write_webflow',request((action==='create_page'?'data_pages_tool.':actions[action]==='read'?'data_releases_read_tool.':'data_releases_write_tool.')+action,params,{preparationId})),/does not belong/);
  }
- await assert.rejects(router.call('write_webflow',request('data_pages_tool.create_site_branch',{name:'Synthetic',origin_page_id:'foreign'},{preparationId})),/does not belong/);
+ await assert.rejects(router.call('write_webflow',request('data_releases_write_tool.create_site_branch',{name:'Synthetic',origin_page_id:'foreign'},{preparationId})),/does not belong/);
  branchResult={unexpected:[]};
  await assert.rejects(router.call('write_webflow',request(pageId,page,{preparationId})),error=>error.feedback.stage==='resource_ownership');
  branchResult={branches:[{id:'owned-release'}]};revoke=true;
  await assert.rejects(router.call('write_webflow',request(pageId,page,{preparationId})),/policy changed/);
  for(const [action,mode] of Object.entries(actions)){
   grant(router,{['pages:'+mode]:false});
-  await assert.rejects(router.call(mode==='read'?'read_webflow':'write_webflow',request('data_pages_tool.'+action,{},mode==='read'?{}:{preparationId})),/Missing project permissions/);
+  await assert.rejects(router.call(mode==='read'?'read_webflow':'write_webflow',request((action==='create_page'?'data_pages_tool.':actions[action]==='read'?'data_releases_read_tool.':'data_releases_write_tool.')+action,{},mode==='read'?{}:{preparationId})),/Missing project permissions/);
  }
  router.edit('projects','p',{channel:'stable'});grant(router,{'pages:write':true});
  assert(!(await router.call('get_project_operations',{projectId:'p',operationId:pageId})).schema.properties.site_branch_id);

@@ -9,7 +9,7 @@ export function validateConnectionPermissions(value) {
   if(!value||typeof value!=='object'||Array.isArray(value)||Object.entries(value).some(([k,v])=>!CONNECTION_PERMISSIONS.includes(k)||typeof v!=='boolean'))throw new Error('Invalid connection permissions');
   return {...value};
 }
-export const WORKSPACE_PERMISSIONS = ['workspace_members:read','workspace_members:write','workspace_members:delete'];
+export const WORKSPACE_PERMISSIONS = ['workspace_members:read','workspace_members:write','workspace_members:delete','workspace_aeo:read','workspace_aeo:write'];
 export const GROUPS = [...new Map(CATALOG.filter(o=>!o.scope).map(o => [o.area, { area: o.area, title: o.title, modes: [...new Set(CATALOG.filter(x => x.area === o.area).map(x => x.mode))] }])).values()];
 export function permissions(p) { return p.permissions || { 'site:read': !!p.read }; }
 export function validatePermissions(value) {
@@ -51,7 +51,7 @@ export function prepareArguments(op, params, siteId, pageId) {
   inject(op.schema);
   let validate=validators.get(op.schema);if(!validate){validate=ajv.compile(op.schema);validators.set(op.schema,validate);}
   if(!validate(value)) throw new Error('Parameters do not match the operation schema');
-  if(op.id==='data_pages_tool.list_site_branches' && value.statusGroup!=='merged' && (value.limit!==undefined || value.cursor!==undefined))throw new Error('Release history pagination requires statusGroup=merged');
+  if(op.action==='list_site_branches' && value.statusGroup!=='merged' && (value.limit!==undefined || value.cursor!==undefined))throw new Error('Release history pagination requires statusGroup=merged');
   const args = op.direct ? value : {actions:[op.builder ? value : {label:'Project operation', [op.action]:value}]};
   if(op.topSite)args[op.topSite]=siteId;
   if(op.page){if(typeof pageId!=='string'||!pageId)throw new Error('pageId is required');args.pageId=pageId;}
@@ -177,26 +177,52 @@ export async function checkOwnership(client, op, value, siteId, pageId) {
       if(!found)throw new Error('Element does not belong to this project');
     }
   }
-  if(value.site_branch_id) {
+  if(op.area==='firewall' && (value.domains || value.previousDomains)) {
+    const state=resultOf(await client.call('data_enterprise_tool',{actions:[{label:'Verify firewall domain ownership',get_waf_rules:{site_id:siteId}}]}),'get_waf_rules');
+    if(!state?.byDomain || typeof state.byDomain!=='object' || Array.isArray(state.byDomain))throw new Error('Cannot verify firewall domains');
+    for(const domain of [...(value.domains||[]),...(value.previousDomains||[])])if(!Object.hasOwn(state.byDomain,domain))throw new Error('Domain does not belong to this project');
+  }
+  if(op.action==='set_component_instance_prop_values') {
+    const targets=[...new Set((value.values||[]).flatMap(v=>v.selected_item_ids||[]))];
+    if(targets.length) {
+      // Check the bounded requested ID set across this site's collections, not
+      // every CMS item. Upstream separately enforces the prop's own collection.
+      const result=resultOf(await client.call('data_cms_tool',{actions:[{label:'Verify CMS selection ownership',get_collection_list:{siteId}}]}),'get_collection_list');
+      const collections=Array.isArray(result)?result:result.collections;
+      if(!Array.isArray(collections)||collections.some(c=>typeof c?.id!=='string')||result.pagination?.hasMore||result.pagination?.nextCursor||result.pagination?.total>collections.length)throw new Error('Cannot verify CMS collections');
+      const remaining=new Set(targets);
+      for(const collection of collections) {
+        for(let offset=0;offset<targets.length;offset+=100) {
+          const selected=targets.slice(offset,offset+100);
+          const response=resultOf(await client.call('data_cms_tool',{actions:[{label:'Verify CMS selection ownership',list_collection_items:{collection_id:collection.id,request:{limit:100,filter:{id:{in:selected}}}}}]}),'list_collection_items');
+          if(!Array.isArray(response?.items))throw new Error('Cannot verify CMS items');
+          for(const item of response.items)if(typeof item?.id==='string')remaining.delete(item.id);
+        }
+        if(!remaining.size)break;
+      }
+      if(remaining.size)throw new Error('CMS item does not belong to this project');
+    }
+  }
+  if(value.site_branch_id || value.cms_branch_id) {
     const readBranches = async params => {
-      const result=resultOf(await client.call('data_pages_tool',{actions:[{label:'Verify project Release ownership',list_site_branches:{site_id:siteId,...params}}]}),'list_site_branches');
+      const result=resultOf(await client.call('data_releases_read_tool',{actions:[{label:'Verify project Release ownership',list_site_branches:{site_id:siteId,...params}}]}),'list_site_branches');
       const branches=Array.isArray(result)?result:result.branches || result.siteBranches;
       if(!Array.isArray(branches) || branches.some(branch=>typeof branch?.id!=='string'))throw new Error('Cannot verify resource ownership');
       return {branches,pagination:result.pagination};
     };
     const current=await readBranches({});
     if(current.pagination?.hasMore || current.pagination?.nextCursor)throw new Error('Cannot verify resource ownership');
-    let found=current.branches.some(branch=>branch.id===value.site_branch_id);
+    let found=current.branches.some(branch=>value.cms_branch_id?branch.cmsBranchId===value.cms_branch_id:branch.id===value.site_branch_id);
     // Only the read-only change history supports merged Releases. Never make
     // archived branches eligible for working-page or lifecycle mutations.
-    if(!found && op.id==='data_pages_tool.list_site_branch_changes') {
+    if(!found && op.tool==='data_releases_read_tool' && ['list_site_branch_changes','get_site_branch'].includes(op.action)) {
       let cursor;const seen=new Set();
       for(let page=0;page<100;page++) {
         const {branches,pagination}=await readBranches({statusGroup:'merged',limit:100,...(cursor?{cursor}:{})});
         const more=pagination?.hasMore===true;
         const next=pagination?.nextCursor;
         if((more && (typeof next!=='string' || !next || seen.has(next))) || (!more && next))throw new Error('Release ownership listing incomplete');
-        found=branches.some(branch=>branch.id===value.site_branch_id);
+        found=branches.some(branch=>value.cms_branch_id?branch.cmsBranchId===value.cms_branch_id:branch.id===value.site_branch_id);
         if(found || !more)break;
         if(page===99)throw new Error('Release ownership listing incomplete');
         seen.add(next);cursor=next;
@@ -204,15 +230,19 @@ export async function checkOwnership(client, op, value, siteId, pageId) {
     }
     if(!found)throw new Error('Resource does not belong to this project');
   }
+  if(op.tool==='data_releases_write_tool' && op.action==='update_site_branch_from_main' && value.resolutions?.length) {
+    const preview=resultOf(await client.call('data_releases_read_tool',{actions:[{label:'Verify Release conflicts',preview_site_branch_update:{site_id:siteId,site_branch_id:value.site_branch_id}}]}),'preview_site_branch_update');
+    if(!Array.isArray(preview?.report?.conflicts) || value.resolutions.some(r=>!preview.report.conflicts.some(c=>c.type===r.type&&c.id===r.id)))throw new Error('Conflict does not belong to this Release');
+  }
   const filterResponse=await checkProjectResources(client,op,value,siteId,owns,resultOf);
   async function walk(node,parent='') {
     if(!node||typeof node!=='object')return;
     for(const [key,v] of Object.entries(node)) {
       if(op.scope==='workspace'&&key==='site_access')continue; // Verified against the live workspace above.
       if(['siteId','site_id'].includes(key)&&v!==siteId)throw new Error('Cross-project site denied');
-      if(['page_id','pageId','duplicateOf','origin_page_id'].includes(key)&&v)await owns('page',v);
-      if(['collection_id','collectionId'].includes(key)&&v && !['variable'].includes(op.area))await owns('collection',v);
-      if(['asset_id','image_asset_id'].includes(key)&&v)await owns('asset',v);
+      if(['page_id','pageId','duplicateOf','origin_page_id','link_to_page_id'].includes(key)&&v)await owns('page',v);
+      if(['collection_id','collectionId','binding_collection_id'].includes(key)&&v && !['variable'].includes(op.area))await owns('collection',v);
+      if(['asset_id','image_asset_id','link_to_asset_id'].includes(key)&&v)await owns('asset',v);
       if(key==='asset_ids'&&Array.isArray(v))for(const id of v)await owns('asset',id);
       if(['folder_id','parent_folder'].includes(key)&&v && !(op.scope==='connection'&&op.area==='standalone_apps'))await owns('folder',v);
       if(key==='form_id'&&v)await owns('form',v);

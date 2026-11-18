@@ -1423,6 +1423,152 @@
       ],
       "additionalProperties": false,
       "description": "Create staged CMS collection items in one or more locales. Each entry in items creates one item: omit id to create a new item (in cmsLocaleIds or every current CMS locale with allCmsLocales: true, sharing one item ID); set id to an existing item's ID to add locale variants to it; send several entries sharing an id (one locale each) to give each locale different content."
+    },
+    "channelSchemas": {
+      "beta": {
+        "type": "object",
+        "properties": {
+          "collection_id": {
+            "type": "string",
+            "description": "The collection ID. Use get_collection_list to discover collection IDs."
+          },
+          "request": {
+            "type": "object",
+            "properties": {
+              "items": {
+                "description": "The items to create. A request can create up to 100 locale variants total across all entries, including every current CMS locale for each allCmsLocales entry.",
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "description": "The ID of an existing item to attach locale variants to. Use list_collection_items to discover item IDs. Omit to create a new item. Requires cmsLocaleIds, cannot accompany allCmsLocales, and the item must not already have a variant in those locales.",
+                      "type": "string"
+                    },
+                    "cmsLocaleIds": {
+                      "description": "CMS locale IDs to create this entry in, each at most once. Cannot accompany allCmsLocales. Omitting both selectors creates a new item in the site's primary locale only. Use the cmsLocaleId values (not the locale id values) from a site's locales, via data_sites_tool > get_site.",
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "allCmsLocales": {
+                      "description": "Set to true to create a new item in every current CMS locale, with linked variants sharing one item ID and fieldData. Only true is accepted; cannot accompany id or cmsLocaleIds (even an empty array).",
+                      "type": "boolean",
+                      "const": true
+                    },
+                    "isArchived": {
+                      "default": false,
+                      "description": "Whether the item is archived.",
+                      "type": "boolean"
+                    },
+                    "isDraft": {
+                      "default": true,
+                      "description": "Whether the item is a draft.",
+                      "type": "boolean"
+                    },
+                    "fieldData": {
+                      "allOf": [
+                        {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {}
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "type": "string",
+                              "description": "Display name for the CMS item."
+                            },
+                            "slug": {
+                              "type": "string",
+                              "description": "URL slug, unique within the collection. Changing it breaks all links referencing the old slug."
+                            }
+                          },
+                          "required": [
+                            "name",
+                            "slug"
+                          ]
+                        }
+                      ],
+                      "description": "Item field data keyed by collection field slug (use get_collection_details to discover fields); 'name' and 'slug' are always required."
+                    }
+                  },
+                  "required": [
+                    "fieldData"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "fieldData": {
+                "description": "Deprecated earlier shape: one fieldData object per new item. Use items instead. Cannot accompany items.",
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "allOf": [
+                    {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {}
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "description": "Display name for the CMS item."
+                        },
+                        "slug": {
+                          "type": "string",
+                          "description": "URL slug, unique within the collection. Changing it breaks all links referencing the old slug."
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "slug"
+                      ]
+                    }
+                  ]
+                }
+              },
+              "cmsLocaleIds": {
+                "description": "Deprecated: locales for every entry in fieldData. Use items[].cmsLocaleIds instead.",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "isDraft": {
+                "description": "Deprecated: draft flag for every entry in fieldData. Use items[].isDraft instead.",
+                "type": "boolean"
+              },
+              "isArchived": {
+                "description": "Deprecated: archived flag for every entry in fieldData. Use items[].isArchived instead.",
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": false,
+            "description": "The staged items to create."
+          },
+          "cms_branch_id": {
+            "description": "Releases only. The cmsBranchId of a Release from data_releases_read_tool > list_site_branches. Targets that Release's staged items instead of main. Omit to target main. Items created on a Release are never drafts: isDraft is sent as false.",
+            "type": "string",
+            "pattern": "^[0-9a-f]{24}$"
+          }
+        },
+        "required": [
+          "collection_id",
+          "request"
+        ],
+        "additionalProperties": false,
+        "description": "Create staged CMS collection items in one or more locales. Each entry in items creates one item: omit id to create a new item (in cmsLocaleIds or every current CMS locale with allCmsLocales: true, sharing one item ID); set id to an existing item's ID to add locale variants to it; send several entries sharing an id (one locale each) to give each locale different content."
+      }
     }
   },
   {
@@ -2107,6 +2253,197 @@
       ],
       "additionalProperties": false,
       "description": "List items in a CMS collection with optional filtering and sorting."
+    },
+    "channelSchemas": {
+      "beta": {
+        "type": "object",
+        "properties": {
+          "collection_id": {
+            "type": "string",
+            "description": "The collection ID. Use get_collection_list to discover collection IDs."
+          },
+          "request": {
+            "description": "Filter, sort, and pagination options.",
+            "type": "object",
+            "properties": {
+              "cmsLocaleId": {
+                "description": "CMS locale ID of the items to return. Accepts a single ID or a comma-separated list of IDs; with a list, each locale's variant of an item is returned as its own entry carrying its own cmsLocaleId, and pagination.total counts those variants rather than distinct items. Omit both cmsLocaleId and allCmsLocales to use the site's primary locale. Cannot accompany allCmsLocales. Use the cmsLocaleId values (not the locale id values) from a site's locales, via data_sites_tool > get_site.",
+                "type": "string"
+              },
+              "allCmsLocales": {
+                "description": "Return items across every current CMS locale without providing locale IDs. Only true is accepted; cannot accompany cmsLocaleId, including an empty string. Each locale variant is a separate row with its own cmsLocaleId; pagination.total counts variants. limit and offset still apply; this does not fetch every page. Supports request.filter.id.eq to read one item's variants.",
+                "type": "boolean",
+                "const": true
+              },
+              "limit": {
+                "description": "Maximum records returned (max 100).",
+                "type": "number"
+              },
+              "offset": {
+                "description": "Pagination offset when results exceed limit.",
+                "type": "number"
+              },
+              "name": {
+                "description": "Name of the field.",
+                "type": "string"
+              },
+              "slug": {
+                "description": "URL slug of the item. Updating an item's slug breaks all links referencing the old slug.",
+                "type": "string"
+              },
+              "sortBy": {
+                "description": "Field to sort items by.",
+                "type": "string",
+                "enum": [
+                  "lastPublished",
+                  "name",
+                  "slug"
+                ]
+              },
+              "sortOrder": {
+                "description": "Sort direction.",
+                "type": "string",
+                "enum": [
+                  "asc",
+                  "desc"
+                ]
+              },
+              "filter": {
+                "description": "Custom field filters, combined with AND. Valid operators depend on the collection field type. Pseudo-fields: id and slug.",
+                "type": "object",
+                "propertyNames": {
+                  "type": "string",
+                  "description": "Field slug or pseudo-field (id or slug) to filter by. Use get_collection_details to discover field slugs."
+                },
+                "additionalProperties": {
+                  "type": "object",
+                  "properties": {
+                    "eq": {
+                      "type": "string",
+                      "maxLength": 256,
+                      "description": "Filter value as a string."
+                    },
+                    "ne": {
+                      "type": "string",
+                      "maxLength": 256,
+                      "description": "Filter value as a string."
+                    },
+                    "gt": {
+                      "type": "string",
+                      "maxLength": 256,
+                      "description": "Filter value as a string."
+                    },
+                    "gte": {
+                      "type": "string",
+                      "maxLength": 256,
+                      "description": "Filter value as a string."
+                    },
+                    "lt": {
+                      "type": "string",
+                      "maxLength": 256,
+                      "description": "Filter value as a string."
+                    },
+                    "lte": {
+                      "type": "string",
+                      "maxLength": 256,
+                      "description": "Filter value as a string."
+                    },
+                    "in": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 25699,
+                          "description": "Comma-separated filter values."
+                        },
+                        {
+                          "minItems": 1,
+                          "maxItems": 100,
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "maxLength": 256
+                          },
+                          "description": "Filter values (up to 100)."
+                        }
+                      ]
+                    },
+                    "nin": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 25699,
+                          "description": "Comma-separated filter values."
+                        },
+                        {
+                          "minItems": 1,
+                          "maxItems": 100,
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "maxLength": 256
+                          },
+                          "description": "Filter values (up to 100)."
+                        }
+                      ]
+                    },
+                    "contains": {
+                      "description": "Case-insensitive substring match for text-like fields.",
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 256
+                    },
+                    "ncontains": {
+                      "description": "Case-insensitive negative substring match for text-like fields. Empty or unset values also match.",
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 256
+                    },
+                    "exists": {
+                      "description": "Whether the field has a value. For Switch fields, false is still a set value.",
+                      "type": "string",
+                      "enum": [
+                        "true",
+                        "false"
+                      ]
+                    }
+                  },
+                  "additionalProperties": false,
+                  "description": "Operators for one field or pseudo-field."
+                }
+              },
+              "sort": {
+                "description": "Custom field sort, applied in key order; takes precedence over sortBy and sortOrder. Pseudo-fields: id and slug.",
+                "type": "object",
+                "propertyNames": {
+                  "type": "string",
+                  "description": "Field slug or pseudo-field (id or slug) to sort by."
+                },
+                "additionalProperties": {
+                  "type": "string",
+                  "enum": [
+                    "asc",
+                    "desc"
+                  ],
+                  "description": "Sort direction for this collection field."
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          "cms_branch_id": {
+            "description": "Releases only. The cmsBranchId of a Release from data_releases_read_tool > list_site_branches. Targets that Release's staged items instead of main. Omit to target main.",
+            "type": "string",
+            "pattern": "^[0-9a-f]{24}$"
+          }
+        },
+        "required": [
+          "collection_id"
+        ],
+        "additionalProperties": false,
+        "description": "List items in a CMS collection with optional filtering and sorting."
+      }
     }
   },
   {
@@ -2459,6 +2796,97 @@
       ],
       "additionalProperties": false,
       "description": "Update CMS collection items."
+    },
+    "channelSchemas": {
+      "beta": {
+        "type": "object",
+        "properties": {
+          "collection_id": {
+            "type": "string",
+            "description": "The collection ID. Use get_collection_list to discover collection IDs."
+          },
+          "request": {
+            "type": "object",
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "The item ID."
+                    },
+                    "cmsLocaleId": {
+                      "description": "Locale ID of the CMS item.",
+                      "type": "string"
+                    },
+                    "lastPublished": {
+                      "type": "string"
+                    },
+                    "lastUpdated": {
+                      "type": "string"
+                    },
+                    "createdOn": {
+                      "type": "string"
+                    },
+                    "isArchived": {
+                      "type": "boolean"
+                    },
+                    "isDraft": {
+                      "description": "true = Draft; false = Ready to Publish; omit to preserve status.",
+                      "type": "boolean"
+                    },
+                    "fieldData": {
+                      "allOf": [
+                        {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {}
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "type": "string",
+                              "description": "Display name for the CMS item."
+                            },
+                            "slug": {
+                              "type": "string",
+                              "description": "URL slug, unique within the collection. Changing it breaks all links referencing the old slug."
+                            }
+                          }
+                        }
+                      ],
+                      "description": "Item field data keyed by collection field slug (use get_collection to discover fields); 'name' and 'slug' are optional for updates."
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "fieldData"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "additionalProperties": false,
+            "description": "Items to update."
+          },
+          "cms_branch_id": {
+            "description": "Releases only. The cmsBranchId of a Release from data_releases_read_tool > list_site_branches. Targets that Release's staged items instead of main. Omit to target main.",
+            "type": "string",
+            "pattern": "^[0-9a-f]{24}$"
+          }
+        },
+        "required": [
+          "collection_id",
+          "request"
+        ],
+        "additionalProperties": false,
+        "description": "Update CMS collection items."
+      }
     }
   },
   {
@@ -3507,7 +3935,7 @@
         "task_id"
       ],
       "additionalProperties": false,
-      "description": "Poll the status of an async branch task, using the taskId from the mutation's response, until \"finished\" or \"failed\". Returns { taskId, status, taskType, branchId, siteId, createdOn, error?, nextActions }; status: \"queued\" | \"started\" | \"finished\" | \"failed\"; taskType: \"branch_create\" | \"branch_delete\" | \"branch_merge\" | \"branch_publish\" | \"branch_update\". branchId is null until a create task finishes; on \"failed\", read error.message and error.code. 404 branch_task_not_found for an unknown task ID, a non-branch task, or a task from a different site."
+      "description": "Poll an async branch task by the taskId from the mutation's response until \"finished\" or \"failed\". Returns { taskId, status, taskType, branchId, siteId, createdOn, error?, nextActions }; status: queued|started|finished|failed; taskType: branch_create|branch_delete|branch_merge|branch_publish|branch_update. branchId is null until a create task finishes; on failed, read error.message and error.code. 404 branch_task_not_found for an unknown, non-branch, or other-site task."
     }
   },
   {
@@ -3721,7 +4149,7 @@
         "branch_id"
       ],
       "additionalProperties": false,
-      "description": "Enqueue an async task that merges a branch INTO the site's main pages (branch -> main); on success the branch is consumed and disappears from list_branches. Returns { taskId, status: \"queued\", nextActions } \u2014 poll get_branch_task_status (taskType \"branch_merge\"). If the branch conflicts, pass resolutions covering every conflict: list them via get_branch_conflicts, or omit resolutions to get code \"branch_merge_conflict\" with conflicts[] inline and retry. Unresolved conflicts surface as a failed task. 409 branch_merge_in_progress if a merge is already running for the site; 404 branch_not_found."
+      "description": "Async: merge a page branch INTO the site's main pages (branch -> main); on success the branch is consumed and disappears from list_branches. Returns { taskId, status: \"queued\", nextActions } \u2014 poll get_branch_task_status (taskType \"branch_merge\"). If the branch conflicts, pass resolutions covering every conflict: list them via get_branch_conflicts, or omit resolutions to get code \"branch_merge_conflict\" with conflicts[] inline and retry. Unresolved conflicts surface as a failed task. 409 branch_merge_in_progress if a merge is running on the site; 404 branch_not_found."
     }
   },
   {
@@ -3879,7 +4307,7 @@
         "branch_id"
       ],
       "additionalProperties": false,
-      "description": "Enqueue an async task that pulls the latest main-page changes INTO a branch (main -> branch); it does NOT merge the branch back to main. Returns { taskId, status: \"queued\", nextActions } \u2014 poll get_branch_task_status (taskType \"branch_update\"). If the branch conflicts, pass resolutions covering every conflict (list them via get_branch_conflicts); 400 invalid_resolution means they do not cover the full set. 409 branch_update_in_progress if an update is already running; 404 branch_not_found."
+      "description": "Async: pull the latest main-page changes INTO a page branch (main -> branch); does NOT merge it back to main. Returns { taskId, status: \"queued\", nextActions }; poll get_branch_task_status (taskType \"branch_update\"). On conflicts, pass resolutions covering every one (from get_branch_conflicts); 400 invalid_resolution means some are missing. 409 branch_update_in_progress if an update is running; 404 branch_not_found."
     }
   },
   {
@@ -8372,7 +8800,8 @@
                       "visibility",
                       "filter",
                       "sort",
-                      "selectedItems"
+                      "selectedItems",
+                      "headingTag"
                     ]
                   }
                 },
@@ -8485,7 +8914,8 @@
                       "visibility",
                       "filter",
                       "sort",
-                      "selectedItems"
+                      "selectedItems",
+                      "headingTag"
                     ]
                   }
                 },
@@ -8586,7 +9016,8 @@
                         "visibility",
                         "filter",
                         "sort",
-                        "selectedItems"
+                        "selectedItems",
+                        "headingTag"
                       ]
                     }
                   },
@@ -8665,7 +9096,8 @@
                             "visibility",
                             "filter",
                             "sort",
-                            "selectedItems"
+                            "selectedItems",
+                            "headingTag"
                           ]
                         }
                       },
@@ -9685,7 +10117,10 @@
                   "link",
                   "video",
                   "richText",
-                  "bindable"
+                  "bindable",
+                  "selectedItems",
+                  "filter",
+                  "sort"
                 ]
               },
               "string_value": {
@@ -9716,11 +10151,7 @@
                 ]
               },
               "link_to": {
-                "description": "Literal value for url/email/phone; pageId for page; assetId for file; pageSlug for collectionPage; elementId for pageSection.",
-                "type": "string"
-              },
-              "link_to_component_id": {
-                "description": "Component id of the target element; only used when link_mode is \"pageSection\".",
+                "description": "Literal link target for url / email / phone (URL, address, or number). Not used for other modes; use the typed link_to_* field instead.",
                 "type": "string"
               },
               "link_open_in_new_tab": {
@@ -9733,8 +10164,24 @@
               "link_rel": {
                 "type": "string"
               },
+              "link_to_page_id": {
+                "description": "Page id the link navigates to. Required when link_mode is \"page\"; only used then.",
+                "type": "string",
+                "minLength": 1
+              },
+              "link_to_asset_id": {
+                "description": "Asset id of the file the link opens. Required when link_mode is \"file\"; only used then. The asset must exist.",
+                "type": "string",
+                "minLength": 1
+              },
+              "link_to_page_slug": {
+                "description": "Root-relative path of the collection item page the link navigates to, e.g. /blog/my-post. Must start with \"/\". Required when link_mode is \"collectionPage\"; only used then.",
+                "type": "string",
+                "minLength": 1,
+                "pattern": "^\\/.*"
+              },
               "link_to_element_id": {
-                "description": "The Popover or Modal element (or a component instance whose root is one) this instance's link opens or closes. Only used when link_mode is \"popover\" or \"modal\"; omit it for a targetless link.",
+                "description": "For \"pageSection\": the section to link to. Required, and the element must have an id attribute. For \"popover\" / \"modal\": the Popover or Modal element (or a component instance whose root is one) this instance's link opens or closes; omit it for a targetless link. Only used when link_mode is \"pageSection\", \"popover\", or \"modal\".",
                 "type": "object",
                 "properties": {
                   "component": {
@@ -9806,6 +10253,160 @@
               "rich_text_inner_text": {
                 "description": "Required when type is \"richText\". Plain text: a blank line starts a new paragraph, a single newline is a line break. Headings, lists and inline formatting are not parsed; data_element_builder can create them inside the prop.",
                 "type": "string"
+              },
+              "selected_item_ids": {
+                "description": "CMS item ids a Collection List selectedItems prop shows, in display order. Required when type is \"selectedItems\"; only used then. At most 100 ids, with no duplicates. An empty array clears the selection.",
+                "maxItems": 100,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "filter_conditions": {
+                "description": "Conditions for a Collection List filter prop (type=filter). Required for that type; only used then. Replaces all existing conditions; an empty array removes them.",
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "field_slug": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "Slug of the CMS field to filter on (e.g. \"name\"). Only fields of the prop's own collection; referenced-collection fields are not supported."
+                    },
+                    "operator": {
+                      "type": "string",
+                      "enum": [
+                        "equals",
+                        "doesNotEqual",
+                        "contains",
+                        "doesNotContain",
+                        "greaterThan",
+                        "lessThan",
+                        "greaterThanOrEqual",
+                        "lessThanOrEqual",
+                        "isSet",
+                        "isNotSet",
+                        "isOn",
+                        "isOff"
+                      ],
+                      "description": "Filter operator. Valid operators depend on the field type."
+                    },
+                    "value": {
+                      "description": "Literal value. equals / doesNotEqual / contains / doesNotContain and non-Date comparisons take it. For Option fields the option id; for reference fields a CMS item id; for Number fields a number as a string. Not used by isSet / isNotSet / isOn / isOff.",
+                      "type": "string"
+                    },
+                    "date_value": {
+                      "description": "Relative date for a comparison on a Date field (Date fields take greaterThanOrEqual / lessThanOrEqual), e.g. {amount: 7, unit: \"days\", direction: \"past\"}.",
+                      "type": "object",
+                      "properties": {
+                        "amount": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991,
+                          "description": "Number of units. 0 means today."
+                        },
+                        "unit": {
+                          "type": "string",
+                          "enum": [
+                            "days",
+                            "weeks",
+                            "months",
+                            "years"
+                          ]
+                        },
+                        "direction": {
+                          "type": "string",
+                          "enum": [
+                            "past",
+                            "future"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "amount",
+                        "unit",
+                        "direction"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "value_binding": {
+                      "description": "Bind the filter value to a prop, CMS field, page field or locale field instead of a literal. Same keys as set_settings bindings.",
+                      "type": "object",
+                      "properties": {
+                        "source_type": {
+                          "type": "string",
+                          "enum": [
+                            "prop",
+                            "cms",
+                            "page",
+                            "locale",
+                            "localeItem"
+                          ]
+                        },
+                        "prop_id": {
+                          "description": "For source_type \"prop\".",
+                          "type": "string"
+                        },
+                        "collection_id": {
+                          "description": "For source_type \"cms\".",
+                          "type": "string"
+                        },
+                        "field_id": {
+                          "description": "For source_type \"cms\".",
+                          "type": "string"
+                        },
+                        "field_key": {
+                          "description": "For source_type \"page\", \"locale\" or \"localeItem\".",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "source_type"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "field_slug",
+                    "operator"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "filter_match": {
+                "description": "Whether items must match all conditions or any of them (type=filter). Defaults to \"all\".",
+                "type": "string",
+                "enum": [
+                  "all",
+                  "any"
+                ]
+              },
+              "sort_fields": {
+                "description": "Sort order for a Collection List sort prop, first key first (type=sort). Required for that type; only used then. An empty array removes all sort keys.",
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "field_slug": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "Slug of the CMS field."
+                    },
+                    "direction": {
+                      "type": "string",
+                      "enum": [
+                        "ascending",
+                        "descending"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "field_slug",
+                    "direction"
+                  ],
+                  "additionalProperties": false
+                }
               }
             },
             "required": [
@@ -10273,22 +10874,45 @@
           "type": "string"
         },
         "value": {
-          "type": "object",
-          "properties": {
-            "static_value": {
-              "type": "string",
-              "minLength": 1
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "static_value": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "existing_variable_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "custom_value": {
+                  "type": "string",
+                  "description": "An arbitrary CSS expression string (e.g. 'color-mix(in srgb, red 50%, blue)'). Use when the value doesn't fit standard typed formats."
+                }
+              },
+              "additionalProperties": false
             },
-            "existing_variable_id": {
-              "type": "string",
-              "minLength": 1
-            },
-            "custom_value": {
-              "type": "string",
-              "description": "An arbitrary CSS expression string (e.g. 'color-mix(in srgb, red 50%, blue)'). Use when the value doesn't fit standard typed formats."
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "custom",
+                  "description": "Always \"custom\", as get_variables returns it."
+                },
+                "value": {
+                  "type": "string",
+                  "description": "A CSS expression, in the shape get_variables returns it."
+                }
+              },
+              "required": [
+                "type",
+                "value"
+              ],
+              "additionalProperties": false
             }
-          },
-          "additionalProperties": false
+          ]
         }
       },
       "required": [
@@ -10325,22 +10949,45 @@
           "type": "string"
         },
         "value": {
-          "type": "object",
-          "properties": {
-            "static_value": {
-              "type": "string",
-              "minLength": 1
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "static_value": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "existing_variable_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "custom_value": {
+                  "type": "string",
+                  "description": "An arbitrary CSS expression string. Use when the value doesn't fit standard typed formats."
+                }
+              },
+              "additionalProperties": false
             },
-            "existing_variable_id": {
-              "type": "string",
-              "minLength": 1
-            },
-            "custom_value": {
-              "type": "string",
-              "description": "An arbitrary CSS expression string. Use when the value doesn't fit standard typed formats."
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "custom",
+                  "description": "Always \"custom\", as get_variables returns it."
+                },
+                "value": {
+                  "type": "string",
+                  "description": "A CSS expression, in the shape get_variables returns it."
+                }
+              },
+              "required": [
+                "type",
+                "value"
+              ],
+              "additionalProperties": false
             }
-          },
-          "additionalProperties": false
+          ]
         }
       },
       "required": [
@@ -10377,21 +11024,44 @@
           "type": "string"
         },
         "value": {
-          "type": "object",
-          "properties": {
-            "static_value": {
-              "type": "number"
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "static_value": {
+                  "type": "number"
+                },
+                "existing_variable_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "custom_value": {
+                  "type": "string",
+                  "description": "An arbitrary CSS expression string. Use when the value doesn't fit standard typed formats."
+                }
+              },
+              "additionalProperties": false
             },
-            "existing_variable_id": {
-              "type": "string",
-              "minLength": 1
-            },
-            "custom_value": {
-              "type": "string",
-              "description": "An arbitrary CSS expression string. Use when the value doesn't fit standard typed formats."
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "custom",
+                  "description": "Always \"custom\", as get_variables returns it."
+                },
+                "value": {
+                  "type": "string",
+                  "description": "A CSS expression, in the shape get_variables returns it."
+                }
+              },
+              "required": [
+                "type",
+                "value"
+              ],
+              "additionalProperties": false
             }
-          },
-          "additionalProperties": false
+          ]
         }
       },
       "required": [
@@ -10428,21 +11098,44 @@
           "type": "string"
         },
         "value": {
-          "type": "object",
-          "properties": {
-            "static_value": {
-              "type": "number"
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "static_value": {
+                  "type": "number"
+                },
+                "existing_variable_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "custom_value": {
+                  "type": "string",
+                  "description": "An arbitrary CSS expression string. Use when the value doesn't fit standard typed formats."
+                }
+              },
+              "additionalProperties": false
             },
-            "existing_variable_id": {
-              "type": "string",
-              "minLength": 1
-            },
-            "custom_value": {
-              "type": "string",
-              "description": "An arbitrary CSS expression string. Use when the value doesn't fit standard typed formats."
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "custom",
+                  "description": "Always \"custom\", as get_variables returns it."
+                },
+                "value": {
+                  "type": "string",
+                  "description": "A CSS expression, in the shape get_variables returns it."
+                }
+              },
+              "required": [
+                "type",
+                "value"
+              ],
+              "additionalProperties": false
             }
-          },
-          "additionalProperties": false
+          ]
         }
       },
       "required": [
@@ -10479,50 +11172,73 @@
           "type": "string"
         },
         "value": {
-          "type": "object",
-          "properties": {
-            "static_value": {
+          "anyOf": [
+            {
               "type": "object",
               "properties": {
-                "value": {
-                  "type": "number"
+                "static_value": {
+                  "type": "object",
+                  "properties": {
+                    "value": {
+                      "type": "number"
+                    },
+                    "unit": {
+                      "type": "string",
+                      "enum": [
+                        "px",
+                        "em",
+                        "rem",
+                        "vh",
+                        "vw",
+                        "dvh",
+                        "dvw",
+                        "lvh",
+                        "lvw",
+                        "svh",
+                        "svw",
+                        "vmax",
+                        "vmin",
+                        "ch"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "value",
+                    "unit"
+                  ],
+                  "additionalProperties": false
                 },
-                "unit": {
+                "existing_variable_id": {
                   "type": "string",
-                  "enum": [
-                    "px",
-                    "em",
-                    "rem",
-                    "vh",
-                    "vw",
-                    "dvh",
-                    "dvw",
-                    "lvh",
-                    "lvw",
-                    "svh",
-                    "svw",
-                    "vmax",
-                    "vmin",
-                    "ch"
-                  ]
+                  "minLength": 1
+                },
+                "custom_value": {
+                  "type": "string",
+                  "description": "An arbitrary CSS expression string (e.g. 'calc(100vh - 60px)'). Use when the value doesn't fit standard typed formats."
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "custom",
+                  "description": "Always \"custom\", as get_variables returns it."
+                },
+                "value": {
+                  "type": "string",
+                  "description": "A CSS expression, in the shape get_variables returns it."
                 }
               },
               "required": [
-                "value",
-                "unit"
+                "type",
+                "value"
               ],
               "additionalProperties": false
-            },
-            "existing_variable_id": {
-              "type": "string",
-              "minLength": 1
-            },
-            "custom_value": {
-              "type": "string",
-              "description": "An arbitrary CSS expression string (e.g. 'calc(100vh - 60px)'). Use when the value doesn't fit standard typed formats."
             }
-          },
-          "additionalProperties": false
+          ]
         }
       },
       "required": [
@@ -10914,22 +11630,45 @@
           "minLength": 1
         },
         "value": {
-          "type": "object",
-          "properties": {
-            "static_value": {
-              "type": "string",
-              "minLength": 1
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "static_value": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "existing_variable_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "custom_value": {
+                  "type": "string",
+                  "description": "An arbitrary CSS expression string (e.g. 'color-mix(in srgb, red 50%, blue)'). Use when the value doesn't fit standard typed formats."
+                }
+              },
+              "additionalProperties": false
             },
-            "existing_variable_id": {
-              "type": "string",
-              "minLength": 1
-            },
-            "custom_value": {
-              "type": "string",
-              "description": "An arbitrary CSS expression string (e.g. 'color-mix(in srgb, red 50%, blue)'). Use when the value doesn't fit standard typed formats."
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "custom",
+                  "description": "Always \"custom\", as get_variables returns it."
+                },
+                "value": {
+                  "type": "string",
+                  "description": "A CSS expression, in the shape get_variables returns it."
+                }
+              },
+              "required": [
+                "type",
+                "value"
+              ],
+              "additionalProperties": false
             }
-          },
-          "additionalProperties": false
+          ]
         }
       },
       "required": [
@@ -10970,22 +11709,45 @@
           "minLength": 1
         },
         "value": {
-          "type": "object",
-          "properties": {
-            "static_value": {
-              "type": "string",
-              "minLength": 1
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "static_value": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "existing_variable_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "custom_value": {
+                  "type": "string",
+                  "description": "An arbitrary CSS expression string. Use when the value doesn't fit standard typed formats."
+                }
+              },
+              "additionalProperties": false
             },
-            "existing_variable_id": {
-              "type": "string",
-              "minLength": 1
-            },
-            "custom_value": {
-              "type": "string",
-              "description": "An arbitrary CSS expression string. Use when the value doesn't fit standard typed formats."
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "custom",
+                  "description": "Always \"custom\", as get_variables returns it."
+                },
+                "value": {
+                  "type": "string",
+                  "description": "A CSS expression, in the shape get_variables returns it."
+                }
+              },
+              "required": [
+                "type",
+                "value"
+              ],
+              "additionalProperties": false
             }
-          },
-          "additionalProperties": false
+          ]
         }
       },
       "required": [
@@ -11026,21 +11788,44 @@
           "minLength": 1
         },
         "value": {
-          "type": "object",
-          "properties": {
-            "static_value": {
-              "type": "number"
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "static_value": {
+                  "type": "number"
+                },
+                "existing_variable_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "custom_value": {
+                  "type": "string",
+                  "description": "An arbitrary CSS expression string. Use when the value doesn't fit standard typed formats."
+                }
+              },
+              "additionalProperties": false
             },
-            "existing_variable_id": {
-              "type": "string",
-              "minLength": 1
-            },
-            "custom_value": {
-              "type": "string",
-              "description": "An arbitrary CSS expression string. Use when the value doesn't fit standard typed formats."
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "custom",
+                  "description": "Always \"custom\", as get_variables returns it."
+                },
+                "value": {
+                  "type": "string",
+                  "description": "A CSS expression, in the shape get_variables returns it."
+                }
+              },
+              "required": [
+                "type",
+                "value"
+              ],
+              "additionalProperties": false
             }
-          },
-          "additionalProperties": false
+          ]
         }
       },
       "required": [
@@ -11081,21 +11866,44 @@
           "minLength": 1
         },
         "value": {
-          "type": "object",
-          "properties": {
-            "static_value": {
-              "type": "number"
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "static_value": {
+                  "type": "number"
+                },
+                "existing_variable_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "custom_value": {
+                  "type": "string",
+                  "description": "An arbitrary CSS expression string. Use when the value doesn't fit standard typed formats."
+                }
+              },
+              "additionalProperties": false
             },
-            "existing_variable_id": {
-              "type": "string",
-              "minLength": 1
-            },
-            "custom_value": {
-              "type": "string",
-              "description": "An arbitrary CSS expression string. Use when the value doesn't fit standard typed formats."
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "custom",
+                  "description": "Always \"custom\", as get_variables returns it."
+                },
+                "value": {
+                  "type": "string",
+                  "description": "A CSS expression, in the shape get_variables returns it."
+                }
+              },
+              "required": [
+                "type",
+                "value"
+              ],
+              "additionalProperties": false
             }
-          },
-          "additionalProperties": false
+          ]
         }
       },
       "required": [
@@ -11136,50 +11944,73 @@
           "minLength": 1
         },
         "value": {
-          "type": "object",
-          "properties": {
-            "static_value": {
+          "anyOf": [
+            {
               "type": "object",
               "properties": {
-                "value": {
-                  "type": "number"
+                "static_value": {
+                  "type": "object",
+                  "properties": {
+                    "value": {
+                      "type": "number"
+                    },
+                    "unit": {
+                      "type": "string",
+                      "enum": [
+                        "px",
+                        "em",
+                        "rem",
+                        "vh",
+                        "vw",
+                        "dvh",
+                        "dvw",
+                        "lvh",
+                        "lvw",
+                        "svh",
+                        "svw",
+                        "vmax",
+                        "vmin",
+                        "ch"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "value",
+                    "unit"
+                  ],
+                  "additionalProperties": false
                 },
-                "unit": {
+                "existing_variable_id": {
                   "type": "string",
-                  "enum": [
-                    "px",
-                    "em",
-                    "rem",
-                    "vh",
-                    "vw",
-                    "dvh",
-                    "dvw",
-                    "lvh",
-                    "lvw",
-                    "svh",
-                    "svw",
-                    "vmax",
-                    "vmin",
-                    "ch"
-                  ]
+                  "minLength": 1
+                },
+                "custom_value": {
+                  "type": "string",
+                  "description": "An arbitrary CSS expression string (e.g. 'calc(100vh - 60px)'). Use when the value doesn't fit standard typed formats."
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "custom",
+                  "description": "Always \"custom\", as get_variables returns it."
+                },
+                "value": {
+                  "type": "string",
+                  "description": "A CSS expression, in the shape get_variables returns it."
                 }
               },
               "required": [
-                "value",
-                "unit"
+                "type",
+                "value"
               ],
               "additionalProperties": false
-            },
-            "existing_variable_id": {
-              "type": "string",
-              "minLength": 1
-            },
-            "custom_value": {
-              "type": "string",
-              "description": "An arbitrary CSS expression string (e.g. 'calc(100vh - 60px)'). Use when the value doesn't fit standard typed formats."
             }
-          },
-          "additionalProperties": false
+          ]
         }
       },
       "required": [
@@ -11219,7 +12050,7 @@
         }
       },
       "additionalProperties": false,
-      "description": "Get all elements on the page"
+      "description": "Get all elements on the page. A component instance's children are its Slots (type \"Slot\"); a Slot id is not an element id."
     }
   },
   {
@@ -11370,7 +12201,7 @@
         "queries"
       ],
       "additionalProperties": false,
-      "description": "Query elements on the page by filters, scope, or parent lookup; supports multiple queries per call."
+      "description": "Query elements on the page by filters, scope, or parent lookup; supports multiple queries per call. Scoped search and parent lookup include elements in component instance Slots (a slotted element's parent is its Slot)."
     }
   },
   {
@@ -12461,7 +13292,7 @@
                           ]
                         },
                         "to": {
-                          "description": "Link target. url/email/phone: literal value; page: pageId; file: assetId; collectionPage: pageSlug; pageSection/popover/modal: unused \u2014 use to_element_id.",
+                          "description": "Link target. url/email/phone: literal value; page: pageId; file: assetId; collectionPage: root-relative path of the collection item page, e.g. /blog/my-post; pageSection/popover/modal: unused \u2014 use to_element_id.",
                           "type": "string"
                         },
                         "to_element_id": {
@@ -13501,10 +14332,11 @@
                 "Dropdown",
                 "Popover",
                 "Modal",
+                "FormPlaceholder",
                 "DOM",
                 "BY_CUSTOM_TAG"
               ],
-              "description": "The type of element to create. Use Box for generic containers such as a div. When Box elements are enabled for the site, Container also creates a Box, so set its max-width and centering styles explicitly. Use DOM for a generic DOM element (requires set_dom_config). Use BY_CUSTOM_TAG to create any element by arbitrary HTML tag with optional atomic settings (requires custom_tag)."
+              "description": "The type of element to create. Use Box for generic containers such as a div. When Box elements are enabled for the site, Container also creates a Box, so set its max-width and centering styles explicitly. Section always creates a Box with the section tag. Use DOM for a generic DOM element (requires set_dom_config). Use BY_CUSTOM_TAG to create any element by arbitrary HTML tag with optional atomic settings (requires custom_tag)."
             },
             "set_style": {
               "description": "Set style on the element. it will remove all other styles on the element. and set only the styles passed in style_names.",
@@ -13649,7 +14481,7 @@
               "additionalProperties": false
             },
             "settings": {
-              "description": "Settings to apply atomically on element creation (e.g. domId, altText, visibility). Same format as set_settings. If any setting is invalid the element is not created. Only applies to DOM type elements.",
+              "description": "Settings to apply atomically on element creation (e.g. domId, altText, visibility). Same format as set_settings. If any setting is invalid the element is not created.",
               "type": "array",
               "items": {
                 "type": "object",
@@ -13829,7 +14661,7 @@
                         ]
                       },
                       "to": {
-                        "description": "Link target. url/email/phone: literal value; page: pageId; file: assetId; collectionPage: pageSlug; pageSection/popover/modal: unused \u2014 use to_element_id.",
+                        "description": "Link target. url/email/phone: literal value; page: pageId; file: assetId; collectionPage: root-relative path of the collection item page, e.g. /blog/my-post; pageSection/popover/modal: unused \u2014 use to_element_id.",
                         "type": "string"
                       },
                       "to_element_id": {
@@ -14295,7 +15127,7 @@
             "insert_in_element",
             "insert_in_slot"
           ],
-          "description": "insert_in_element: insert the component as a child of parent_element_id. insert_in_slot: insert the component into a named slot of the component instance identified by parent_element_id."
+          "description": "insert_in_element: insert the component as a child of parent_element_id. insert_in_slot: insert the component or element into a named slot of the component instance identified by parent_element_id."
         },
         "parent_element_id": {
           "type": "object",
@@ -14324,9 +15156,10 @@
             "before",
             "after"
           ],
-          "description": "The position to insert the component. append/prepend insert as child of the parent element. before/after insert as sibling adjacent to the target element. For insert_in_slot, before/after are treated as append."
+          "description": "The position to insert the component or element. append/prepend insert as child of the parent element. before/after insert as sibling adjacent to the target element. For insert_in_slot, before/after are treated as append."
         },
         "component_schema": {
+          "description": "The component schema to insert. Use name to specify which component. To populate slots, pass slots[] with the slot name and children[]; each child uses the same { name, slots? } shape and can nest to any depth. Required for insert_in_element; for insert_in_slot pass exactly one of component_schema or element_schema.",
           "type": "object",
           "properties": {
             "name": {
@@ -14366,15 +15199,720 @@
           "required": [
             "name"
           ],
-          "additionalProperties": false,
-          "description": "The component schema to insert. Use name to specify which component. To populate slots, pass slots[] with the slot name and children[]; each child uses the same { name, slots? } shape and can nest to any depth."
+          "additionalProperties": false
+        },
+        "element_schema": {
+          "description": "The element schema to insert into a slot. Same shape as data_element_builder's element_schema, including nested children. Only valid for insert_in_slot; pass exactly one of component_schema or element_schema.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "Container",
+                "Section",
+                "DivBlock",
+                "Box",
+                "Heading",
+                "TextBlock",
+                "Paragraph",
+                "Button",
+                "TextLink",
+                "LinkBlock",
+                "Image",
+                "RichText",
+                "CodeBlock",
+                "Blockquote",
+                "HtmlEmbed",
+                "Video",
+                "YouTubeVideo",
+                "Lightbox",
+                "Form",
+                "FormBlockLabel",
+                "FormTextInput",
+                "FormTextarea",
+                "FormCheckboxInput",
+                "FormRadioInput",
+                "FormSelect",
+                "FormFileUploadWrapper",
+                "FormButton",
+                "Tabs",
+                "Slider",
+                "CMSCollection",
+                "PageSlot",
+                "ComponentSlot",
+                "Dropdown",
+                "Popover",
+                "Modal",
+                "FormPlaceholder",
+                "DOM",
+                "BY_CUSTOM_TAG"
+              ],
+              "description": "The type of element to create. Use Box for generic containers such as a div. When Box elements are enabled for the site, Container also creates a Box, so set its max-width and centering styles explicitly. Section always creates a Box with the section tag. Use DOM for a generic DOM element (requires set_dom_config). Use BY_CUSTOM_TAG to create any element by arbitrary HTML tag with optional atomic settings (requires custom_tag)."
+            },
+            "set_style": {
+              "description": "Set style on the element. it will remove all other styles on the element. and set only the styles passed in style_names.",
+              "type": "object",
+              "properties": {
+                "style_names": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "The style names to set on the element."
+                }
+              },
+              "required": [
+                "style_names"
+              ],
+              "additionalProperties": false
+            },
+            "set_text": {
+              "description": "Set text on the element. only valid for text block, paragraph, heading, button, text link, link block.",
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "The text to set on the element."
+                }
+              },
+              "required": [
+                "text"
+              ],
+              "additionalProperties": false
+            },
+            "set_link": {
+              "description": "Set link on the element. only valid for button, text link, link block.",
+              "type": "object",
+              "properties": {
+                "link_type": {
+                  "type": "string",
+                  "enum": [
+                    "url",
+                    "file",
+                    "page",
+                    "element",
+                    "email",
+                    "phone"
+                  ],
+                  "description": "The type of link to set on the element."
+                },
+                "link": {
+                  "type": "string",
+                  "description": "The link to set on the element."
+                }
+              },
+              "required": [
+                "link_type",
+                "link"
+              ],
+              "additionalProperties": false
+            },
+            "set_heading_level": {
+              "description": "Set heading level on the element. only valid for heading.",
+              "type": "object",
+              "properties": {
+                "heading_level": {
+                  "type": "number",
+                  "minimum": 1,
+                  "maximum": 6,
+                  "description": "The heading level to set on the element."
+                }
+              },
+              "required": [
+                "heading_level"
+              ],
+              "additionalProperties": false
+            },
+            "set_image_asset": {
+              "description": "Set image asset on the element. only valid for image.",
+              "type": "object",
+              "properties": {
+                "image_asset_id": {
+                  "type": "string",
+                  "description": "The image asset id to set on the element."
+                },
+                "alt_text": {
+                  "description": "The alt text to set on the image. if not provided it will inherit from the image asset.",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "image_asset_id"
+              ],
+              "additionalProperties": false
+            },
+            "set_dom_config": {
+              "description": "Set DOM config on the element. only valid for DOM element.",
+              "type": "object",
+              "properties": {
+                "dom_tag": {
+                  "type": "string",
+                  "description": "The tag of the DOM element to create. for example span, code, etc."
+                }
+              },
+              "required": [
+                "dom_tag"
+              ],
+              "additionalProperties": false
+            },
+            "custom_tag": {
+              "description": "HTML tag name for the new element (e.g. 'div', 'span', 'p', 'h1'). Required when type is BY_CUSTOM_TAG.",
+              "type": "string"
+            },
+            "set_attributes": {
+              "description": "Set attributes on the element.",
+              "type": "object",
+              "properties": {
+                "attributes": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "description": "The name of the attribute to set."
+                      },
+                      "value": {
+                        "type": "string",
+                        "description": "The value of the attribute to set."
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "value"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "description": "The attributes to set on the element."
+                }
+              },
+              "required": [
+                "attributes"
+              ],
+              "additionalProperties": false
+            },
+            "settings": {
+              "description": "Settings to apply atomically on element creation (e.g. domId, altText, visibility). Same format as set_settings. If any setting is invalid the element is not created.",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "key": {
+                    "type": "string",
+                    "description": "The setting key to write (e.g. \"domId\", \"altText\", \"href\", \"visibility\", \"attributes\"). Use get_settings to discover keys."
+                  },
+                  "clear": {
+                    "description": "Resets the setting to its default (writes null).",
+                    "type": "boolean",
+                    "const": true
+                  },
+                  "binding": {
+                    "description": "Bind the setting to a typed data source.",
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "source_type": {
+                            "type": "string",
+                            "const": "prop"
+                          },
+                          "prop_id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "description": "Prop ID. Discover with the component props tool's get_component_instance_props action."
+                          }
+                        },
+                        "required": [
+                          "source_type",
+                          "prop_id"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "source_type": {
+                            "type": "string",
+                            "const": "cms"
+                          },
+                          "collection_id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "description": "CMS collection ID. Discover with data_cms_tool > list_collections."
+                          },
+                          "field_id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "description": "Field ID in the collection. Discover with data_cms_tool > get_collection."
+                          }
+                        },
+                        "required": [
+                          "source_type",
+                          "collection_id",
+                          "field_id"
+                        ],
+                        "additionalProperties": false,
+                        "description": "Bind to a CMS field."
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "source_type": {
+                            "type": "string",
+                            "const": "page"
+                          },
+                          "field_key": {
+                            "type": "string",
+                            "minLength": 1,
+                            "description": "Field key, e.g. 'title', 'slug'. Discover with element tool > get_bindable_sources."
+                          }
+                        },
+                        "required": [
+                          "source_type",
+                          "field_key"
+                        ],
+                        "additionalProperties": false,
+                        "description": "Bind to a page field."
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "source_type": {
+                            "type": "string",
+                            "const": "locale"
+                          },
+                          "field_key": {
+                            "type": "string",
+                            "minLength": 1,
+                            "description": "Field key. Discover with element tool > get_bindable_sources."
+                          }
+                        },
+                        "required": [
+                          "source_type",
+                          "field_key"
+                        ],
+                        "additionalProperties": false,
+                        "description": "Bind to a locale field."
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "source_type": {
+                            "type": "string",
+                            "const": "localeItem"
+                          },
+                          "field_key": {
+                            "type": "string",
+                            "minLength": 1,
+                            "description": "Field key. Discover with element tool > get_bindable_sources."
+                          }
+                        },
+                        "required": [
+                          "source_type",
+                          "field_key"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ]
+                  },
+                  "static_text": {
+                    "type": "object",
+                    "properties": {
+                      "value": {
+                        "description": "For keys producing string / textContent / id / altText / image (asset ID).",
+                        "type": "string"
+                      },
+                      "rich_text_inner_text": {
+                        "description": "For richText keys. Plain text: a blank line starts a new paragraph, a single newline is a line break.",
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "static_number": {
+                    "type": "object",
+                    "properties": {
+                      "value": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "value"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "static_boolean": {
+                    "description": "For boolean settings (e.g. \"visibility\").",
+                    "type": "object",
+                    "properties": {
+                      "value": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "value"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "static_link": {
+                    "type": "object",
+                    "properties": {
+                      "mode": {
+                        "type": "string",
+                        "enum": [
+                          "url",
+                          "page",
+                          "pageSection",
+                          "email",
+                          "phone",
+                          "file",
+                          "collectionPage",
+                          "popover",
+                          "modal"
+                        ]
+                      },
+                      "to": {
+                        "description": "Link target. url/email/phone: literal value; page: pageId; file: assetId; collectionPage: root-relative path of the collection item page, e.g. /blog/my-post; pageSection/popover/modal: unused \u2014 use to_element_id.",
+                        "type": "string"
+                      },
+                      "to_element_id": {
+                        "description": "Target element id (component + element). For \"pageSection\", the target section. For \"popover\", the Popover element (or a component instance whose root is a Popover) to open or close; For \"modal\", the Modal element (or a component instance whose root is a Modal) to open or close. Omit it for a targetless popover or modal link. Only used when mode is \"pageSection\", \"popover\" or \"modal\".",
+                        "type": "object",
+                        "properties": {
+                          "component": {
+                            "type": "string",
+                            "description": "Pass element.id.component verbatim \u2014 do not invent or shorten it."
+                          },
+                          "element": {
+                            "type": "string",
+                            "description": "Pass element.id.element verbatim \u2014 do not invent or shorten it."
+                          }
+                        },
+                        "required": [
+                          "component",
+                          "element"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "open_in_new_tab": {
+                        "type": "boolean"
+                      },
+                      "email_subject": {
+                        "description": "Only used when mode is \"email\".",
+                        "type": "string"
+                      },
+                      "rel": {
+                        "type": "string"
+                      },
+                      "popover_action": {
+                        "description": "What the link does to its target Popover. Only used when mode is \"popover\". Defaults to \"toggle\" when omitted.",
+                        "type": "string",
+                        "enum": [
+                          "toggle",
+                          "show",
+                          "hide"
+                        ]
+                      },
+                      "modal_action": {
+                        "description": "What the link does to its target Modal. Only used when mode is \"modal\". Defaults to \"show\" when omitted.",
+                        "type": "string",
+                        "enum": [
+                          "show",
+                          "hide"
+                        ]
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "static_video": {
+                    "type": "object",
+                    "properties": {
+                      "src": {
+                        "description": "URL.",
+                        "type": "string"
+                      },
+                      "title": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "static_json": {
+                    "type": "object",
+                    "properties": {
+                      "value": {
+                        "type": "string",
+                        "description": "JSON-encoded value (object or array), e.g. '{\"key\":\"value\"}'."
+                      }
+                    },
+                    "required": [
+                      "value"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "attributes": {
+                    "description": "Only valid when key is \"attributes\". Replaces the full attribute list; an empty array removes all.",
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name_static": {
+                          "type": "string"
+                        },
+                        "name_binding": {
+                          "description": "Bind the attribute name to a typed data source (DOM elements only).",
+                          "oneOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "source_type": {
+                                  "type": "string",
+                                  "const": "prop"
+                                },
+                                "prop_id": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "description": "Prop ID. Discover with the component props tool's get_component_instance_props action."
+                                }
+                              },
+                              "required": [
+                                "source_type",
+                                "prop_id"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "source_type": {
+                                  "type": "string",
+                                  "const": "cms"
+                                },
+                                "collection_id": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "description": "CMS collection ID. Discover with data_cms_tool > list_collections."
+                                },
+                                "field_id": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "description": "Field ID in the collection. Discover with data_cms_tool > get_collection."
+                                }
+                              },
+                              "required": [
+                                "source_type",
+                                "collection_id",
+                                "field_id"
+                              ],
+                              "additionalProperties": false,
+                              "description": "Bind to a CMS field."
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "source_type": {
+                                  "type": "string",
+                                  "const": "page"
+                                },
+                                "field_key": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "description": "Field key, e.g. 'title', 'slug'. Discover with element tool > get_bindable_sources."
+                                }
+                              },
+                              "required": [
+                                "source_type",
+                                "field_key"
+                              ],
+                              "additionalProperties": false,
+                              "description": "Bind to a page field."
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "source_type": {
+                                  "type": "string",
+                                  "const": "locale"
+                                },
+                                "field_key": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "description": "Field key. Discover with element tool > get_bindable_sources."
+                                }
+                              },
+                              "required": [
+                                "source_type",
+                                "field_key"
+                              ],
+                              "additionalProperties": false,
+                              "description": "Bind to a locale field."
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "source_type": {
+                                  "type": "string",
+                                  "const": "localeItem"
+                                },
+                                "field_key": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "description": "Field key. Discover with element tool > get_bindable_sources."
+                                }
+                              },
+                              "required": [
+                                "source_type",
+                                "field_key"
+                              ],
+                              "additionalProperties": false
+                            }
+                          ]
+                        },
+                        "value_static": {
+                          "type": "string"
+                        },
+                        "value_binding": {
+                          "description": "Bind the attribute value to a typed data source.",
+                          "oneOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "source_type": {
+                                  "type": "string",
+                                  "const": "prop"
+                                },
+                                "prop_id": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "description": "Prop ID. Discover with the component props tool's get_component_instance_props action."
+                                }
+                              },
+                              "required": [
+                                "source_type",
+                                "prop_id"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "source_type": {
+                                  "type": "string",
+                                  "const": "cms"
+                                },
+                                "collection_id": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "description": "CMS collection ID. Discover with data_cms_tool > list_collections."
+                                },
+                                "field_id": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "description": "Field ID in the collection. Discover with data_cms_tool > get_collection."
+                                }
+                              },
+                              "required": [
+                                "source_type",
+                                "collection_id",
+                                "field_id"
+                              ],
+                              "additionalProperties": false,
+                              "description": "Bind to a CMS field."
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "source_type": {
+                                  "type": "string",
+                                  "const": "page"
+                                },
+                                "field_key": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "description": "Field key, e.g. 'title', 'slug'. Discover with element tool > get_bindable_sources."
+                                }
+                              },
+                              "required": [
+                                "source_type",
+                                "field_key"
+                              ],
+                              "additionalProperties": false,
+                              "description": "Bind to a page field."
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "source_type": {
+                                  "type": "string",
+                                  "const": "locale"
+                                },
+                                "field_key": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "description": "Field key. Discover with element tool > get_bindable_sources."
+                                }
+                              },
+                              "required": [
+                                "source_type",
+                                "field_key"
+                              ],
+                              "additionalProperties": false,
+                              "description": "Bind to a locale field."
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "source_type": {
+                                  "type": "string",
+                                  "const": "localeItem"
+                                },
+                                "field_key": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "description": "Field key. Discover with element tool > get_bindable_sources."
+                                }
+                              },
+                              "required": [
+                                "source_type",
+                                "field_key"
+                              ],
+                              "additionalProperties": false
+                            }
+                          ]
+                        }
+                      },
+                      "additionalProperties": false,
+                      "description": "Exactly one of name_static / name_binding must be set; exactly one of value_static / value_binding must be set."
+                    }
+                  }
+                },
+                "required": [
+                  "key"
+                ],
+                "additionalProperties": false,
+                "description": "One setting write. Exactly one of clear / binding / static_text / static_number / static_boolean / static_link / static_video / attributes / static_json must be provided."
+              }
+            },
+            "children": {
+              "description": "Child element schemas. Each child must use the same element_schema shape, including type and optional setup fields like set_style, set_text, settings, and children. Children may include their own children at any depth. The child item schema is passthrough because JSON Schema cannot represent unbounded recursion reliably in MCP descriptors.",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {},
+                "additionalProperties": {}
+              }
+            }
+          },
+          "required": [
+            "type"
+          ]
         },
         "slot_name": {
-          "description": "The slot name to insert the component into. Required when action_type is insert_in_slot.",
+          "description": "The slot name to insert the component or element into. Required when action_type is insert_in_slot.",
           "type": "string"
         },
         "return_component_info": {
-          "description": "Whether to return full component instance info for the created instance. Defaults to false.",
+          "description": "Whether to return full component instance info (or full element info for element_schema) for the created instance. Defaults to false.",
           "type": "boolean"
         },
         "scope_component_id": {
@@ -14386,8 +15924,7 @@
         "build_label",
         "action_type",
         "parent_element_id",
-        "creation_position",
-        "component_schema"
+        "creation_position"
       ],
       "additionalProperties": false
     }
@@ -16702,7 +18239,7 @@
         }
       },
       "additionalProperties": false,
-      "description": "List IX3 interactions on the site (paginated summaries). Use get_interaction for full timelines."
+      "description": "List IX3 interactions on the site (paginated summaries). Use get_interaction for full timelines. The response also has availableTriggerKeys, the trigger types this site accepts on create and update; use only those. triggerKeyGuide, when present, says when to use some of them."
     }
   },
   {
@@ -17059,7 +18596,7 @@
         "timelines"
       ],
       "additionalProperties": false,
-      "description": "Create an IX3 interaction in one call (triggers + inline timelines). Use Designer-legal shapes: object-format triggers/targets; animate opacity via wf:transform (e.g. [\"0%\",\"100%\"]), not wf:style. For legal payload shapes, call action guide or read MCP resource webflow://guides/interactions."
+      "description": "Create an IX3 interaction in one call (triggers + inline timelines). Use Designer-legal shapes: object-format triggers/targets; animate opacity via wf:transform (e.g. [\"0%\",\"100%\"]), not wf:style. Use only trigger types listed in availableTriggerKeys from list_interactions. For legal payload shapes, call action guide or read MCP resource webflow://guides/interactions."
     }
   },
   {
@@ -17399,7 +18936,7 @@
         "id"
       ],
       "additionalProperties": false,
-      "description": "Update an IX3 interaction by id. Omitted fields unchanged; null clears nullable fields; timelines when provided fully replace. For legal payload shapes, call action guide or read MCP resource webflow://guides/interactions."
+      "description": "Update an IX3 interaction by id. Omitted fields unchanged; null clears nullable fields; timelines when provided fully replace. Use only trigger types listed in availableTriggerKeys from list_interactions. For legal payload shapes, call action guide or read MCP resource webflow://guides/interactions."
     }
   },
   {
@@ -17949,7 +19486,7 @@
           "minLength": 1
         },
         "mount": {
-          "description": "App mount path. Standalone apps can only use '/' (the default). Site-attached apps default to '/app' and cannot use '/'. Webflow validates other site-attached paths.",
+          "description": "Initial environment mount path. Creating a standalone app uses '/' (the default); additional environments and later mount updates may use non-root paths. Site-attached apps default to '/app' and cannot use '/'. Webflow validates other site-attached paths.",
           "type": "string",
           "minLength": 1
         },
@@ -18004,7 +19541,7 @@
             "minLength": 1
           },
           "mount": {
-            "description": "App mount path. Standalone apps can only use '/' (the default). Site-attached apps default to '/app' and cannot use '/'. Webflow validates other site-attached paths.",
+            "description": "Initial environment mount path. Creating a standalone app uses '/' (the default); additional environments and later mount updates may use non-root paths. Site-attached apps default to '/app' and cannot use '/'. Webflow validates other site-attached paths.",
             "type": "string",
             "minLength": 1
           },
@@ -18032,6 +19569,10 @@
               "everyone",
               "restricted"
             ]
+          },
+          "app_path": {
+            "description": "Directory inside the connected GitHub repository that holds the app's package.json, used for builds (for example apps/storefront in a monorepo). Not the URL mount and not a local checkout path. Omit, or pass '.', for the repository root (server default).",
+            "type": "string"
           }
         },
         "required": [
@@ -18097,7 +19638,7 @@
         "mount"
       ],
       "additionalProperties": false,
-      "description": "Create an environment mapping a Git branch to an app mount. Immediate; does not deploy code. Mount safety requires siteAttached from get_app: '/' is valid only when false; siteId does not indicate attachment. Duplicate branches or mounts are rejected. An optional idempotency_key provides best-effort deduplication of exact retries. Returns { environment, mountRefreshStatus, message }; environment is null when an accepted response is unreadable; otherwise it matches a list_environments entry, where publicUrl is the user-facing environment address or null when unavailable. mountRefreshStatus is 'queued' | 'failed' | null, and message explains uncertainty or a failed refresh."
+      "description": "Create an environment mapping a Git branch to an app mount. Immediate; does not deploy code. Mount safety requires siteAttached from get_app: a standalone app (false) allows '/' or a non-root mount; a site-attached app (true) requires a non-root mount; siteId does not indicate attachment. Branches must be unique within the app; mounts must be unique across the site. An optional idempotency_key provides best-effort deduplication of exact retries. Returns { environment, mountRefreshStatus, message }; environment is null when an accepted response is unreadable; otherwise it matches a list_environments entry, where publicUrl is the user-facing environment address or null when unavailable. mountRefreshStatus is 'queued' | 'failed' | null, and message explains uncertainty or a failed refresh."
     }
   },
   {
@@ -18155,6 +19696,48 @@
       ],
       "additionalProperties": false,
       "description": "Update an app's name, description, and/or GitHub source. Source updates require a user-authorized token; machine tokens return 403. They attach or repoint the repository without changing any environment branch or triggering a deployment. Renaming a standalone app also renames its backing site best-effort; a sync failure keeps the old site name. Site-attached parent names are unchanged. Returns the get_app shape under app, or app: null with a reconciliation message when an accepted response is unreadable."
+    },
+    "channelSchemas": {
+      "beta": {
+        "type": "object",
+        "properties": {
+          "app_id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The Webflow Cloud app identifier (project UUID)."
+          },
+          "name": {
+            "description": "New non-empty name; does not rename a site-attached parent site.",
+            "type": "string",
+            "minLength": 1
+          },
+          "description": {
+            "description": "New description; pass null (not \"\") to clear it.",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source_url": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Canonical GitHub repository URL in the form https://github.com/owner/repository, optionally ending in .git. Webflow validates repository access."
+          },
+          "app_path": {
+            "description": "Directory inside the connected GitHub repository that holds the app's package.json, used for builds (for example apps/storefront in a monorepo). Not the URL mount and not a local checkout path. Omit to leave the existing directory unchanged. Pass '', '.', '/', or './' to reset to the repository root. The new directory applies to the next build; updating it does not deploy or change an environment branch or mount path.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "app_id"
+        ],
+        "additionalProperties": false,
+        "description": "Update an app's name, description, and/or GitHub source. Source updates require a user-authorized token; machine tokens return 403. They attach or repoint the repository without changing any environment branch or triggering a deployment. Renaming a standalone app also renames its backing site best-effort; a sync failure keeps the old site name. Site-attached parent names are unchanged. Returns the get_app shape under app, or app: null with a reconciliation message when an accepted response is unreadable."
+      }
     }
   },
   {
@@ -18207,7 +19790,7 @@
         "env_id"
       ],
       "additionalProperties": false,
-      "description": "Change an environment's Git branch and/or mount. Immediate; does not deploy code; same values are successful no-ops. Mount changes require siteAttached from get_app: '/' is valid only when false; siteId does not indicate attachment. Returns { environment, mountRefreshStatus, message }; environment is null when an accepted response is unreadable; otherwise it matches a list_environments entry, where publicUrl is the user-facing environment address or null when unavailable. mountRefreshStatus is 'queued' | 'failed' | 'skipped' | null, and message explains uncertainty or a failed refresh."
+      "description": "Change an environment's Git branch and/or mount. Immediate; does not deploy code; same values are successful no-ops. Mount changes require siteAttached from get_app: a standalone app (false) allows '/' or a non-root mount; a site-attached app (true) requires a non-root mount; siteId does not indicate attachment. Mounts must be unique across the site. Returns { environment, mountRefreshStatus, message }; environment is null when an accepted response is unreadable; otherwise it matches a list_environments entry, where publicUrl is the user-facing environment address or null when unavailable. mountRefreshStatus is 'queued' | 'failed' | 'skipped' | null, and message explains uncertainty or a failed refresh."
     }
   },
   {
@@ -18407,7 +19990,7 @@
         "deployment_id"
       ],
       "additionalProperties": false,
-      "description": "Rebuild and deploy a prior deployment's exact commit for a retry or rollback; GitHub source only. CONSEQUENTIAL. The default dry_run previews the commit; dry_run: false executes. Returns commitHash and status 'queued' or 'processing'; no deployment ID is returned. Wrong app/environment returns 404."
+      "description": "Rebuild and deploy a prior deployment's exact commit for a retry or rollback; GitHub source only. CONSEQUENTIAL. The default dry_run previews the commit; dry_run: false executes. Returns commitHash and status 'queued' with the new deploymentId \u2014 not the re-run deployment's id \u2014 or 'processing' for an in-flight idempotent replay (no id). The returned deploymentId identifies the deployment available through get_deployment. Wrong app/environment returns 404."
     }
   },
   {
@@ -18461,7 +20044,7 @@
         "env_id"
       ],
       "additionalProperties": false,
-      "description": "Deploy the connected GitHub branch HEAD; GitHub source only. CONSEQUENTIAL. The default dry_run previews the branch; dry_run: false executes. Returns 'queued', 'skipped' when the branch has no commit, or 'processing' when a request with the same idempotency key is already in flight; no deployment ID is returned."
+      "description": "Deploy the connected GitHub branch HEAD; GitHub source only. CONSEQUENTIAL. The default dry_run previews the branch; dry_run: false executes. Returns status 'queued' with the new deploymentId, 'skipped' when the branch has no commit, or 'processing' for an in-flight idempotent replay (no id). The returned deploymentId identifies the deployment available through get_deployment."
     }
   },
   {
@@ -20833,7 +22416,7 @@
           "type": "string"
         },
         "mount": {
-          "description": "App mount path. Standalone apps can only use '/' (the default). Site-attached apps default to '/app' and cannot use '/'. Webflow validates other site-attached paths.",
+          "description": "Initial environment mount path. Creating a standalone app uses '/' (the default); additional environments and later mount updates may use non-root paths. Site-attached apps default to '/app' and cannot use '/'. Webflow validates other site-attached paths.",
           "type": "string",
           "minLength": 1
         },
@@ -20861,6 +22444,10 @@
             "everyone",
             "restricted"
           ]
+        },
+        "app_path": {
+          "description": "Directory inside the connected GitHub repository that holds the app's package.json, used for builds (for example apps/storefront in a monorepo). Not the URL mount and not a local checkout path. Omit, or pass '.', for the repository root (server default).",
+          "type": "string"
         }
       },
       "required": [
@@ -20873,318 +22460,6 @@
     },
     "scope": "connection",
     "upstreamAlias": true
-  },
-  {
-    "id": "data_pages_tool.list_site_branches",
-    "tool": "data_pages_tool",
-    "action": "list_site_branches",
-    "area": "pages",
-    "title": "Pages",
-    "mode": "read",
-    "permission": "pages:read",
-    "extraPermissions": [],
-    "topSite": null,
-    "page": false,
-    "builder": false,
-    "direct": false,
-    "channels": [
-      "beta"
-    ],
-    "schema": {
-      "type": "object",
-      "properties": {
-        "site_id": {
-          "type": "string",
-          "description": "Webflow site ID. Use list_sites to discover site IDs."
-        },
-        "statusGroup": {
-          "description": "Filter by status group. Omit for the default in-progress group. Use merged to page through merged history.",
-          "type": "string",
-          "enum": [
-            "inProgress",
-            "merged"
-          ]
-        },
-        "limit": {
-          "description": "Page size for merged history only (1-100). Requires statusGroup=merged; do not pass for in-progress.",
-          "type": "number",
-          "minimum": 1,
-          "maximum": 100
-        },
-        "cursor": {
-          "description": "Opaque cursor from pagination.nextCursor. Requires statusGroup=merged.",
-          "type": "string",
-          "minLength": 1
-        }
-      },
-      "required": [
-        "site_id"
-      ],
-      "additionalProperties": false,
-      "description": "List Releases (site-scope branches) for a site. Use when the user asks to list Releases or site branches. Each row's id is the site_branch_id for discard_site_branch and later lifecycle actions. Each row's changeSummary counts the pages, components, styles, and CMS items it touched and lists contributors. changeSummary is left out when it could not be read, so do not treat a missing one as no changes. Use list_site_branch_changes for the changes themselves. Supports statusGroup filtering; limit and cursor require statusGroup=merged (in-progress is returned in full). Distinct from list_branches, which returns page branches."
-    }
-  },
-  {
-    "id": "data_pages_tool.create_site_branch",
-    "tool": "data_pages_tool",
-    "action": "create_site_branch",
-    "area": "pages",
-    "title": "Pages",
-    "mode": "write",
-    "permission": "pages:write",
-    "extraPermissions": [
-      "agent_instructions:read"
-    ],
-    "topSite": null,
-    "page": false,
-    "builder": false,
-    "direct": false,
-    "channels": [
-      "beta"
-    ],
-    "schema": {
-      "type": "object",
-      "properties": {
-        "site_id": {
-          "type": "string",
-          "description": "Webflow site ID. Use list_sites to discover site IDs."
-        },
-        "name": {
-          "type": "string",
-          "minLength": 1,
-          "description": "User-facing name for the new site branch."
-        },
-        "description": {
-          "description": "Optional description for the site branch (max 300 chars).",
-          "type": "string",
-          "maxLength": 300
-        },
-        "origin_page_id": {
-          "description": "Optional main-site page id (from list_pages) the user was viewing; used to choose the destination working page after create. Omit to use the site index page.",
-          "type": "string",
-          "minLength": 1
-        }
-      },
-      "required": [
-        "site_id",
-        "name"
-      ],
-      "additionalProperties": false,
-      "description": "Create a site-scope branch (Releases) for a site. Sync \u2014 returns the new site-branch id and destinationPageId for create-and-enter. Distinct from create_branch, which enqueues an async page-branch create."
-    }
-  },
-  {
-    "id": "data_pages_tool.stage_site_branch",
-    "tool": "data_pages_tool",
-    "action": "stage_site_branch",
-    "area": "pages",
-    "title": "Pages",
-    "mode": "publish",
-    "permission": "pages:publish",
-    "extraPermissions": [
-      "agent_instructions:read"
-    ],
-    "topSite": null,
-    "page": false,
-    "builder": false,
-    "direct": false,
-    "channels": [
-      "beta"
-    ],
-    "schema": {
-      "type": "object",
-      "properties": {
-        "site_id": {
-          "type": "string",
-          "description": "Webflow site ID. Use list_sites to discover site IDs."
-        },
-        "site_branch_id": {
-          "type": "string",
-          "minLength": 1,
-          "description": "Releases / site-branch id from list_site_branches. Stages that live Release to its staging domain."
-        }
-      },
-      "required": [
-        "site_id",
-        "site_branch_id"
-      ],
-      "additionalProperties": false,
-      "description": "Stage (publish to staging) a Releases site-scope branch. Returns { taskId, stagingDomain } \u2014 poll get_branch_task_status (taskType \"branch_publish\") for completion; stagingDomain is the preview host once it succeeds. Distinct from publish_branch (page branch staging) and publish_site (production). 409 conflict when another publish is already in progress for the site \u2014 tell the user and try again later. 409 branch_merge_in_progress while the branch is being merged \u2014 retry after the wait in the message."
-    }
-  },
-  {
-    "id": "data_pages_tool.discard_site_branch",
-    "tool": "data_pages_tool",
-    "action": "discard_site_branch",
-    "area": "pages",
-    "title": "Pages",
-    "mode": "delete",
-    "permission": "pages:delete",
-    "extraPermissions": [
-      "agent_instructions:read"
-    ],
-    "topSite": null,
-    "page": false,
-    "builder": false,
-    "direct": false,
-    "channels": [
-      "beta"
-    ],
-    "schema": {
-      "type": "object",
-      "properties": {
-        "site_id": {
-          "type": "string",
-          "description": "Webflow site ID. Use list_sites to discover site IDs."
-        },
-        "site_branch_id": {
-          "type": "string",
-          "minLength": 1,
-          "description": "Releases / site-branch id from list_site_branches. Hard-deletes that live Release."
-        }
-      },
-      "required": [
-        "site_id",
-        "site_branch_id"
-      ],
-      "additionalProperties": false,
-      "description": "Discard (hard-delete) a live Releases branch (site-scope). Use this when the user asks to delete, remove, discard, or cancel a Release \u2014 there is no separate delete_release action. Sync \u2014 succeeds with an empty body. Merged Releases cannot be discarded (409). 409 branch_merge_in_progress while the branch is being merged \u2014 retry after the wait in the message. Distinct from delete_branch, which deletes a page branch asynchronously."
-    }
-  },
-  {
-    "id": "data_pages_tool.get_site_branch_freshness",
-    "tool": "data_pages_tool",
-    "action": "get_site_branch_freshness",
-    "area": "pages",
-    "title": "Pages",
-    "mode": "read",
-    "permission": "pages:read",
-    "extraPermissions": [],
-    "topSite": null,
-    "page": false,
-    "builder": false,
-    "direct": false,
-    "channels": [
-      "beta"
-    ],
-    "schema": {
-      "type": "object",
-      "properties": {
-        "site_id": {
-          "type": "string",
-          "description": "Webflow site ID. Use list_sites to discover site IDs."
-        },
-        "site_branch_id": {
-          "type": "string",
-          "minLength": 1,
-          "description": "Releases / site-branch id from list_site_branches."
-        }
-      },
-      "required": [
-        "site_id",
-        "site_branch_id"
-      ],
-      "additionalProperties": false,
-      "description": "Read-only. Check whether a Releases branch (site-scope) is up to date with main. Returns { status, coverage }: status \"ready\" (up to date), \"needs_update\" (main has newer changes), \"updating\" (an update is running; includes activeTaskId), or \"unknown\" (freshness could not be read; includes reason). Returns 409 branch_merge_in_progress while the branch is being merged."
-    }
-  },
-  {
-    "id": "data_pages_tool.update_site_branch_details",
-    "tool": "data_pages_tool",
-    "action": "update_site_branch_details",
-    "area": "pages",
-    "title": "Pages",
-    "mode": "write",
-    "permission": "pages:write",
-    "extraPermissions": [
-      "agent_instructions:read"
-    ],
-    "topSite": null,
-    "page": false,
-    "builder": false,
-    "direct": false,
-    "channels": [
-      "beta"
-    ],
-    "schema": {
-      "type": "object",
-      "properties": {
-        "site_id": {
-          "type": "string",
-          "description": "Webflow site ID. Use list_sites to discover site IDs."
-        },
-        "site_branch_id": {
-          "type": "string",
-          "minLength": 1,
-          "description": "Releases / site-branch id from list_site_branches."
-        },
-        "name": {
-          "description": "New name for the Release. Omit to keep the current name.",
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 256
-        },
-        "description": {
-          "description": "New description (max 300 chars). Omit to keep the current one; \"\" clears it.",
-          "type": "string",
-          "maxLength": 300
-        }
-      },
-      "required": [
-        "site_id",
-        "site_branch_id"
-      ],
-      "additionalProperties": false,
-      "description": "Rename a Releases branch (site-scope) or change its description. Pass name, description, or both \u2014 fields left out stay the same; description \"\" clears it. Sync \u2014 returns { id, name, description }. Merged Releases cannot be updated (409)."
-    }
-  },
-  {
-    "id": "data_pages_tool.list_site_branch_changes",
-    "tool": "data_pages_tool",
-    "action": "list_site_branch_changes",
-    "area": "pages",
-    "title": "Pages",
-    "mode": "read",
-    "permission": "pages:read",
-    "extraPermissions": [],
-    "topSite": null,
-    "page": false,
-    "builder": false,
-    "direct": false,
-    "channels": [
-      "beta"
-    ],
-    "schema": {
-      "type": "object",
-      "properties": {
-        "site_id": {
-          "type": "string",
-          "description": "Webflow site ID. Use list_sites to discover site IDs."
-        },
-        "site_branch_id": {
-          "type": "string",
-          "minLength": 1,
-          "description": "Releases / site-branch id from list_site_branches."
-        },
-        "limit": {
-          "description": "Page size (1-100, default 25).",
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 100
-        },
-        "cursor": {
-          "description": "Opaque cursor from pagination.nextCursor of a previous call for the same site branch.",
-          "type": "string",
-          "minLength": 1
-        }
-      },
-      "required": [
-        "site_id",
-        "site_branch_id"
-      ],
-      "additionalProperties": false,
-      "description": "Read-only. List the pages, components, styles, and CMS items a Releases branch (site-scope) touched, most recently changed first. Returns { changes, pagination }; while pagination.hasMore is true, pass pagination.nextCursor as cursor for the next page (a page can hold fewer than limit changes). A resource edited while you page moves to the front and can be missed; list again from the start for a full view. Each change has resourceType, resourceId, action (\"added\", \"changed\", or \"removed\"), name, the locales edited, and contributors. A change means it was written in the branch, not that it still differs from main. Works for merged branches too."
-    }
   },
   {
     "id": "data_component_props_tool.get_slot_default",
@@ -21433,6 +22708,1682 @@
       ],
       "additionalProperties": false,
       "description": "Empty a component instance's slot, hiding the component's default content. Needs slot defaults enabled."
+    }
+  },
+  {
+    "id": "data_enterprise_tool.get_waf_rules",
+    "tool": "data_enterprise_tool",
+    "action": "get_waf_rules",
+    "area": "firewall",
+    "title": "Live firewall",
+    "mode": "read",
+    "permission": "firewall:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{24}$",
+          "description": "Webflow site ID. Discover with data_sites_tool (list_sites)."
+        }
+      },
+      "required": [
+        "site_id"
+      ],
+      "additionalProperties": false,
+      "description": "Read a site's WAF rules and bot bypass settings: byDomain (each connected custom domain's config, null when it has none), rules (the shared config as rules.waf when uniform is true), bypassVerifiedBots and bypassAuthorizedBots in each byDomain config and in rules.waf, hostnamesApplied, hostnameStages, and siteStateHash. test_waf_rules, update_waf_rule, delete_waf_rule, test_waf_settings, and update_waf_settings require that siteStateHash as expectedSiteStateHash and are refused with WafSiteStateChanged once the site changes. Read-only. Requires site_config:read."
+    }
+  },
+  {
+    "id": "data_enterprise_tool.suggest_waf_changes",
+    "tool": "data_enterprise_tool",
+    "action": "suggest_waf_changes",
+    "area": "firewall",
+    "title": "Live firewall",
+    "mode": "read",
+    "permission": "firewall:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{24}$",
+          "description": "Webflow site ID. Discover with data_sites_tool (list_sites)."
+        }
+      },
+      "required": [
+        "site_id"
+      ],
+      "additionalProperties": false,
+      "description": "Suggest WAF rule changes for a site from its current rules. Applies nothing: a suggestion takes effect only through test_waf_rules and update_waf_rule. Read-only. Requires site_config:read."
+    }
+  },
+  {
+    "id": "data_enterprise_tool.validate_waf_rule",
+    "tool": "data_enterprise_tool",
+    "action": "validate_waf_rule",
+    "area": "firewall",
+    "title": "Live firewall",
+    "mode": "read",
+    "permission": "firewall:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{24}$",
+          "description": "Webflow site ID. Discover with data_sites_tool (list_sites)."
+        },
+        "ruleType": {
+          "type": "string",
+          "enum": [
+            "ipRules",
+            "geoRules",
+            "asnRules",
+            "userAgentRules"
+          ],
+          "description": "The rule type: ipRules (IP addresses and CIDR ranges), geoRules (countries), asnRules (network ASNs), or userAgentRules (User-Agent patterns)."
+        },
+        "config": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {},
+          "description": "Same shape as test_waf_rules' config: the COMPLETE replacement config for ruleType."
+        },
+        "domains": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Connected custom domains to scope the change to, as named in get_waf_rules byDomain. Omit to apply site-wide."
+        },
+        "previousDomains": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Required with domains on an update, and only accepted with them: the domains this rule instance covered before the edit (from get_waf_rules byDomain), or [] for a new rule instance. The rule type is cleared from previousDomains minus domains."
+        }
+      },
+      "required": [
+        "site_id",
+        "ruleType",
+        "config"
+      ],
+      "additionalProperties": false,
+      "description": "Check a rule config with the same checks as test_waf_rules, but without a siteStateHash, preview, or write. Use it before test_waf_rules whenever you build or edit a config. On success: false, fix error.details; error.schema, when present, shows the exact config shape. On success: true, check that explanation matches what the user asked for; any riskFindings mean applying will need the high-risk confirmation. Read-only. Requires site_config:read."
+    }
+  },
+  {
+    "id": "data_enterprise_tool.test_waf_rules",
+    "tool": "data_enterprise_tool",
+    "action": "test_waf_rules",
+    "area": "firewall",
+    "title": "Live firewall",
+    "mode": "read",
+    "permission": "firewall:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{24}$",
+          "description": "Webflow site ID. Discover with data_sites_tool (list_sites)."
+        },
+        "ruleType": {
+          "type": "string",
+          "enum": [
+            "ipRules",
+            "geoRules",
+            "asnRules",
+            "userAgentRules"
+          ],
+          "description": "The rule type: ipRules (IP addresses and CIDR ranges), geoRules (countries), asnRules (network ASNs), or userAgentRules (User-Agent patterns)."
+        },
+        "operation": {
+          "description": "Preview an update (default) or a deletion of the rule type.",
+          "type": "string",
+          "enum": [
+            "update",
+            "delete"
+          ]
+        },
+        "config": {
+          "description": "Required for an update; omit for a deletion. Check it with validate_waf_rule first. The COMPLETE replacement configuration for ruleType, in the shape get_waf_rules returns for it (byDomain[domain][ruleType]). It replaces the whole rule type on each target domain; entries left out are removed. ipRules: {ips: [{ip, mode}]}, 1-100 entries, ip an IPv4/IPv6 address or CIDR range. geoRules: {countryList, mode, paths?}, 1-250 ISO 3166-1 alpha-2 codes. asnRules: {asnList, mode, paths?}, 1-100 positive integer ASNs. userAgentRules: {blockEmpty?, patterns: [{pattern?, matchMode?, browser?, withinLatest?, minVersion?, mode, paths?}]}, at most 50 patterns; blockEmpty blocks requests without a User-Agent; matchMode is contains (default), exact, any, or browserVersionFloor; any and browserVersionFloor take no pattern, and browserVersionFloor needs browser (chrome, edge, or firefox) plus withinLatest or minVersion. mode is BLOCK or ALLOW; a geo or ASN ALLOW list blocks everything not listed. ips and patterns are first-match-wins. paths: 1-20 {path starting with /, matchMode?: prefix (default) or exact}.",
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {}
+        },
+        "domains": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Connected custom domains to scope the change to, as named in get_waf_rules byDomain. Omit to apply site-wide."
+        },
+        "previousDomains": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Required with domains on an update, and only accepted with them: the domains this rule instance covered before the edit (from get_waf_rules byDomain), or [] for a new rule instance. The rule type is cleared from previousDomains minus domains."
+        },
+        "expectedSiteStateHash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "The siteStateHash from the latest get_waf_rules call. If the site changed since that read, the request is refused with WafSiteStateChanged."
+        }
+      },
+      "required": [
+        "site_id",
+        "ruleType",
+        "expectedSiteStateHash"
+      ],
+      "additionalProperties": false,
+      "description": "Preview an update or deletion of one rule type without changing anything. Returns per-domain targets (current and candidate hash, size against the limit), riskFindings, evidence limits, and a short-lived previewToken bound to this exact change. Apply it with update_waf_rule (same ruleType, config, domains, and previousDomains) or delete_waf_rule (same ruleType and domains) plus that previewToken. Expected failures return success: false with error.name and error.message. Requires site_config:write."
+    }
+  },
+  {
+    "id": "data_enterprise_tool.test_waf_settings",
+    "tool": "data_enterprise_tool",
+    "action": "test_waf_settings",
+    "area": "firewall",
+    "title": "Live firewall",
+    "mode": "read",
+    "permission": "firewall:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{24}$",
+          "description": "Webflow site ID. Discover with data_sites_tool (list_sites)."
+        },
+        "settings": {
+          "type": "object",
+          "properties": {
+            "bypassVerifiedBots": {
+              "description": "Whether verified bots bypass site WAF rules.",
+              "type": "boolean"
+            },
+            "bypassAuthorizedBots": {
+              "description": "Whether authorized bots bypass site WAF rules.",
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false,
+          "description": "Site-wide bot bypass. The combined Bot bypass control uses the same value for both booleans. Omitted settings, rules, and bot tokens are preserved. Off subjects those bots to site rules and can affect indexing. Platform security still applies."
+        },
+        "expectedSiteStateHash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "The siteStateHash from the latest get_waf_rules call. If the site changed since that read, the request is refused with WafSiteStateChanged."
+        }
+      },
+      "required": [
+        "site_id",
+        "settings",
+        "expectedSiteStateHash"
+      ],
+      "additionalProperties": false,
+      "description": "Preview site-wide bot bypass without writing. Returns targets, size, skipped hostnames, previewToken, and expiresAt. The token binds update_waf_settings to the same site, settings, and expectedSiteStateHash. Checks configuration, not traffic. Requires site_config:write."
+    }
+  },
+  {
+    "id": "data_enterprise_tool.update_waf_rule",
+    "tool": "data_enterprise_tool",
+    "action": "update_waf_rule",
+    "area": "firewall",
+    "title": "Live firewall",
+    "mode": "write",
+    "permission": "firewall:write",
+    "extraPermissions": [
+      "agent_instructions:read"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{24}$",
+          "description": "Webflow site ID. Discover with data_sites_tool (list_sites)."
+        },
+        "ruleType": {
+          "type": "string",
+          "enum": [
+            "ipRules",
+            "geoRules",
+            "asnRules",
+            "userAgentRules"
+          ],
+          "description": "The rule type: ipRules (IP addresses and CIDR ranges), geoRules (countries), asnRules (network ASNs), or userAgentRules (User-Agent patterns)."
+        },
+        "config": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {},
+          "description": "The COMPLETE replacement configuration for ruleType, in the shape get_waf_rules returns for it (byDomain[domain][ruleType]). It replaces the whole rule type on each target domain; entries left out are removed. ipRules: {ips: [{ip, mode}]}, 1-100 entries, ip an IPv4/IPv6 address or CIDR range. geoRules: {countryList, mode, paths?}, 1-250 ISO 3166-1 alpha-2 codes. asnRules: {asnList, mode, paths?}, 1-100 positive integer ASNs. userAgentRules: {blockEmpty?, patterns: [{pattern?, matchMode?, browser?, withinLatest?, minVersion?, mode, paths?}]}, at most 50 patterns; blockEmpty blocks requests without a User-Agent; matchMode is contains (default), exact, any, or browserVersionFloor; any and browserVersionFloor take no pattern, and browserVersionFloor needs browser (chrome, edge, or firefox) plus withinLatest or minVersion. mode is BLOCK or ALLOW; a geo or ASN ALLOW list blocks everything not listed. ips and patterns are first-match-wins. paths: 1-20 {path starting with /, matchMode?: prefix (default) or exact}."
+        },
+        "domains": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Connected custom domains to scope the change to, as named in get_waf_rules byDomain. Omit to apply site-wide."
+        },
+        "previousDomains": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Required with domains on an update, and only accepted with them: the domains this rule instance covered before the edit (from get_waf_rules byDomain), or [] for a new rule instance. The rule type is cleared from previousDomains minus domains."
+        },
+        "expectedSiteStateHash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "The siteStateHash from the latest get_waf_rules call. If the site changed since that read, the request is refused with WafSiteStateChanged."
+        },
+        "previewToken": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8192,
+          "description": "The previewToken test_waf_rules returned for exactly this change. The default way to apply. A stale, expired, or mismatched token is refused (WafPreviewStale, WafPreviewExpired, WafPreviewInvalid); test the change again."
+        },
+        "directApply": {
+          "type": "boolean",
+          "description": "true applies without a test_waf_rules preview, for when the user explicitly asked to skip testing. Sent together with previewToken, the request is refused with WafConflictingApplyMode."
+        },
+        "highRiskChangeConfirmation": {
+          "type": "object",
+          "properties": {
+            "candidateHash": {
+              "type": "string",
+              "minLength": 1,
+              "description": "error.highRiskChange.candidateHash, copied unchanged."
+            },
+            "currentStateHash": {
+              "type": "string",
+              "minLength": 1,
+              "description": "error.highRiskChange.currentStateHash, copied unchanged."
+            },
+            "confirmationPhrase": {
+              "type": "string",
+              "minLength": 1,
+              "description": "error.highRiskChange.confirmationPhrase, copied unchanged."
+            },
+            "acknowledgedRiskIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "description": "The id of every entry in error.highRiskChange.risks."
+            },
+            "expiresAt": {
+              "type": "string",
+              "minLength": 1,
+              "description": "error.highRiskChange.expiresAt, copied unchanged."
+            },
+            "confirmationToken": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048,
+              "description": "error.highRiskChange.confirmationToken, copied unchanged."
+            }
+          },
+          "required": [
+            "candidateHash",
+            "currentStateHash",
+            "confirmationPhrase",
+            "acknowledgedRiskIds",
+            "expiresAt",
+            "confirmationToken"
+          ],
+          "additionalProperties": false,
+          "description": "Only for resending after a HighRiskWafChange result, once the user has seen error.highRiskChange and explicitly confirmed it. Edited or expired values are refused with a new challenge."
+        }
+      },
+      "required": [
+        "site_id",
+        "ruleType",
+        "config",
+        "expectedSiteStateHash"
+      ],
+      "additionalProperties": false,
+      "description": "Replace the WHOLE configuration of one rule type, site-wide or on the listed domains, on the live firewall: entries left out of config are removed, so start from the current config in get_waf_rules. Default flow: get_waf_rules, then test_waf_rules, then this action with the returned previewToken. directApply skips the preview and is for an explicit user request to skip testing; previewToken and directApply together are refused. A HighRiskWafChange result changes nothing: show error.highRiskChange (targets, risks, confirmationPhrase) to the user, and only after the user confirms, resend the same request with highRiskChangeConfirmation filled from it, values copied exactly, confirmationToken included. Other expected failures return success: false with error.name, such as WafSiteStateChanged (read again), WafPreviewStale (test again), WafPartialMutation (error.recovery lists per-host results; read again and reconcile), and WafMutationRateLimited (retryAfterSeconds). Takes effect on live traffic immediately. Requires site_config:write."
+    }
+  },
+  {
+    "id": "data_enterprise_tool.update_waf_settings",
+    "tool": "data_enterprise_tool",
+    "action": "update_waf_settings",
+    "area": "firewall",
+    "title": "Live firewall",
+    "mode": "write",
+    "permission": "firewall:write",
+    "extraPermissions": [
+      "agent_instructions:read"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{24}$",
+          "description": "Webflow site ID. Discover with data_sites_tool (list_sites)."
+        },
+        "settings": {
+          "type": "object",
+          "properties": {
+            "bypassVerifiedBots": {
+              "description": "Whether verified bots bypass site WAF rules.",
+              "type": "boolean"
+            },
+            "bypassAuthorizedBots": {
+              "description": "Whether authorized bots bypass site WAF rules.",
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false,
+          "description": "Site-wide bot bypass. The combined Bot bypass control uses the same value for both booleans. Omitted settings, rules, and bot tokens are preserved. Off subjects those bots to site rules and can affect indexing. Platform security still applies."
+        },
+        "expectedSiteStateHash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "The siteStateHash from the latest get_waf_rules call. If the site changed since that read, the request is refused with WafSiteStateChanged."
+        },
+        "previewToken": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8192,
+          "description": "The previewToken returned by test_waf_settings for exactly this site, settings, and expectedSiteStateHash. Stale, expired, or mismatched tokens are refused."
+        },
+        "directApply": {
+          "type": "boolean",
+          "description": "true applies without a test_waf_settings preview. Mutually exclusive with previewToken (WafConflictingApplyMode)."
+        }
+      },
+      "required": [
+        "site_id",
+        "settings",
+        "expectedSiteStateHash"
+      ],
+      "additionalProperties": false,
+      "description": "Change site-wide bot bypass immediately, preserving rules, omitted settings, and bot tokens. Requires a matching test_waf_settings previewToken, or directApply:true without a token. Stale state or previews are refused. Failures return success:false and error.name/message. Requires site_config:write."
+    }
+  },
+  {
+    "id": "data_enterprise_tool.delete_waf_rule",
+    "tool": "data_enterprise_tool",
+    "action": "delete_waf_rule",
+    "area": "firewall",
+    "title": "Live firewall",
+    "mode": "delete",
+    "permission": "firewall:delete",
+    "extraPermissions": [
+      "agent_instructions:read"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{24}$",
+          "description": "Webflow site ID. Discover with data_sites_tool (list_sites)."
+        },
+        "ruleType": {
+          "type": "string",
+          "enum": [
+            "ipRules",
+            "geoRules",
+            "asnRules",
+            "userAgentRules"
+          ],
+          "description": "The rule type: ipRules (IP addresses and CIDR ranges), geoRules (countries), asnRules (network ASNs), or userAgentRules (User-Agent patterns)."
+        },
+        "domains": {
+          "description": "Connected custom domains to delete the rule type from, as named in get_waf_rules byDomain. Omit to delete it site-wide.",
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "expectedSiteStateHash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "The siteStateHash from the latest get_waf_rules call. If the site changed since that read, the request is refused with WafSiteStateChanged."
+        },
+        "previewToken": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8192,
+          "description": "The previewToken test_waf_rules returned for exactly this change. The default way to apply. A stale, expired, or mismatched token is refused (WafPreviewStale, WafPreviewExpired, WafPreviewInvalid); test the change again."
+        },
+        "directApply": {
+          "type": "boolean",
+          "description": "true applies without a test_waf_rules preview, for when the user explicitly asked to skip testing. Sent together with previewToken, the request is refused with WafConflictingApplyMode."
+        }
+      },
+      "required": [
+        "site_id",
+        "ruleType",
+        "expectedSiteStateHash"
+      ],
+      "additionalProperties": false,
+      "description": "Delete one rule type, site-wide or from the listed domains, on the live firewall, keeping the other rule types, settings, and bot access. Default flow: get_waf_rules, then test_waf_rules with operation delete, then this action with the returned previewToken. directApply skips the preview and is for an explicit user request to skip testing; previewToken and directApply together are refused. Expected failures return success: false with error.name and error.message. Takes effect on live traffic immediately. Requires site_config:write."
+    }
+  },
+  {
+    "id": "data_aeo_brand_presences_tool.get_brand_presence",
+    "tool": "data_aeo_brand_presences_tool",
+    "action": "get_brand_presence",
+    "area": "workspace_aeo",
+    "title": "Workspace AEO",
+    "mode": "read",
+    "permission": "workspace_aeo:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "workspace_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{24}$",
+          "description": "Workspace id from data_workspaces_tool > list_workspaces. Must be the 24-character hex id; a workspace slug is rejected."
+        },
+        "brand_presence_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{24}$",
+          "description": "Brand presence id from list_brand_presences. Must be a 24-character hex Mongo ObjectId."
+        }
+      },
+      "required": [
+        "workspace_id",
+        "brand_presence_id"
+      ],
+      "additionalProperties": false,
+      "description": "Get one brand presence by id. Returns id, workspaceId, customerId, createdOn, and lastUpdated. An id that is archived, unknown, or in another workspace returns 404."
+    },
+    "scope": "workspace"
+  },
+  {
+    "id": "data_aeo_brand_presences_tool.get_prompt",
+    "tool": "data_aeo_brand_presences_tool",
+    "action": "get_prompt",
+    "area": "workspace_aeo",
+    "title": "Workspace AEO",
+    "mode": "read",
+    "permission": "workspace_aeo:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "workspace_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{24}$",
+          "description": "Workspace id from data_workspaces_tool > list_workspaces. Must be the 24-character hex id; a workspace slug is rejected."
+        },
+        "brand_presence_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{24}$",
+          "description": "Brand presence id from list_brand_presences. Must be a 24-character hex Mongo ObjectId."
+        },
+        "prompt_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{24}$",
+          "description": "Prompt id from this tool's list_prompts. Must be a 24-character hex Mongo ObjectId."
+        }
+      },
+      "required": [
+        "workspace_id",
+        "brand_presence_id",
+        "prompt_id"
+      ],
+      "additionalProperties": false,
+      "description": "Get one tracked prompt by id. Returns id, topicId, promptText, createdOn, and lastUpdated. A prompt id that is unknown, archived, or in another brand presence returns 404."
+    },
+    "scope": "workspace"
+  },
+  {
+    "id": "data_aeo_brand_presences_tool.get_topic",
+    "tool": "data_aeo_brand_presences_tool",
+    "action": "get_topic",
+    "area": "workspace_aeo",
+    "title": "Workspace AEO",
+    "mode": "read",
+    "permission": "workspace_aeo:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "workspace_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{24}$",
+          "description": "Workspace id from data_workspaces_tool > list_workspaces. Must be the 24-character hex id; a workspace slug is rejected."
+        },
+        "brand_presence_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{24}$",
+          "description": "Brand presence id from list_brand_presences. Must be a 24-character hex Mongo ObjectId."
+        },
+        "topic_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{24}$",
+          "description": "Topic id from list_topics. Must be a 24-character hex Mongo ObjectId."
+        }
+      },
+      "required": [
+        "workspace_id",
+        "brand_presence_id",
+        "topic_id"
+      ],
+      "additionalProperties": false,
+      "description": "Get one topic by id. Returns id, name, createdOn, and lastUpdated. A topic id that is unknown, archived, or in another brand presence returns 404."
+    },
+    "scope": "workspace"
+  },
+  {
+    "id": "data_aeo_brand_presences_tool.list_brand_presences",
+    "tool": "data_aeo_brand_presences_tool",
+    "action": "list_brand_presences",
+    "area": "workspace_aeo",
+    "title": "Workspace AEO",
+    "mode": "read",
+    "permission": "workspace_aeo:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "workspace_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{24}$",
+          "description": "Workspace id from data_workspaces_tool > list_workspaces. Must be the 24-character hex id; a workspace slug is rejected."
+        }
+      },
+      "required": [
+        "workspace_id"
+      ],
+      "additionalProperties": false,
+      "description": "List the brand presences in a workspace. Returns { brandPresences }, each with id, workspaceId, customerId, createdOn, and lastUpdated. Archived brand presences are not listed. The list is not paginated. Use a returned id as brand_presence_id on get_brand_presence."
+    },
+    "scope": "workspace"
+  },
+  {
+    "id": "data_aeo_brand_presences_tool.list_prompts",
+    "tool": "data_aeo_brand_presences_tool",
+    "action": "list_prompts",
+    "area": "workspace_aeo",
+    "title": "Workspace AEO",
+    "mode": "read",
+    "permission": "workspace_aeo:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "workspace_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{24}$",
+          "description": "Workspace id from data_workspaces_tool > list_workspaces. Must be the 24-character hex id; a workspace slug is rejected."
+        },
+        "brand_presence_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{24}$",
+          "description": "Brand presence id from list_brand_presences. Must be a 24-character hex Mongo ObjectId."
+        },
+        "topicId": {
+          "description": "Return only prompts in this topic. Topic id from list_topics, a 24-character hex Mongo ObjectId. Omit to list every topic's prompts.",
+          "type": "string",
+          "pattern": "^[a-f0-9]{24}$"
+        }
+      },
+      "required": [
+        "workspace_id",
+        "brand_presence_id"
+      ],
+      "additionalProperties": false,
+      "description": "List the active prompts tracked in a brand presence, optionally for one topic. Returns { prompts }, each with id, topicId, promptText, createdOn, and lastUpdated. Archived prompts are not listed. The list is not paginated. These are the brand presence's tracked prompts; data_aeo_tool > list_prompts lists a site's report prompts instead."
+    },
+    "scope": "workspace"
+  },
+  {
+    "id": "data_aeo_brand_presences_tool.list_topics",
+    "tool": "data_aeo_brand_presences_tool",
+    "action": "list_topics",
+    "area": "workspace_aeo",
+    "title": "Workspace AEO",
+    "mode": "read",
+    "permission": "workspace_aeo:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "workspace_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{24}$",
+          "description": "Workspace id from data_workspaces_tool > list_workspaces. Must be the 24-character hex id; a workspace slug is rejected."
+        },
+        "brand_presence_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{24}$",
+          "description": "Brand presence id from list_brand_presences. Must be a 24-character hex Mongo ObjectId."
+        }
+      },
+      "required": [
+        "workspace_id",
+        "brand_presence_id"
+      ],
+      "additionalProperties": false,
+      "description": "List the active topics in a brand presence. A topic is a named group of tracked prompts. Returns { topics }, each with id, name, createdOn, and lastUpdated. Archived topics are not listed. The list is not paginated."
+    },
+    "scope": "workspace"
+  },
+  {
+    "id": "data_aeo_brand_presences_tool.bulk_create_prompts",
+    "tool": "data_aeo_brand_presences_tool",
+    "action": "bulk_create_prompts",
+    "area": "workspace_aeo",
+    "title": "Workspace AEO",
+    "mode": "write",
+    "permission": "workspace_aeo:write",
+    "extraPermissions": [
+      "agent_instructions:read"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "workspace_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{24}$",
+          "description": "Workspace id from data_workspaces_tool > list_workspaces. Must be the 24-character hex id; a workspace slug is rejected."
+        },
+        "brand_presence_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{24}$",
+          "description": "Brand presence id from list_brand_presences. Must be a 24-character hex Mongo ObjectId."
+        },
+        "prompts": {
+          "minItems": 1,
+          "maxItems": 100,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "topicId": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{24}$",
+                "description": "Topic to add this prompt to. Topic id from list_topics or create_topic, a 24-character hex Mongo ObjectId."
+              },
+              "promptText": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000,
+                "description": "The question to send to each answer engine, 1 to 1000 characters after trimming, e.g. \"What is the best CMS for a marketing site?\"."
+              }
+            },
+            "required": [
+              "topicId",
+              "promptText"
+            ],
+            "additionalProperties": false,
+            "description": "One prompt to create."
+          },
+          "description": "The prompts to create, 1 to 100 items. The results come back in the same order."
+        }
+      },
+      "required": [
+        "workspace_id",
+        "brand_presence_id",
+        "prompts"
+      ],
+      "additionalProperties": false,
+      "description": "Create up to 100 tracked prompts in one call. Each item is saved on its own, so some can fail while the rest save. Returns 200 with summary { created, failed } and results in request order: each result has index and outcome; a created item carries prompt (id, topicId, promptText, createdOn, lastUpdated), and a failed item carries error { code, message }, for example resource_not_found for an unknown or archived topicId. A retry can resend only the failed items. Limited to 10 requests per minute per workspace."
+    },
+    "scope": "workspace"
+  },
+  {
+    "id": "data_aeo_brand_presences_tool.create_prompt",
+    "tool": "data_aeo_brand_presences_tool",
+    "action": "create_prompt",
+    "area": "workspace_aeo",
+    "title": "Workspace AEO",
+    "mode": "write",
+    "permission": "workspace_aeo:write",
+    "extraPermissions": [
+      "agent_instructions:read"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "workspace_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{24}$",
+          "description": "Workspace id from data_workspaces_tool > list_workspaces. Must be the 24-character hex id; a workspace slug is rejected."
+        },
+        "brand_presence_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{24}$",
+          "description": "Brand presence id from list_brand_presences. Must be a 24-character hex Mongo ObjectId."
+        },
+        "topicId": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{24}$",
+          "description": "Topic to add the prompt to. Topic id from list_topics or create_topic, a 24-character hex Mongo ObjectId."
+        },
+        "promptText": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "description": "The question to send to each answer engine, 1 to 1000 characters after trimming, e.g. \"What is the best CMS for a marketing site?\"."
+        }
+      },
+      "required": [
+        "workspace_id",
+        "brand_presence_id",
+        "topicId",
+        "promptText"
+      ],
+      "additionalProperties": false,
+      "description": "Create one tracked prompt in a topic. Returns the new prompt with id, topicId, promptText, createdOn, and lastUpdated. A topicId that is unknown, archived, or in another brand presence returns 404 resource_not_found. Limited to 30 writes per minute per workspace."
+    },
+    "scope": "workspace"
+  },
+  {
+    "id": "data_aeo_brand_presences_tool.create_topic",
+    "tool": "data_aeo_brand_presences_tool",
+    "action": "create_topic",
+    "area": "workspace_aeo",
+    "title": "Workspace AEO",
+    "mode": "write",
+    "permission": "workspace_aeo:write",
+    "extraPermissions": [
+      "agent_instructions:read"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "workspace_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{24}$",
+          "description": "Workspace id from data_workspaces_tool > list_workspaces. Must be the 24-character hex id; a workspace slug is rejected."
+        },
+        "brand_presence_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{24}$",
+          "description": "Brand presence id from list_brand_presences. Must be a 24-character hex Mongo ObjectId."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255,
+          "description": "Topic name, 1 to 255 characters after trimming, e.g. \"Pricing\"."
+        }
+      },
+      "required": [
+        "workspace_id",
+        "brand_presence_id",
+        "name"
+      ],
+      "additionalProperties": false,
+      "description": "Create a topic in a brand presence. Topic names are unique among the brand presence's active topics: a name already in use returns 409 conflict. Returns the new topic with id, name, createdOn, and lastUpdated. Limited to 30 writes per minute per workspace."
+    },
+    "scope": "workspace"
+  },
+  {
+    "id": "performance_audits_tool.audit_site_performance",
+    "tool": "performance_audits_tool",
+    "action": "audit_site_performance",
+    "area": "analyze",
+    "title": "Analytics",
+    "mode": "read",
+    "permission": "analyze:read",
+    "extraPermissions": [
+      "scripts:read"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Webflow site ID. Discover with list_sites."
+        },
+        "type": {
+          "description": "Optional finding filter. syncScript: render-blocking external script. googleTagManager: container analysis. duplicateLibrary: recognized library loaded more than once. Omit for all types.",
+          "type": "string",
+          "enum": [
+            "syncScript",
+            "googleTagManager",
+            "duplicateLibrary"
+          ]
+        },
+        "page_id": {
+          "description": "Optional page ID from list_pages. Returns matching page findings plus site findings and GTM containers with a site or matching-page placement. Does not validate page existence or narrow backend analysis. Omit for all findings.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "site_id"
+      ],
+      "additionalProperties": false,
+      "description": "Find script performance risks in saved site and publishable-page data. Reports render-blocking external scripts without async, defer, or type=module, Google Tag Manager containers from Custom Code or Google tag IDs, and recognized duplicate libraries including Webflow's jQuery and GSAP. Returns summary (totalProblems, countsByType), problems (criticality, message, remediation and source details), and scope. GTM findings group placements by container with transfer/uncompressed bytes and potential script/trigger counts. Duplicate findings identify site or page scope and each load's source, URL, and version. Filters apply after the full-site audit. Empty findings do not prove a fast site. Assets, fonts, and published-page behavior need companion inspection, described in webflow_guide_tool. No load-time, Core Web Vitals, or Lighthouse measurement."
+    }
+  },
+  {
+    "id": "data_releases_read_tool.get_branch_task_status",
+    "tool": "data_releases_read_tool",
+    "action": "get_branch_task_status",
+    "area": "pages",
+    "title": "Pages",
+    "mode": "read",
+    "permission": "pages:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Webflow site ID. Use list_sites to discover site IDs."
+        },
+        "task_id": {
+          "type": "string",
+          "description": "Async branch task ID (a UUID, not an ObjectId)."
+        }
+      },
+      "required": [
+        "site_id",
+        "task_id"
+      ],
+      "additionalProperties": false,
+      "description": "Poll an async branch task by the taskId from the mutation's response until \"finished\" or \"failed\". Returns { taskId, status, taskType, branchId, siteId, createdOn, error?, nextActions }; status: queued|started|finished|failed; taskType: branch_create|branch_delete|branch_merge|branch_publish|branch_update. branchId is null until a create task finishes; on failed, read error.message and error.code. 404 branch_task_not_found for an unknown, non-branch, or other-site task."
+    }
+  },
+  {
+    "id": "data_releases_read_tool.get_site_branch",
+    "tool": "data_releases_read_tool",
+    "action": "get_site_branch",
+    "area": "pages",
+    "title": "Pages",
+    "mode": "read",
+    "permission": "pages:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Webflow site ID. Use list_sites to discover site IDs."
+        },
+        "site_branch_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "From list_site_branches."
+        }
+      },
+      "required": [
+        "site_id",
+        "site_branch_id"
+      ],
+      "additionalProperties": false,
+      "description": "Read-only. Get one Release (site branch) by id, with the same fields as its list_site_branches row. Merged Releases can still be read. changeSummary is left out when unreadable, which does not mean no changes. 404 for an unknown id, a page branch, or another site's id."
+    }
+  },
+  {
+    "id": "data_releases_read_tool.get_site_branch_freshness",
+    "tool": "data_releases_read_tool",
+    "action": "get_site_branch_freshness",
+    "area": "pages",
+    "title": "Pages",
+    "mode": "read",
+    "permission": "pages:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Webflow site ID. Use list_sites to discover site IDs."
+        },
+        "site_branch_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "From list_site_branches."
+        }
+      },
+      "required": [
+        "site_id",
+        "site_branch_id"
+      ],
+      "additionalProperties": false,
+      "description": "Read-only. Is a Release (site branch) up to date with main? Returns { status, coverage }; status: ready, needs_update (main has newer changes), updating (includes activeTaskId), or unknown (unreadable; includes reason). 409 branch_merge_in_progress while the branch is being merged."
+    }
+  },
+  {
+    "id": "data_releases_read_tool.list_site_branch_changes",
+    "tool": "data_releases_read_tool",
+    "action": "list_site_branch_changes",
+    "area": "pages",
+    "title": "Pages",
+    "mode": "read",
+    "permission": "pages:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Webflow site ID. Use list_sites to discover site IDs."
+        },
+        "site_branch_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "From list_site_branches."
+        },
+        "limit": {
+          "description": "Page size (1-100, default 25).",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "cursor": {
+          "description": "Opaque cursor from pagination.nextCursor of a previous call for the same site branch.",
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "site_id",
+        "site_branch_id"
+      ],
+      "additionalProperties": false,
+      "description": "Read-only. List the pages, components, styles, and CMS items a Release (site branch) touched, newest first. Returns { changes, pagination }; while pagination.hasMore, pass pagination.nextCursor as cursor (a page can hold fewer than limit). Resources edited while paging move to the front and can be missed; restart for a full view. Each change has resourceType, resourceId, action (added|changed|removed), name, locales edited, and contributors. A change was written in the branch; it may no longer differ from main. Works for merged branches."
+    }
+  },
+  {
+    "id": "data_releases_read_tool.list_site_branches",
+    "tool": "data_releases_read_tool",
+    "action": "list_site_branches",
+    "area": "pages",
+    "title": "Pages",
+    "mode": "read",
+    "permission": "pages:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Webflow site ID. Use list_sites to discover site IDs."
+        },
+        "statusGroup": {
+          "description": "Filter by status group. Omit for the default in-progress group. Use merged to page through merged history.",
+          "type": "string",
+          "enum": [
+            "inProgress",
+            "merged"
+          ]
+        },
+        "limit": {
+          "description": "Page size (1-100). Requires statusGroup=merged.",
+          "type": "number",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "cursor": {
+          "description": "Opaque cursor from pagination.nextCursor. Requires statusGroup=merged.",
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "site_id"
+      ],
+      "additionalProperties": false,
+      "description": "List Releases (site branches) for a site. Each row's id is the site_branch_id for discard_site_branch and other Release actions. changeSummary counts the pages, components, styles, and CMS items it touched, plus contributors; it is left out when unreadable, which does not mean no changes. list_site_branch_changes lists the changes. limit and cursor require statusGroup=merged (in-progress returns in full). Not list_branches (page branches)."
+    }
+  },
+  {
+    "id": "data_releases_read_tool.preview_site_branch_update",
+    "tool": "data_releases_read_tool",
+    "action": "preview_site_branch_update",
+    "area": "pages",
+    "title": "Pages",
+    "mode": "read",
+    "permission": "pages:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Webflow site ID. Use list_sites to discover site IDs."
+        },
+        "site_branch_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "From list_site_branches."
+        }
+      },
+      "required": [
+        "site_id",
+        "site_branch_id"
+      ],
+      "additionalProperties": false,
+      "description": "Read-only. Preview updating a Release from main. status: current|available|conflicted (report.conflicts: { type, id, name })|blocked|unavailable (reason). 409 branch_merge_in_progress: a merge is running."
+    }
+  },
+  {
+    "id": "data_releases_write_tool.get_branch_task_status",
+    "tool": "data_releases_write_tool",
+    "action": "get_branch_task_status",
+    "area": "pages",
+    "title": "Pages",
+    "mode": "read",
+    "permission": "pages:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Webflow site ID. Use list_sites to discover site IDs."
+        },
+        "task_id": {
+          "type": "string",
+          "description": "Async branch task ID (a UUID, not an ObjectId)."
+        }
+      },
+      "required": [
+        "site_id",
+        "task_id"
+      ],
+      "additionalProperties": false,
+      "description": "Poll an async branch task by the taskId from the mutation's response until \"finished\" or \"failed\". Returns { taskId, status, taskType, branchId, siteId, createdOn, error?, nextActions }; status: queued|started|finished|failed; taskType: branch_create|branch_delete|branch_merge|branch_publish|branch_update. branchId is null until a create task finishes; on failed, read error.message and error.code. 404 branch_task_not_found for an unknown, non-branch, or other-site task."
+    }
+  },
+  {
+    "id": "data_releases_write_tool.create_site_branch",
+    "tool": "data_releases_write_tool",
+    "action": "create_site_branch",
+    "area": "pages",
+    "title": "Pages",
+    "mode": "write",
+    "permission": "pages:write",
+    "extraPermissions": [
+      "agent_instructions:read"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Webflow site ID. Use list_sites to discover site IDs."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "User-facing name for the new site branch."
+        },
+        "description": {
+          "description": "Optional description for the site branch (max 300 chars).",
+          "type": "string",
+          "maxLength": 300
+        },
+        "origin_page_id": {
+          "description": "Optional main-site page id (from list_pages) the user was viewing; used to choose the destination working page after create. Omit to use the site index page.",
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "site_id",
+        "name"
+      ],
+      "additionalProperties": false,
+      "description": "Create a site-scope branch (Releases) for a site. Sync \u2014 returns the new site-branch id and destinationPageId for create-and-enter. Distinct from create_branch, which enqueues an async page-branch create."
+    }
+  },
+  {
+    "id": "data_releases_write_tool.update_site_branch_details",
+    "tool": "data_releases_write_tool",
+    "action": "update_site_branch_details",
+    "area": "pages",
+    "title": "Pages",
+    "mode": "write",
+    "permission": "pages:write",
+    "extraPermissions": [
+      "agent_instructions:read"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Webflow site ID. Use list_sites to discover site IDs."
+        },
+        "site_branch_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Releases / site-branch id from list_site_branches."
+        },
+        "name": {
+          "description": "New name for the Release. Omit to keep the current name.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "description": {
+          "description": "New description (max 300 chars). Omit to keep the current one; \"\" clears it.",
+          "type": "string",
+          "maxLength": 300
+        }
+      },
+      "required": [
+        "site_id",
+        "site_branch_id"
+      ],
+      "additionalProperties": false,
+      "description": "Rename a Releases branch (site-scope) or change its description. Pass name, description, or both \u2014 fields left out stay the same; description \"\" clears it. Sync \u2014 returns { id, name, description }. Merged Releases cannot be updated (409)."
+    }
+  },
+  {
+    "id": "data_releases_write_tool.update_site_branch_from_main",
+    "tool": "data_releases_write_tool",
+    "action": "update_site_branch_from_main",
+    "area": "pages",
+    "title": "Pages",
+    "mode": "write",
+    "permission": "pages:write",
+    "extraPermissions": [
+      "agent_instructions:read"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Webflow site ID. Use list_sites to discover site IDs."
+        },
+        "site_branch_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "From list_site_branches."
+        },
+        "resolutions": {
+          "description": "One per conflict.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "style",
+                  "component"
+                ],
+                "description": "From preview_site_branch_update."
+              },
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "description": "From preview_site_branch_update."
+              },
+              "resolution": {
+                "type": "string",
+                "enum": [
+                  "main",
+                  "branch"
+                ],
+                "description": "The side to keep."
+              }
+            },
+            "required": [
+              "type",
+              "id",
+              "resolution"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "site_id",
+        "site_branch_id"
+      ],
+      "additionalProperties": false,
+      "description": "Update a Release from main; changes the Release, not main. Resolve every conflict from preview_site_branch_update, or the task fails unchanged. Poll get_branch_task_status (taskType \"branch_update\"). 409: a merge is running, or the Release is merged or busy. Not update_branch."
+    }
+  },
+  {
+    "id": "data_releases_write_tool.stage_site_branch",
+    "tool": "data_releases_write_tool",
+    "action": "stage_site_branch",
+    "area": "pages",
+    "title": "Pages",
+    "mode": "publish",
+    "permission": "pages:publish",
+    "extraPermissions": [
+      "agent_instructions:read"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Webflow site ID. Use list_sites to discover site IDs."
+        },
+        "site_branch_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "From list_site_branches."
+        }
+      },
+      "required": [
+        "site_id",
+        "site_branch_id"
+      ],
+      "additionalProperties": false,
+      "description": "Stage (publish to staging) a live Release (site branch). Returns { taskId, stagingDomain }; poll get_branch_task_status (taskType \"branch_publish\"); stagingDomain is the preview host once it succeeds. Not publish_branch (page branches) or publish_site (production). 409 conflict: another publish is running on the site; tell the user and try later. 409 branch_merge_in_progress: retry after the wait in the message."
+    }
+  },
+  {
+    "id": "data_releases_write_tool.merge_site_branch",
+    "tool": "data_releases_write_tool",
+    "action": "merge_site_branch",
+    "area": "release_merge",
+    "title": "Release merging",
+    "mode": "publish",
+    "permission": "release_merge:publish",
+    "extraPermissions": [
+      "agent_instructions:read",
+      "pages:publish"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Webflow site ID. Use list_sites to discover site IDs."
+        },
+        "site_branch_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "From list_site_branches."
+        }
+      },
+      "required": [
+        "site_id",
+        "site_branch_id"
+      ],
+      "additionalProperties": false,
+      "description": "Merge a live Release (site branch) into main. Changes main; cannot be undone. get_site_branch_freshness says if it is ready; list_site_branch_changes lists what it changed. Returns { taskId, status: \"queued\", nextActions }; poll get_branch_task_status (taskType \"branch_merge\") until \"finished\" or \"failed\". 409 branch_merge_in_progress: a merge is running on the site; retry after the wait in the message. 409 conflict: already merged, a publish is running, or another task holds it. Not merge_branch (page branches)."
+    }
+  },
+  {
+    "id": "data_releases_write_tool.discard_site_branch",
+    "tool": "data_releases_write_tool",
+    "action": "discard_site_branch",
+    "area": "pages",
+    "title": "Pages",
+    "mode": "delete",
+    "permission": "pages:delete",
+    "extraPermissions": [
+      "agent_instructions:read"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Webflow site ID. Use list_sites to discover site IDs."
+        },
+        "site_branch_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "From list_site_branches."
+        }
+      },
+      "required": [
+        "site_id",
+        "site_branch_id"
+      ],
+      "additionalProperties": false,
+      "description": "Discard (hard-delete) a live Release (site branch). Use when the user asks to delete, remove, discard, or cancel a Release; there is no delete_release action. Sync; empty body on success. 409 for merged Releases. 409 branch_merge_in_progress: retry after the wait in the message. Not delete_branch (page branches, async)."
+    }
+  },
+  {
+    "id": "data_members_tool.bulk_remove_workspace_members",
+    "tool": "data_members_tool",
+    "action": "bulk_remove_workspace_members",
+    "area": "workspace_members",
+    "title": "Workspace Members",
+    "mode": "delete",
+    "permission": "workspace_members:delete",
+    "extraPermissions": [
+      "agent_instructions:read"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "workspace_id": {
+          "type": "string",
+          "description": "Workspace id. Discover it with data_workspaces_tool > list_workspaces."
+        },
+        "member_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Member ids to remove, from the members list of list_workspace_members. member_ids, invite_ids, or both may be given; at least one id is required, and the two arrays combined cap at 100."
+        },
+        "invite_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Pending invite ids to cancel, from the invites list of list_workspace_members. Invites are a separate list from members and are identified by their own ids. member_ids and invite_ids combined cap at 100."
+        }
+      },
+      "required": [
+        "workspace_id"
+      ],
+      "additionalProperties": false,
+      "description": "Remove many members from a workspace and cancel many pending invites in one call. A removed member loses access to the workspace and every site in it, and their seat is freed; a cancelled invite can no longer be accepted. Both take effect immediately and cannot be undone through this tool. Individual ids can fail while others succeed, and the call still returns success with a per-id outcome."
+    },
+    "scope": "workspace"
+  },
+  {
+    "id": "data_pages_tool.list_folders",
+    "tool": "data_pages_tool",
+    "action": "list_folders",
+    "area": "pages",
+    "title": "Pages",
+    "mode": "read",
+    "permission": "pages:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Webflow site ID. Use list_sites to discover site IDs."
+        },
+        "limit": {
+          "description": "Max records to return (up to 100).",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "offset": {
+          "description": "Pagination offset.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "site_id"
+      ],
+      "additionalProperties": false,
+      "description": "List a site's page folders, including folders that contain no pages. Returns each folder's id, parent folder id, title and slug; use a returned id as parentFolderId in create_page or update_page_settings."
     }
   }
 ]

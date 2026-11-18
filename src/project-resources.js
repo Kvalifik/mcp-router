@@ -7,7 +7,7 @@ const id = value => typeof value === 'string' && value.length > 0;
 const envelope = (action, result) => ({content:[{type:'text',text:JSON.stringify({action,result})}]});
 
 export async function checkProjectResources(client, op, value, siteId, owns, resultOf) {
-  if(!['data_apps_tool','data_campaigns_tool','data_members_tool','data_optimize_tool'].includes(op.tool))return;
+  if(!['data_apps_tool','data_campaigns_tool','data_members_tool','data_optimize_tool','data_aeo_brand_presences_tool'].includes(op.tool))return;
   const read = async (tool,action,params) => resultOf(await client.call(tool,{actions:[{label:'Verify project resource ownership',[action]:params}]}),action);
   const cache=new Map();
   async function workspace() {
@@ -46,6 +46,23 @@ export async function checkProjectResources(client, op, value, siteId, owns, res
       offset=result.nextOffset;
     }
     invalid();
+  }
+  if(op.tool==='data_aeo_brand_presences_tool') {
+    // Brand records belong to the whole workspace, never to a single site.
+    if(value.workspace_id!==await workspace())denied();
+    if(value.brand_presence_id) {
+      const brand=await read(op.tool,'get_brand_presence',{workspace_id:value.workspace_id,brand_presence_id:value.brand_presence_id});
+      if(brand?.id!==value.brand_presence_id || brand.workspaceId!==value.workspace_id)denied();
+    }
+    const topics=[value.topic_id,value.topicId,...(value.prompts||[]).map(p=>p.topicId)].filter(Boolean);
+    for(const topic of new Set(topics)) {
+      const result=await read(op.tool,'get_topic',{workspace_id:value.workspace_id,brand_presence_id:value.brand_presence_id,topic_id:topic});
+      if(result?.id!==topic)denied(); // Upstream verifies brand membership with this scoped endpoint.
+    }
+    if(value.prompt_id) {
+      const result=await read(op.tool,'get_prompt',{workspace_id:value.workspace_id,brand_presence_id:value.brand_presence_id,prompt_id:value.prompt_id});
+      if(result?.id!==value.prompt_id)denied();
+    }
   }
   if(op.tool==='data_apps_tool') {
     if(op.area==='standalone_apps') {

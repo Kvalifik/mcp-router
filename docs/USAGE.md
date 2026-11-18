@@ -540,3 +540,32 @@ block new runs and withhold active-run output. Ordinary reads remain available.
 Only the owner-authenticated settings interface can change this preference.
 
 Prefer ordinary reads unless code mode is likely to substantially reduce intermediate data returned to the conversation or simplify a known, repetitive workflow. Multiple calls alone are not a reason to use code mode. Consider response size, how much data the answer actually needs, and whether the relevant schemas and fields are already understood. Use upstream filtering where possible. When uncertain, start with a small ordinary read and reassess.
+
+### Live firewall, workspace AEO and Beta Releases
+
+**Live firewall** has separate Read, Write and Delete project permissions. Existing
+Enterprise settings grants do not enable it. Read includes suggestions, validation
+and previews; Write and Delete affect live traffic immediately. Start with the
+current rules, validate and preview the exact change, then use its preview token.
+A rule update replaces that whole rule type. Follow Webflow's explicit confirmation
+flow for high-risk changes and inspect per-host results after partial failures.
+
+In **Workspace permissions**, **Workspace AEO** Read and Write are separate,
+default-off Beta grants. They cover brands, topics and tracked prompts across the
+verified workspace, including sites disabled in the router. Write creates topics
+and prompts; it does not grant project access. Workspace Members Delete also allows
+bulk member removal and invitation cancellation. These changes can take effect
+immediately across the whole workspace; inspect individual outcomes before retrying.
+
+Beta Release operations now use `data_releases_read_tool` and
+`data_releases_write_tool`. Discover their current operation IDs instead of reusing
+old Pages operation IDs. Pages Read/Write/Publish/Delete grants still apply. Merging
+into main additionally requires the new, default-off **Release merging → Publish**
+grant because a merge can promote CMS, styles and custom code as well as pages. Release CMS reads, creates and updates accept the
+Release's `cmsBranchId` as `cms_branch_id`, verified against the project's current
+Releases. CMS delete/publish/unpublish still target main and cannot be used for
+Release items. Merged history is readable but never authorizes working mutations.
+
+Beta performance diagnostics use Analytics Read and Custom code Read. They report saved script risks,
+not measured load times, Lighthouse scores or Core Web Vitals. The optional page
+filter is checked against the selected project.
