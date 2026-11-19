@@ -7,7 +7,10 @@ import shutil
 
 def clean_dist(root):
     current = json.loads((root / 'package.json').read_text())['version']
-    version_tuple = lambda value: tuple(map(int, value.split('.')))
+    def version_tuple(value):
+        base, separator, candidate = value.partition('-rc.')
+        return (*map(int, base.split('.')), not separator, int(candidate) if separator else 0)
+
     older = lambda value: version_tuple(value) < version_tuple(current)
     dist = root / 'dist'
     if not dist.exists() or dist.is_symlink():
@@ -28,8 +31,8 @@ def clean_dist(root):
         for item in list(folder.iterdir()):
             if item.is_symlink():
                 continue
-            match = re.fullmatch(r'(?:MCP-Router-|Webflow-Router-|mcp-router-(?:source-)?)(\d+\.\d+\.\d+)-?.*\.zip', item.name)
-            ci = re.fullmatch(r'ci-release-(\d+\.\d+\.\d+)', item.name)
+            match = re.fullmatch(r'(?:MCP-Router-|Webflow-Router-|mcp-router-(?:source-)?)(\d+\.\d+\.\d+(?:-rc\.\d+)?)(?:-.*)?\.zip', item.name)
+            ci = re.fullmatch(r'ci-release-(\d+\.\d+\.\d+(?:-rc\.\d+)?)', item.name)
             if match and older(match[1]) or ci and older(ci[1]):
                 remove(item)
             elif item.name == '.DS_Store':

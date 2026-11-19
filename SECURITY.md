@@ -97,12 +97,14 @@ when credentials or notarization are unavailable.
 Signing keys and notarization credentials belong in macOS Keychain or the protected
 GitHub `mac-signing` environment. Only manually requested signed Mac release jobs
 receive them, in a temporary keychain removed after the job's packaging steps.
-Developer ID Mac builds use Electron's native Squirrel updater. It verifies the
-replacement app against the running app's signing requirement before installing
-on quit or explicit restart. Feeds are derived from the configured GitHub
-repository, detected stable release tag, and native architecture; renderer IPC
-accepts no update URLs or file paths. Ad-hoc and Windows builds use manual downloads.
-Release metadata also supplies ZIP SHA-256 and size. A compromised signing key or
+Developer ID Mac builds cache the architecture-specific ZIP from the configured
+GitHub repository and check the size and SHA-256 against its release asset.
+Only an explicit install action for the offered version gives the cached archive
+to Squirrel, which verifies the running app’s signing requirement before
+replacement. The renderer cannot supply update URLs or file paths. Stable
+builds follow stable releases. Numbered RC builds can also receive published
+release candidates. Ad-hoc and Windows builds use manual downloads.
+A compromised signing key or
 approved release workflow can still produce trusted malicious releases.
 
 Beta Releases are channel-gated and use separate Pages read, write, publish and

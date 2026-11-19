@@ -47,6 +47,16 @@ with tempfile.TemporaryDirectory() as temp:
     assert (external / 'keep').exists()
     assert sums.read_bytes() == ('1' * 64 + '  ' + current.name + '\\n').encode('utf-8')
     module.clean_dist(root)
+    (root / 'package.json').write_text(json.dumps({'version':'0.9.0-rc.10'}))
+    rc2 = release / 'MCP-Router-0.9.0-rc.2-mac-arm64.zip'
+    rc10 = release / 'MCP-Router-0.9.0-rc.10-mac-arm64.zip'
+    for file in [rc2, rc10]:
+        file.write_text('fixture')
+    module.clean_dist(root)
+    assert not rc2.exists() and rc10.exists() and future.exists()
+    (root / 'package.json').write_text(json.dumps({'version':'0.9.0'}))
+    module.clean_dist(root)
+    assert not rc10.exists() and future.exists()
 `], { encoding: 'utf8' });
   assert.equal(result.status, 0, result.stderr || result.stdout);
 });

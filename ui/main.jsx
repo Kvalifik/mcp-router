@@ -100,26 +100,30 @@ function PublisherLink({ className = '', large = false, children }) {
   }}>{children || <><img src={kvalifikLogo} alt="Kvalifik" className={`${large ? 'h-5' : 'h-[0.8em]'} w-auto dark:invert`} /><ArrowUpRight className="size-3.5" aria-hidden="true" /></>}</a>;
 }
 function showUpdateStatus(result,manual=false) {
-  if(result.state==='downloading') {
-    toast.loading(`Downloading version ${result.version}…`,{id:'app-update',description:'You can keep working. The app will let you know when it is ready.'});
+  const options = {id:'app-update', className:'update-notification', action:null, cancel:null, description:null, duration:4500};
+  const cancel = {label:'Skip this version', onClick:() => window.routerDesktop.skipUpdate(result.version).catch(() => toast.error('Could not skip this update. Check again.'))};
+  if(result.state==='skipped') {
+    toast.dismiss('app-update');
+  } else if(result.state==='downloading') {
+    toast.loading(`Downloading version ${result.version}…`,{...options,duration:Infinity,cancel,description:'You can keep working.'});
   } else if(result.state==='ready') {
-    toast.success(`Version ${result.version} is ready`,{id:'app-update',duration:Infinity,description:'Installs when you quit, or restart now to update. Active AI connections will briefly disconnect.',action:{label:'Restart to update',onClick:()=>window.routerDesktop.installUpdate().catch(()=>toast.error('Could not restart to update. Quit and reopen MCP Router.'))}});
+    toast.success(`Version ${result.version} is ready`,{...options,duration:Infinity,cancel,description:'Restart when you’re ready. Active AI connections will briefly disconnect.',action:{label:'Restart to update',onClick:event=>{event.preventDefault();window.routerDesktop.installUpdate(result.version).catch(()=>toast.error('Update changed. Check for updates again.'));}}});
   } else if(result.state==='installing') {
-    toast.loading('Restarting to update…',{id:'app-update'});
+    toast.loading('Preparing to restart…',{...options,duration:Infinity});
   } else if(result.state==='available') {
-    toast.info(`Version ${result.version} is available`,{id:'app-update',duration:Infinity,description:'Download and replace the app to update.',action:{label:'Download update',onClick:()=>window.routerDesktop.downloadUpdate().catch(()=>toast.error('Could not open the download page.'))}});
-  } else if(manual || result.reason==='install' || result.reason==='download-timeout') {
+    toast.info(`Version ${result.version} is available`,{...options,duration:Infinity,cancel,description:'Download and replace the app to update.',action:{label:'Download update',onClick:()=>window.routerDesktop.downloadUpdate(result.version).catch(()=>toast.error('Could not open the download page.'))}});
+  } else if(manual || result.reason==='install') {
     const message={current:'You’re using the latest version.','no-release':'No public release is available yet.',unconfigured:'Update checks will be available when the GitHub release repository is set.',error:'Could not complete the update. Try again later.'}[result.state];
-    const description=result.state==='error'?{timeout:'GitHub took too long to respond. Check your connection and try again.',network:'Could not connect to GitHub. Check your connection, VPN, or firewall.', 'rate-limit':'GitHub’s request limit has been reached. Try again later.',server:'GitHub could not complete the request. Try again later.','invalid-response':'GitHub returned an unreadable response. Try again later.',install:'The update could not be downloaded or verified. Try checking again, or install from GitHub Releases.','download-timeout':'The download is taking longer than expected. It may still finish; restart the app before retrying.'}[result.reason]:undefined;
-    toast[result.state==='error'?'error':'info'](message,{id:'app-update',description});
+    const description=result.state==='error'?{timeout:'GitHub took too long to respond. Check your connection and try again.',network:'Could not connect to GitHub. Check your connection, VPN, or firewall.', 'rate-limit':'GitHub’s request limit has been reached. Try again later.',server:'GitHub could not complete the request. Try again later.','invalid-response':'GitHub returned an unreadable response. Try again later.',install:'The update could not be downloaded or verified. Try checking again, or install from GitHub Releases.'}[result.reason]:undefined;
+    toast[result.state==='error'?'error':'info'](message,{...options,description});
   } else {
     toast.dismiss('app-update');
   }
 }
 async function checkForUpdates(manual=false) {
   if (!window.routerDesktop?.checkUpdates) return;
-  if(manual)toast.loading('Checking for updates…',{id:'app-update'});
-  showUpdateStatus(await window.routerDesktop.checkUpdates().catch(()=>({state:'error'})),manual);
+  if(manual)toast.loading('Checking for updates…',{id:'app-update',action:null,cancel:null,description:null});
+  showUpdateStatus(await window.routerDesktop.checkUpdates(manual).catch(()=>({state:'error'})),manual);
 }
 async function openGitHubIssues() {
   try {

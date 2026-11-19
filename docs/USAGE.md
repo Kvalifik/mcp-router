@@ -337,12 +337,19 @@ If moving fails or authorization is cancelled, you can continue using the curren
 Use **Settings → Check for updates** to check the latest public GitHub release.
 The desktop app also checks on startup and every six hours while it is open.
 
-Developer ID Mac builds download newer signed releases automatically when the
-release includes an update feed for your Mac's architecture. Electron verifies
-the update's signature before installation. A persistent notification offers
-**Restart to update**; otherwise the downloaded update installs when you quit.
-Restarting briefly disconnects active AI clients. Closing the window only hides
-the app and does not install the update. Connections and settings remain saved.
+Signed Mac builds download the update ZIP in the background and check its size and
+SHA-256. Choose **Restart to update** when you are ready. Electron verifies the
+app signature and restarts, briefly disconnecting active AI clients. Quitting
+normally keeps the current version. Your connections and settings stay saved.
+
+Choose **Skip this version** to silence that release across restarts. Newer
+versions still appear. **Settings → Check for updates** offers the skipped
+version again if it is still current.
+
+Stable installations follow stable releases. Manually installing a numbered
+release candidate (for example, `0.12.0-rc.1`) also opts that installation into
+published candidates. It can update to `0.12.0-rc.2` or the final `0.12.0`.
+Once you install a stable version, checks follow stable releases again.
 
 Windows, development builds, and releases without a compatible update feed use
 **Download update**, which opens GitHub Releases for manual installation. Existing
@@ -350,8 +357,7 @@ versions without updater support need one manual install of a signed version
 that includes it. Install the Mac app in Applications before using auto-updates.
 
 If checking or downloading fails, the app shows a safe error message and does not
-install an unverified update. Check again to retry, or use GitHub Releases. If a
-download times out but remains pending, restart the app before retrying.
+install an unverified update. Check again to retry, or use GitHub Releases.
 
 ### Launch at startup
 

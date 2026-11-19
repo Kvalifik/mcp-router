@@ -1,5 +1,5 @@
 import { packager } from '@electron/packager';
-import { excludeFromPackage } from './packaging.mjs';
+import { excludeFromPackage, nativeVersions, restoreCandidateLabel } from './packaging.mjs';
 import { fileURLToPath } from 'node:url';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -15,7 +15,8 @@ const resourcesFor = output => path.join(output, platform === 'darwin' ? 'MCP Ro
 const paths = await packager({
   icon: platform === 'darwin' ? `${dir}/assets/icons/MCPRouter.icns` : `${dir}/assets/icons/MCPRouter.ico`,
   dir, name: 'MCP Router', executableName: 'MCP Router', appBundleId: 'dk.kvalifik.mcp-router',
-  appVersion: version, platform, arch, out: `${dir}/dist`,
+  ...nativeVersions(version, platform),
+  platform, arch, out: `${dir}/dist`,
   overwrite: true, prune: true, asar: false,
   electronZipDir: process.env.ELECTRON_ZIP_DIR,
   ignore: excludeFromPackage,
@@ -23,6 +24,7 @@ const paths = await packager({
 });
 // Keep runtime notices inside the app when users distribute only the .app bundle.
 for (const output of paths) {
+  await restoreCandidateLabel(resourcesFor(output), version);
   const notices = path.join(resourcesFor(output), 'runtime-notices');
   await fs.mkdir(notices, { recursive: true });
   for (const file of ['LICENSE', 'LICENSES.chromium.html']) await fs.copyFile(path.join(output, file), path.join(notices, file));

@@ -46,7 +46,7 @@ Choose **mac-arm64** for Apple Silicon (M1 or later), or **mac-x64** for Intel M
 5. Open **Apps**, connect your AI app, and follow its restart/reload instructions.
 
 Signed Mac builds with updater support download new signed releases in the background.
-Choose **Restart to update**, or quit the app to install. Older versions need one
+Choose **Restart to update** to install, or **Skip this version** to wait. Older versions need one
 manual installation of an updater-enabled build. See [update behavior](docs/USAGE.md#checking-for-updates).
 
 ## Install on Windows
@@ -64,14 +64,10 @@ Quit through the MCP Router menu before replacing the app folder during updates.
 
 ### Updating
 
-When a new public GitHub release is available, the app shows **Download update**.
-You can also use **Settings → Check for updates**. Downloading opens the release
-page; the app does not install updates or restart automatically.
-
-To install an update: finish active work, save any settings, **quit MCP Router**,
-and replace the app in Applications with the newly downloaded copy. Reopen it
-and reload/restart connected AI apps. Connections and settings stay in the
-separate application-data folder. Do not delete that folder when updating.
+Signed Mac builds notify you when a download is ready and install it when you
+choose **Restart to update**. Windows and ad-hoc Mac builds offer **Download
+update** for manual installation. **Skip this version** hides that release;
+**Settings → Check for updates** lets you reconsider it. Later releases still appear.
 
 Update checks use public releases from `Kvalifik/mcp-router`.
 

@@ -212,3 +212,9 @@ body:has([data-slot="dropdown-menu-content"]) .app-header-integrated, .app-heade
 @media (prefers-reduced-motion:reduce) {
   :is([data-slot="dialog-content"], [data-slot="dialog-overlay"], [data-slot="popover-content"], [data-slot="dropdown-menu-content"], [data-slot="dropdown-menu-sub-content"], [data-slot="tooltip-content"]) { animation:none; }
 }
+
+/* Let both update actions share a second row in the menu bar panel. */
+[data-sonner-toast][data-styled="true"].update-notification { flex-wrap: wrap; }
+[data-sonner-toast][data-styled="true"].update-notification [data-content] { flex: 1 1 calc(100% - 40px); }
+[data-sonner-toast][data-styled="true"].update-notification [data-button] { margin-inline: 0; }
+[data-sonner-toast][data-styled="true"].update-notification [data-cancel] { margin-inline-start: auto; }
