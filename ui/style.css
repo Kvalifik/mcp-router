@@ -79,8 +79,14 @@ button:disabled { cursor:not-allowed; }
 
 
 /* One title bar; reserve space for native controls on each desktop platform. */
-.router-main { margin-top:64px; height:calc(100dvh - 64px); overflow-x:hidden; overflow-y:scroll; padding:0 16px 20px; overscroll-behavior:contain; }
-.app-header { position:fixed; inset:0 0 auto; z-index:60; height:64px; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:0 16px; border-bottom:1px solid var(--border); background:var(--app-background); }
+.router-shell { display:flex; flex-direction:column; height:100dvh; }
+.update-banner-reveal { --reveal-gap:0px; }
+@starting-style {
+  .update-banner-reveal[data-open="true"] { grid-template-rows:0fr; opacity:0; }
+}
+.update-banner { display:flex; flex-wrap:wrap; align-items:center; gap:8px; flex:none; min-height:36px; padding:5px 12px; border-bottom:1px solid var(--border); background:var(--muted); }
+.router-main { flex:1; min-height:0; overflow-x:hidden; overflow-y:scroll; padding:0 16px 20px; overscroll-behavior:contain; }
+.app-header { flex:none; position:relative; z-index:60; height:64px; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:0 16px; border-bottom:1px solid var(--border); background:var(--app-background); }
 .app-header-integrated { -webkit-app-region:drag; user-select:none; }
 .app-header-mac { padding-left:96px; }
 .app-header-windows { padding-right:calc(100vw - env(titlebar-area-width, calc(100vw - 138px)) + 16px); }
@@ -212,9 +218,3 @@ body:has([data-slot="dropdown-menu-content"]) .app-header-integrated, .app-heade
 @media (prefers-reduced-motion:reduce) {
   :is([data-slot="dialog-content"], [data-slot="dialog-overlay"], [data-slot="popover-content"], [data-slot="dropdown-menu-content"], [data-slot="dropdown-menu-sub-content"], [data-slot="tooltip-content"]) { animation:none; }
 }
-
-/* Let both update actions share a second row in the menu bar panel. */
-[data-sonner-toast][data-styled="true"].update-notification { flex-wrap: wrap; }
-[data-sonner-toast][data-styled="true"].update-notification [data-content] { flex: 1 1 calc(100% - 40px); }
-[data-sonner-toast][data-styled="true"].update-notification [data-button] { margin-inline: 0; }
-[data-sonner-toast][data-styled="true"].update-notification [data-cancel] { margin-inline-start: auto; }

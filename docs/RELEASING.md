@@ -194,9 +194,9 @@ version from the tested source with its own review, tag, ZIPs and checksums.
 Changing a release’s GitHub badge cannot change the version inside a signed app.
 
 Signed Macs discover compatible archives from published release metadata.
-They cache the ZIP and verify its size and SHA-256. Clicking **Restart to update**
+They cache the ZIP and verify its size and SHA-256. Clicking **Update**
 passes the cached bytes to Squirrel for signature verification and installation.
-Normal quit leaves the installed version alone. **Skip this version** suppresses
+Normal quit leaves the installed version alone. **Skip Version** suppresses
 automatic offers for that version, and a manual check can offer it again.
 A missing architecture feed or asset digest leaves manual download available.
 
@@ -638,3 +638,18 @@ Keep the dependency set tested in rc.1. The signing and SDK updates in #55
 are already shipped; TOML patch 3.3.2 remains for separate client-configuration
 compatibility testing. Defer Motion 14 (#35) and setup-node 7 (#32) for separate
 UI and CI migration validation.
+
+### November 19 stable promotion (0.11.1)
+
+Promote the tested compact update banner and connection feedback from local
+rc.3. Fresh fully paginated captures from Stable (38 tools) and Beta (45 tools),
+including both guides, were byte-identical to the November 19 pilot captures.
+The Managed catalog, ownership checks and grants are unchanged. Retain the
+narrow CMS fieldData correction, the existing utility exclusions, and the
+pilot’s documented deferrals for 14 Beta Shared Libraries actions and four
+Beta Component descriptions. Neither channel was unavailable.
+
+Keep the dependency set exercised by the signed rc.3 build. The SDK and
+signing changes in #55 have shipped; defer its remaining TOML patch for
+client-configuration testing. Defer the Motion (#35) and setup-node (#32)
+major upgrades for their own UI and CI migration checks.

@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.11.1 — Choose when to update
+
+MCP Router keeps your connection switches within reach and lets you choose when to restart for an update.
+
+### What’s new
+
+- **See what changed.** A compact banner slides in below the app title. Select the version number to read its release notes. The banner respects Reduce Motion.
+- **Update on your schedule.** Signed Mac builds download updates in the background. Choose **Update** to restart and install, or **Skip Version** to silence that release. A manual check offers it again, and newer releases still appear automatically.
+- **Find your new connection.** The router brings its row into view and shows authorization progress there, so you can reach its switch as soon as setup finishes.
+- **Move from a candidate to stable.** Release candidates can discover the final stable version through **Settings → Check for updates**.
+
 ## 0.11.1-rc.2 — Choose when to install updates
 
 This prerelease lets you test the new Mac update flow before the next stable release.

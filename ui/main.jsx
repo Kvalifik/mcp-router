@@ -17,6 +17,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { Label } from '@/components/ui/label';
 import { ThemeProvider, useTheme } from './theme';
 import './style.css';
+import { UpdateBanner, useUpdateBanner } from './update-banner.jsx';
 import { projectAuthorized } from './channel-access.js';
 import { presetGrants, accessLabel } from './permission-presets.js';
 import { connectionTestUnavailable } from './permission-availability.js';
@@ -79,6 +80,15 @@ function AnimatedProjectList({ label, ids, children }) {
   </motion.div>;
 }
 
+function connectionSummary(connection) {
+  const grant = connection.channels?.[connection.channel || 'stable'];
+  if (grant?.status === 'awaiting_authorization') return 'Continue in your browser to connect Webflow…';
+  if (grant?.authorized && grant.inventoryPending) return 'Checking project access…';
+  const {projects, accessMode, enabled} = connection;
+  const access = accessMode === 'direct' ? 'Direct Webflow' : `${projects.filter(p => p.enabled).length} enabled`;
+  return `${projects.length} ${projects.length === 1 ? 'project' : 'projects'} · ${access}${enabled ? '' : ' · Connection off'}`;
+}
+
 function AnimatedConnection({ children, ...props }) {
   const present = useIsPresent();
   const reduced = useReducedMotion();
@@ -98,32 +108,6 @@ function PublisherLink({ className = '', large = false, children }) {
     event.preventDefault();
     try { await window.routerDesktop.openPublisher(); } catch { toast.error('Could not open kvalifik.dk.'); }
   }}>{children || <><img src={kvalifikLogo} alt="Kvalifik" className={`${large ? 'h-5' : 'h-[0.8em]'} w-auto dark:invert`} /><ArrowUpRight className="size-3.5" aria-hidden="true" /></>}</a>;
-}
-function showUpdateStatus(result,manual=false) {
-  const options = {id:'app-update', className:'update-notification', action:null, cancel:null, description:null, duration:4500};
-  const cancel = {label:'Skip this version', onClick:() => window.routerDesktop.skipUpdate(result.version).catch(() => toast.error('Could not skip this update. Check again.'))};
-  if(result.state==='skipped') {
-    toast.dismiss('app-update');
-  } else if(result.state==='downloading') {
-    toast.loading(`Downloading version ${result.version}…`,{...options,duration:Infinity,cancel,description:'You can keep working.'});
-  } else if(result.state==='ready') {
-    toast.success(`Version ${result.version} is ready`,{...options,duration:Infinity,cancel,description:'Restart when you’re ready. Active AI connections will briefly disconnect.',action:{label:'Restart to update',onClick:event=>{event.preventDefault();window.routerDesktop.installUpdate(result.version).catch(()=>toast.error('Update changed. Check for updates again.'));}}});
-  } else if(result.state==='installing') {
-    toast.loading('Preparing to restart…',{...options,duration:Infinity});
-  } else if(result.state==='available') {
-    toast.info(`Version ${result.version} is available`,{...options,duration:Infinity,cancel,description:'Download and replace the app to update.',action:{label:'Download update',onClick:()=>window.routerDesktop.downloadUpdate(result.version).catch(()=>toast.error('Could not open the download page.'))}});
-  } else if(manual || result.reason==='install') {
-    const message={current:'You’re using the latest version.','no-release':'No public release is available yet.',unconfigured:'Update checks will be available when the GitHub release repository is set.',error:'Could not complete the update. Try again later.'}[result.state];
-    const description=result.state==='error'?{timeout:'GitHub took too long to respond. Check your connection and try again.',network:'Could not connect to GitHub. Check your connection, VPN, or firewall.', 'rate-limit':'GitHub’s request limit has been reached. Try again later.',server:'GitHub could not complete the request. Try again later.','invalid-response':'GitHub returned an unreadable response. Try again later.',install:'The update could not be downloaded or verified. Try checking again, or install from GitHub Releases.'}[result.reason]:undefined;
-    toast[result.state==='error'?'error':'info'](message,{...options,description});
-  } else {
-    toast.dismiss('app-update');
-  }
-}
-async function checkForUpdates(manual=false) {
-  if (!window.routerDesktop?.checkUpdates) return;
-  if(manual)toast.loading('Checking for updates…',{id:'app-update',action:null,cancel:null,description:null});
-  showUpdateStatus(await window.routerDesktop.checkUpdates(manual).catch(()=>({state:'error'})),manual);
 }
 async function openGitHubIssues() {
   try {
@@ -382,12 +366,15 @@ function ConnectionOrderForm({connections,busy,perform,close}) {
     <DialogFooter><Button type="button" variant="outline" disabled={busy} onClick={close}>Cancel</Button><Button disabled={busy||!!dragging}>Save order</Button></DialogFooter>
   </form>;
 }
+function hasGrantMismatch(connection) {
+  const comparison = connection?.grantComparison;
+  return Boolean(comparison?.missingProjects.length || comparison?.missingWorkspaceIds?.length);
+}
+
 function GrantComparison({connection,onReconnect,busy}) {
   const comparison=connection?.grantComparison;
-  if(!comparison)return null;
+  if(!hasGrantMismatch(connection))return null;
   const {missingProjects,missingWorkspaceIds}=comparison;
-  const mismatch=missingProjects.length||missingWorkspaceIds?.length;
-  if(!mismatch)return null;
   return <div className="space-y-2 text-xs"><p className="font-medium text-sm">Stable and β Beta have access to different projects.</p>
     {!!missingProjects.length&&<><p>{missingProjects.length} {missingProjects.length===1?'project available':'projects available'} on Stable {missingProjects.length===1?'is':'are'} not available on β Beta.</p><div className="max-h-24 overflow-auto text-muted-foreground">{missingProjects.map(p=><div key={p.id}>{p.name}</div>)}</div></>}
     {missingWorkspaceIds===null&&<p className="text-muted-foreground">Workspace coverage could not be verified.</p>}
@@ -401,7 +388,7 @@ function NameForm({ model, busy, perform, close }) {
   const [useDefault,setUseDefault] = useState(false);
   async function submit(e) {
     e.preventDefault();
-    try { await perform(`/api/${model.kind}/${item.id}/edit`, useDefault ? {useDefaultName:true} : {name}); toast.success('Display name saved.'); close(true); }
+    try { await perform(`/api/${model.kind}/${item.id}/edit`, useDefault ? {useDefaultName:true} : {name}); if (!model.initialNaming) toast.success('Display name saved.'); close(true); }
     catch(e) { toast.error(e.message); }
   }
   return <form onSubmit={submit} className="space-y-4">
@@ -413,9 +400,10 @@ function NameForm({ model, busy, perform, close }) {
 }
 function App() {
   useAnimatedScrollbars();
+  const {notice, check:checkForUpdates, report} = useUpdateBanner();
   const {theme,setTheme}=useTheme();
   const [toolbarDragging,setToolbarDragging]=useState(false);
-  const comparedGrants=useRef(new Map());
+  const revealConnection = useRef(null);
   const toolbarPointer=useRef(null);
   function beginToolbarDrag(e) {
     if (!e.currentTarget.contains(e.target) || !window.routerDesktop?.integratedTitleBar || e.button!==0 || e.target.closest('button,a,input') || !document.querySelector('[data-slot="dropdown-menu-content"]')) return;
@@ -459,12 +447,14 @@ function App() {
   useEffect(() => {load().catch(() => {setBootFailed(true);toast.error('Cannot connect to the router. Reopen the app.');});const timer=setInterval(() => {if(!document.hidden&&(!modalRef.current||['channel','permissions','issues'].includes(modalRef.current.type)))load().catch(()=>{});},15000);return()=>clearInterval(timer);},[]);
   async function perform(path,body={}) {setBusy(true);try{const r=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json','X-Router-CSRF':csrf.current},body:JSON.stringify(body)});const result=await r.json();if(!r.ok)throw new Error(result.error);await load();return result;}finally{setBusy(false);}}
   async function action(work,success) {setBusy(true);try{await work();if(success)toast.success(success);}catch(e){toast.error(e.message);}finally{setBusy(false);}}
-  useEffect(()=>{
-    for(const c of data?.connections||[]){const result=c.grantComparison;if(!result)continue;
-      const key=JSON.stringify([c.betaTokenVersion,result]);if(comparedGrants.current.get(c.id)===key)continue;comparedGrants.current.set(c.id,key);
-      if(result.missingProjects.length||result.missingWorkspaceIds?.length)toast.info(`${c.name}: β Beta access differs from Stable.`,{id:`beta-grant-${c.id}`,duration:10000,action:{label:'Review',onClick:()=>{if(modalRef.current){toast.info('Save or cancel your project edits, then select Reconnect Webflow from the connection menu.');}else setModal({type:'channel',item:c});}}});
+  useEffect(() => {
+    if (modal || !revealConnection.current) return;
+    const row = mainRef.current?.querySelector(`[data-connection-header="${CSS.escape(revealConnection.current)}"]`);
+    if (row) {
+      row.scrollIntoView({block:'nearest'});
+      revealConnection.current = null;
     }
-  },[data]);
+  }, [data, modal]);
   useEffect(()=>{
     if(modal || busy)return;
     const connection=data?.connections.find(c=>c.needsName);
@@ -473,11 +463,10 @@ function App() {
   async function closeModal(saved = false) {
     if(busy)return;
     if(modal?.initialNaming && saved !== true){try{await perform(`/api/connections/${modal.item.id}/edit`,{dismissNaming:true});}catch(e){toast.error(e.message);return;}}
+    if (modal?.initialNaming) revealConnection.current = modal.item.id;
     setModal(null);
   }
   async function connect(id,channel) {const r=await perform(`/api/connections/${id}/authorize`,channel?{channel}:{});if(window.routerDesktop)await window.routerDesktop.openOAuth(r.url);else location.assign(r.url);}
-  useEffect(()=>window.routerDesktop?.onUpdateStatus?.(state=>showUpdateStatus(state)),[]);
-  useEffect(()=>{checkForUpdates();const timer=setInterval(()=>checkForUpdates(),6*60*60*1000);return()=>clearInterval(timer);},[]);
   useEffect(() => window.routerDesktop?.onShowAbout(() => { if (modalRef.current && modalRef.current.type !== 'about') { toast.info('Close the current dialog before opening About.'); return; } setModal({type:'about'}); }), []);
   if(!data)return <div className="p-8 text-sm text-muted-foreground">{bootFailed ? <Button variant="outline" onClick={()=>{setBootFailed(false);load().catch(()=>{setBootFailed(true);toast.error('Cannot connect to the router. Reopen the app.');});}}>Retry connection</Button> : 'Opening connections…'}</div>;
   const permissionKeys=data.permissionGroups.flatMap(g=>g.modes.map(m=>`${g.area}:${m}`));
@@ -519,14 +508,16 @@ function App() {
 
   ];
   const filterActive=!!search||pinnedOnly;
-  return <main ref={mainRef} tabIndex={-1} className="router-main">
+  return <div className="router-shell">
     <header data-dragging={toolbarDragging} onPointerDown={beginToolbarDrag} onPointerMove={()=>{if(toolbarPointer.current!==null)window.routerDesktop.toolbarDrag('move');}} onPointerUp={endToolbarDrag} onPointerCancel={endToolbarDrag} onLostPointerCapture={endToolbarDrag} className={`app-header ${window.routerDesktop?.integratedTitleBar ? `app-header-integrated ${window.routerDesktop.titleBarPlatform === 'win32' ? 'app-header-windows' : 'app-header-mac'}` : ''}`}><div className="min-w-0"><div className="flex flex-wrap items-baseline gap-x-2"><h1 className="text-base font-semibold">MCP Router</h1><span className="app-publisher inline-flex items-baseline gap-1 text-sm"><span className="text-muted-foreground">by</span><PublisherLink className="font-semibold" /></span></div><p className="text-xs text-muted-foreground"><AnimatedText>{`${data.connections.length} ${data.connections.length===1?'connection':'connections'} · ${data.projects.length} ${data.projects.length===1?'project':'projects'}`}</AnimatedText></p></div><div className="app-header-actions"><ClientConnections /><SettingsMenu disabled={busy} items={settingsItems} />{window.routerDesktop?.openMainWindow&&<Button className="compact-window-only" variant="outline" size="icon" aria-label="Open main window" title="Open main window" onClick={()=>window.routerDesktop.openMainWindow()}><Maximize2 className="size-4" /></Button>}</div></header>
+    <UpdateBanner notice={notice} report={report} />
+    <main ref={mainRef} tabIndex={-1} className="router-main">
     <div className="router-toolbar flex flex-wrap items-center justify-between gap-2 py-4"><div className="flex min-w-0 flex-1 items-center gap-2"><div className="min-w-40 flex-1 max-w-xs"><Input search placeholder="Search projects…" aria-label="Search projects" value={query} onClear={()=>setQuery('')} onChange={e=>setQuery(e.target.value)} /></div><Button size="icon" aria-label="Show pinned projects" title="Show pinned projects" variant={pinnedOnly?'secondary':'outline'} aria-pressed={pinnedOnly} onClick={()=>setPinnedOnly(value=>!value)}><AnimatedSwap icon value={pinnedOnly} className="size-4"><Pin className={`size-4 ${pinnedOnly?'fill-current':''}`} /></AnimatedSwap></Button></div><Button variant="outline" size="icon" disabled={busy} aria-label="Add connection" title="Add connection" onClick={()=>setModal({type:'connect'})}><Plus className="size-4" /></Button></div>
     <Accordion type="multiple" className="space-y-3" aria-label="Connections and projects" value={grouped.filter(c=>expanded[`${filterActive ? `filter:${search}:${pinnedOnly}:` : ''}${c.id}`]??filterActive).map(c=>c.id)} onValueChange={ids=>setExpanded(prev=>({...prev,...Object.fromEntries(grouped.map(c=>[`${filterActive ? `filter:${search}:${pinnedOnly}:` : ''}${c.id}`,ids.includes(c.id)]))}))}>
       {!grouped.length && <p className="rounded-lg border bg-background p-5 text-sm text-muted-foreground"><AnimatedText>{pinnedOnly?'No pinned projects match. Pin a project to add it here.':search?'No matching projects or connections.':'Add a connection to discover its projects.'}</AnimatedText></p>}
       <AnimatePresence initial={false}>{grouped.map(c=>{const expandKey=`${filterActive ? `filter:${search}:${pinnedOnly}:` : ''}${c.id}`;const open=expanded[expandKey]??filterActive;return <AnimatedConnection key={c.id} value={c.id} className="overflow-hidden rounded-lg border bg-background last:border-b">
-        <div className="connection-header flex flex-wrap items-center gap-2 p-3">
-          <AccordionTrigger headerClassName="min-w-0 flex-1" className="items-center p-1 text-left hover:no-underline" aria-label={`${open?'Collapse':'Expand'} ${c.name}`} ><span className="min-w-0"><span className="block truncate text-sm font-semibold"><AnimatedText className="max-w-full truncate">{c.name}</AnimatedText></span><span className="mt-1 block text-xs text-muted-foreground"><AnimatedText>{`${c.projects.length} ${c.projects.length===1?'project':'projects'} · ${c.accessMode==='direct'?'Direct Webflow':`${c.projects.filter(p=>p.enabled).length} enabled`}${!c.enabled?' · Connection off':''}`}</AnimatedText></span></span></AccordionTrigger>
+        <div data-connection-header={c.id} className="connection-header flex flex-wrap items-center gap-2 p-3">
+          <AccordionTrigger headerClassName="min-w-0 flex-1" className="items-center p-1 text-left hover:no-underline" aria-label={`${open?'Collapse':'Expand'} ${c.name}`} ><span className="min-w-0"><span className="block truncate text-sm font-semibold"><AnimatedText className="max-w-full truncate">{c.name}</AnimatedText></span><span className="mt-1 block text-xs text-muted-foreground"><AnimatedText>{connectionSummary(c)}</AnimatedText></span></span></AccordionTrigger>
           <div className="connection-controls flex shrink-0 items-center gap-0.5">
             <AccessIssueBadge issues={readiness.issues.filter(i=>i.connectionId===c.id)} name={c.name} onClick={event=>openIssues({connectionId:c.id},event.currentTarget)} />
 
@@ -542,6 +533,10 @@ function App() {
             <Switch className="ml-2" aria-label={`Enable ${c.name}`} checked={c.enabled} disabled={busy} onCheckedChange={enabled=>action(()=>perform(`/api/connections/${c.id}/toggle`,{enabled}))} />
           </div>
         </div>
+        {hasGrantMismatch(c) && <div className="flex flex-wrap items-center justify-between gap-2 border-t px-3 py-1 text-xs">
+          Stable and β Beta access differ.
+          <Button size="xs" variant="ghost" onClick={() => setModal({type:'channel',item:c})}>Review</Button>
+        </div>}
         <AccordionContent className="pb-0">{c.accessMode==='direct'&&<p className="border-t px-4 py-3 text-xs text-muted-foreground"><span className="font-medium text-foreground">Direct Webflow: project permissions don’t apply.</span> Project switches and workspace permissions are inactive. Access follows the selected Webflow authorization and may include other projects or workspaces.</p>}<AnimatedProjectList label={`${c.name} projects`} ids={c.visible.map(p=>p.id)}>
           {!c.visible.length&&<p className="p-5 text-sm text-muted-foreground"><AnimatedText>{c.tokenFingerprint?'Sync this connection to discover projects.':'Connect with OAuth to discover projects.'}</AnimatedText></p>}
           {c.visible.map(p=><div key={p.id} data-project-id={p.id} className="project-row flex items-center gap-2 pl-8 pr-3 py-2.5"><Button variant="ghost" size="icon-xs" className={`-ml-5 shrink-0 ${p.favourite?'text-foreground':'text-muted-foreground'}`} aria-pressed={!!p.favourite} aria-label={`${p.favourite?'Unpin':'Pin'} ${p.name}`} disabled={busy} onClick={()=>action(()=>perform(`/api/projects/${p.id}/edit`,{favourite:!p.favourite}))}><AnimatedSwap icon value={p.favourite} className="size-3.5"><Pin className={`size-3.5 ${p.favourite?'fill-current':''}`} /></AnimatedSwap></Button><div className="project-name mr-auto min-w-0"><div className="project-title flex min-w-0 items-center gap-1"><h3 className="truncate text-sm font-medium" title={p.name}><AnimatedText className="max-w-full truncate">{p.name}</AnimatedText></h3><ProjectLinks project={p} /></div></div><div className="project-controls flex shrink-0 items-center gap-0.5"><div className="project-badges flex items-center gap-2">{c.accessMode!=='direct'&&(p.channel&&p.channel!=='inherit'?p.channel:c.channel)==='beta'&&<BetaBadge project={p} connection={c} onClick={()=>setModal({type:'permissions',item:p})} />}{readiness.issues.some(i=>i.projectId===p.id)?<AccessIssueBadge issues={readiness.issues.filter(i=>i.projectId===p.id)} name={p.name} onClick={event=>openIssues({projectId:p.id,connectionId:c.id},event.currentTarget)} />:<AccessBadge project={p} connection={c} permissionKeys={permissionKeys} onClick={()=>setModal(c.accessMode==='direct'?{type:'accessMode',item:c}:{type:'permissions',item:p})} />}</div>
@@ -569,10 +564,12 @@ function App() {
         <p className="text-xs text-muted-foreground">You can choose fewer projects or permissions. Features requiring access you haven’t granted won’t be available. Router restrictions apply only to actions passing through MCP Router.</p>
         <DialogFooter><Button variant="outline" disabled={busy} onClick={()=>setModal(null)}>Cancel</Button><Button disabled={busy} onClick={()=>action(async()=>{
           const id=displayedModal.connectionId || (await perform('/api/connections')).id;
+          revealConnection.current = id;
+          setQuery(''); setPinnedOnly(false);
           setModal({type:'connect',connectionId:id});
           setExpanded(prev=>({...prev,[id]:true}));
           await connect(id);setModal(null);
-        },'Complete authorization in your browser. New projects will appear disabled.')}><AnimatedText>{busy?'Opening…':'Continue to Webflow'}</AnimatedText></Button></DialogFooter>
+        })}><AnimatedText>{busy?'Opening…':'Continue to Webflow'}</AnimatedText></Button></DialogFooter>
       </>}
       {displayedModal&&['permissions','defaults'].includes(displayedModal.type)&&<PermissionForm key={`${displayedModal.type}-${displayedModal.item?.id||''}`} model={displayedModal} data={data} busy={busy} perform={perform} connect={connect} refresh={load} close={()=>setModal(null)} />}
       {displayedModal?.type==='channel'&&<div className="dialog-scroll space-y-4">
@@ -590,7 +587,7 @@ function App() {
       {displayedModal?.type==='diagnostics'&&<div className="dialog-scroll space-y-4"><div className="flex flex-wrap gap-2">{data.connections.filter(c=>c.enabled&&c.hasRefreshToken).map(c=><Button key={c.id} size="sm" variant="outline" disabled={busy} onClick={()=>action(()=>perform(`/api/connections/${c.id}/refresh`),`${c.name}: OAuth refreshed.`)}>Refresh OAuth · {c.name}</Button>)}</div><div className="space-y-1 text-xs text-muted-foreground">{data.audit.map((a,i)=><div key={i}>{new Date(a.at).toLocaleTimeString()} · {a.event}</div>)}</div></div>}
 
     </DialogContent></Dialog>
-  </main>;
+  </main></div>;
 }
 function ThemedToaster(){const {resolved}=useTheme();return <Toaster theme={resolved} position="bottom-right" closeButton duration={4500} />;}
 createRoot(document.getElementById('root')).render(<ThemeProvider><App /><ThemedToaster /></ThemeProvider>);

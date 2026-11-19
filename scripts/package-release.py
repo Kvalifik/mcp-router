@@ -109,7 +109,7 @@ Choose the ZIP for your computer:
 
 On Windows, extract the entire ZIP into a permanent folder and run **MCP Router.exe**. Keep the resources and supporting files together. The Windows build is unsigned and may show a publisher warning.
 
-On signed Mac installations, follow the update notification. In this version, choose **Restart to update** to install a downloaded update, or **Skip this version** to wait for the next one. Older Mac installations and Windows users should quit MCP Router before replacing the app folder. Connections and settings remain in the separate application-data folder. Reconnect AI clients if you move the app.
+On signed Mac installations, follow the update notification. In this version, choose **Update** to install a downloaded update, or **Skip Version** to wait for the next one. Older Mac installations and Windows users should quit MCP Router before replacing the app folder. Connections and settings remain in the separate application-data folder. Reconnect AI clients if you move the app.
 
 SHA-256 checksum is included in SHA256SUMS.txt.
 '''

@@ -136,6 +136,7 @@ else {
     ipcMain.handle('check-updates', (event, manual) => { if (!allowed(event)) throw new Error('Denied'); return updater.check(manual === true); });
     ipcMain.handle('skip-update', (event, version) => { if (!allowed(event)) throw new Error('Denied'); return updater.skip(version); });
     ipcMain.handle('install-update', (event, version) => { if (!allowed(event)) throw new Error('Denied'); return updater.install(version); });
+    ipcMain.handle('open-update-notes', async (event, version) => { if (!allowed(event)) throw new Error('Denied'); await shell.openExternal(updater.releaseNotesUrl(version)); });
     ipcMain.handle('download-update', async (event, version) => { if (!allowed(event)) throw new Error('Denied'); await shell.openExternal(updater.downloadUrl(version)); });
 
     let licensesWindow;
