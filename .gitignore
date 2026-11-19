@@ -257,3 +257,5 @@ public/
 !/docs/CODE_MODE_BENCHMARK.md
 
 !test/november-capabilities.test.js
+
+!/src/update-cache.cjs

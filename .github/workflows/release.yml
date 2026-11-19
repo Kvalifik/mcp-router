@@ -73,9 +73,10 @@ jobs:
         run: |
           node --input-type=module <<'JS'
           import fs from 'node:fs';
+          import {nativeVersions} from './packaging.mjs';
           const {version} = JSON.parse(fs.readFileSync('package.json'));
           const lock = JSON.parse(fs.readFileSync('package-lock.json'));
-          if (!/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(version)) throw Error('Expected a stable semantic version');
+          nativeVersions(version, process.env.BUILD_PLATFORM);
           if (lock.version !== version || lock.packages[''].version !== version) throw Error('Lockfile version mismatch');
           if (!fs.readFileSync('CHANGELOG.md', 'utf8').includes(`## ${version} —`)) throw Error('Add a changelog entry first');
           fs.appendFileSync(process.env.GITHUB_OUTPUT, `version=${version}\n`);
@@ -171,6 +172,8 @@ jobs:
           sha256sum --check SHA256SUMS.txt
           shopt -s nullglob
           feeds=(update-mac-*.json)
+          visibility=(--draft)
+          if [[ "$RELEASE_VERSION" == *-rc.* ]]; then visibility+=(--prerelease --latest=false); fi
           gh release create "v$RELEASE_VERSION" MCP-Router-*.zip SHA256SUMS.txt "${feeds[@]}" \
             --target "$RELEASE_COMMIT" --title "MCP Router v$RELEASE_VERSION" \
-            --draft --notes-file release-notes.md
+            "${visibility[@]}" --notes-file release-notes.md

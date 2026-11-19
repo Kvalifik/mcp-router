@@ -183,11 +183,22 @@ the exact versioned GitHub ZIP URL, SHA-256, and byte size. Publish these JSON f
 alongside the ZIPs; the draft workflow includes them automatically. Ad-hoc builds
 never generate update feeds. Do not replace an existing version's assets.
 
-The app discovers the latest stable public release, checks for the matching
-architecture's feed, and gives its version-specific URL to Squirrel.Mac. Downloads
-run in the background; Squirrel verifies signing identity and installs on quit or
-**Restart to update**. The renderer cannot choose an update URL or install path.
-A feed missing from the release keeps the manual-download path available.
+For a pilot, give the candidate its own package and lockfile version (for
+example, `npm version 0.12.0-rc.1 --no-git-tag-version`) and matching changelog
+heading. RC numbers run from 1 through 255. Use the same release review, signing
+and draft workflow. The draft for an RC is marked as a prerelease. Publish it
+as a prerelease for testers, who can install the first candidate manually.
+Later published candidates and the final stable version are offered to those
+installations. For general distribution, build and publish the final numeric
+version from the tested source with its own review, tag, ZIPs and checksums.
+Changing a release’s GitHub badge cannot change the version inside a signed app.
+
+Signed Macs discover compatible archives from published release metadata.
+They cache the ZIP and verify its size and SHA-256. Clicking **Restart to update**
+passes the cached bytes to Squirrel for signature verification and installation.
+Normal quit leaves the installed version alone. **Skip this version** suppresses
+automatic offers for that version, and a manual check can offer it again.
+A missing architecture feed or asset digest leaves manual download available.
 
 Run the isolated signed updater integration check on macOS:
 
@@ -196,8 +207,8 @@ MAC_SIGNING_IDENTITY='Developer ID Application: Example Developer (A1B2C3D4E5)' 
 ```
 
 It creates two fixture apps with a separate bundle ID and temporary data, rejects
-a tampered update, then downloads, installs, and relaunches a correctly signed one.
-Its loopback HTTP exception exists only in fixture bundles; production keeps ATS.
+a tampered update, confirms ordinary quit preserves the prerelease, and installs
+the cached stable version after approval.
 It never starts or replaces an installed router. Also test the
 real browser-downloaded app from Applications. Older app versions need a manual
 install of the first signed build containing updater support. Switching to a

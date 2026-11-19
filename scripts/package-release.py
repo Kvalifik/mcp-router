@@ -13,7 +13,7 @@ import tempfile
 
 root = Path(__file__).resolve().parents[1]
 version = json.loads((root / 'package.json').read_text(encoding='utf-8'))['version']
-assert re.fullmatch(r'(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)', version)
+assert re.fullmatch(r'(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-rc\.([1-9]\d*))?', version)
 platform = os.environ.get('BUILD_PLATFORM', sys.platform)
 arch = os.environ.get('BUILD_ARCH', 'arm64' if host_platform.machine().lower() in {'arm64', 'aarch64'} else 'x64')
 signing_mode = os.environ.get('MAC_SIGNING_MODE', 'adhoc')
@@ -25,7 +25,8 @@ resources = app / ('Contents/Resources' if platform == 'darwin' else 'resources'
 bundle = resources / 'app'
 if platform == 'darwin':
     metadata = plistlib.loads((app / 'Contents/Info.plist').read_bytes())
-    assert metadata['CFBundleShortVersionString'] == version, 'Bundle version mismatch'
+    assert metadata['CFBundleShortVersionString'] == version.split('-')[0], 'Bundle version mismatch'
+    assert metadata['CFBundleVersion'] == version.replace('-rc.', 'fc'), 'Bundle build mismatch'
     assert json.loads((resources / 'mac-update.json').read_text()) == {'enabled': signing_mode == 'developer-id'}, 'Update configuration mismatch'
 else:
     assert (app / 'MCP Router.exe').is_file()
@@ -88,7 +89,7 @@ if platform == 'darwin' and signing_mode == 'developer-id':
         }}],
     }, indent=2) + '\n', encoding='utf-8')
 changelog = (root / 'CHANGELOG.md').read_text(encoding='utf-8')
-section = re.search(r'^## ' + re.escape(version) + r' — [^\n]+\n(.*?)(?=^## \d+\.\d+\.\d+ — |\Z)', changelog, re.M | re.S)
+section = re.search(r'^## ' + re.escape(version) + r' — [^\n]+\n(.*?)(?=^## \d+\.\d+\.\d+(?:-rc\.\d+)? — |\Z)', changelog, re.M | re.S)
 assert section, 'Missing changelog entry'
 mac_install = ('On Mac, extract and move **MCP Router.app** to Applications. The Mac apps are Developer ID signed and notarized by Apple.'
                if signing_mode == 'developer-id' else
@@ -108,7 +109,7 @@ Choose the ZIP for your computer:
 
 On Windows, extract the entire ZIP into a permanent folder and run **MCP Router.exe**. Keep the resources and supporting files together. The Windows build is unsigned and may show a publisher warning.
 
-Signed Mac installations with updater support download new signed releases automatically and install on quit; choose **Restart to update** to apply immediately. Older Mac installations and Windows users should quit MCP Router before replacing the app folder. Connections and settings remain in the separate application-data folder. Reconnect AI clients if you move the app.
+On signed Mac installations, follow the update notification. In this version, choose **Restart to update** to install a downloaded update, or **Skip this version** to wait for the next one. Older Mac installations and Windows users should quit MCP Router before replacing the app folder. Connections and settings remain in the separate application-data folder. Reconnect AI clients if you move the app.
 
 SHA-256 checksum is included in SHA256SUMS.txt.
 '''

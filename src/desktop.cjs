@@ -112,20 +112,31 @@ else {
     const openPublisher = () => shell.openExternal('https://kvalifik.dk');
     const { createUpdateChecker } = require('./updates.cjs');
     const updates = createUpdateChecker({repository:require('../package.json').updateRepository,currentVersion:app.getVersion()});
-    let nativeUpdates;
-    if(process.platform==='darwin' && app.isPackaged) {
-      let enabled=false;
-      try { enabled=JSON.parse(require('node:fs').readFileSync(path.join(process.resourcesPath,'mac-update.json'),'utf8')).enabled===true; } catch {}
-      if(enabled) {
-        nativeUpdates=require('./mac-updates.cjs').createMacUpdater({checker:updates,autoUpdater,arch:process.arch,
-          onChange:state=>{trayUpdateState=state;updateTray();for(const window of [win,popover])if(window&&!window.isDestroyed())window.webContents.send('update-status',state);}});
-        // quitAndInstall closes windows before Electron's ordinary before-quit.
-        autoUpdater.on('before-quit-for-update',()=>{app.isQuitting=true;});
-      }
+    let signedMac = false;
+    if (process.platform === 'darwin' && app.isPackaged) {
+      try { signedMac = JSON.parse(require('node:fs').readFileSync(path.join(process.resourcesPath,'mac-update.json'),'utf8')).enabled === true; } catch {}
     }
-    ipcMain.handle('check-updates', event => {if(!allowed(event))throw new Error('Denied');return (nativeUpdates||updates).check();});
-    ipcMain.handle('install-update', event => {if(!allowed(event)||!nativeUpdates)throw new Error('Denied');nativeUpdates.install();});
-    ipcMain.handle('download-update', async event => {if(!allowed(event)||!updates.releaseUrl())throw new Error('No verified release');await shell.openExternal(updates.releaseUrl());});
+    const updater = require('./mac-updates.cjs').createAppUpdater({
+      checker:updates, arch:process.arch, autoUpdater:signedMac ? autoUpdater : null,
+      cache:signedMac && require('./update-cache.cjs').createUpdateCache(path.join(app.getPath('userData'), 'update-cache')),
+      isSkipped:version => router.store.data.settings?.skippedAppVersions?.includes(version),
+      setSkipped:version => {
+        router.store.data.settings ||= {};
+        const skipped = router.store.data.settings.skippedAppVersions ||= [];
+        if (!skipped.includes(version)) skipped.push(version);
+        router.store.save();
+      },
+      onChange:state => {
+        trayUpdateState = state;
+        updateTray();
+        for (const window of [win,popover]) if (window && !window.isDestroyed()) window.webContents.send('update-status',state);
+      },
+    });
+    if (signedMac) autoUpdater.on('before-quit-for-update', () => { app.isQuitting = true; });
+    ipcMain.handle('check-updates', (event, manual) => { if (!allowed(event)) throw new Error('Denied'); return updater.check(manual === true); });
+    ipcMain.handle('skip-update', (event, version) => { if (!allowed(event)) throw new Error('Denied'); return updater.skip(version); });
+    ipcMain.handle('install-update', (event, version) => { if (!allowed(event)) throw new Error('Denied'); return updater.install(version); });
+    ipcMain.handle('download-update', async (event, version) => { if (!allowed(event)) throw new Error('Denied'); await shell.openExternal(updater.downloadUrl(version)); });
 
     let licensesWindow;
     const openLicenses = async () => {
