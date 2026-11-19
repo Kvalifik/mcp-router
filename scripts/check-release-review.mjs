@@ -12,11 +12,11 @@ execFileSync('git',['diff','--exit-code','--quiet','--','.',':!'+reportPath]);
 const entries=execFileSync('git',['ls-files','--stage','-z'],{encoding:'utf8'}).split('\0').filter(line=>line&&!line.endsWith('\t'+reportPath)).sort();
 const sourceDigest=digest(entries.join('\0'));
 const version=JSON.parse(fs.readFileSync('package.json')).version;
-// This pilot preserves the rc.1 Managed catalog. Record the reviewed Beta
+// The pilot and its stable promotion preserve the rc.1 Managed catalog. Record the reviewed Beta
 // differences explicitly; later releases must decide how to handle Libraries.
 function pilotDeferrals(channel, tools, catalog, comparison) {
  const result = {missing:[], outdated:[], deferred:[]};
- if (version !== '0.11.1-rc.2' || channel !== 'beta') return result;
+ if (!['0.11.1-rc.2','0.11.1'].includes(version) || channel !== 'beta') return result;
  const definitions = ['data_libraries_tool','data_component_tool'].map(name => tools.find(tool => tool.name === name));
  if (digest(JSON.stringify(definitions)) !== '84860394ee762d9aa91ae0c9f3ac1bb3192ad255cfc872dfda88d5c0185dbd99') throw Error('Review the changed Beta Libraries and Components definitions');
  if (!isDeepStrictEqual(comparison.unclassifiedTools,['data_libraries_tool'])) throw Error('Review Beta tool classification');
