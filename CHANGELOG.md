@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.11.1-rc.2 — Choose when to install updates
+
+This prerelease lets you test the new Mac update flow before the next stable release.
+
+### What’s new
+
+- **Install when ready.** Signed Mac builds download the next update in the background. Choose **Restart to update** to install it. Quitting normally keeps your current version.
+- **Skip a release.** Choose **Skip this version** to dismiss that update across restarts. **Settings → Check for updates** can offer it again. Later versions still appear automatically.
+- **Test release candidates.** Candidate installations can find later candidates and the final stable release. Stable installations continue to receive stable releases.
+
 ## 0.11.0 — Reliable connections and expanded Webflow tools
 
 Keep connections ready for longer and use more Webflow capabilities with explicit access controls.
