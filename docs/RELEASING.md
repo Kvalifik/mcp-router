@@ -614,3 +614,27 @@ update. Its GUI launch now clears inherited ELECTRON_RUN_AS_NODE. An earlier run
 failed at Apple's timestamp service before reaching the updater; the retry passed.
 The production dependency audit has zero advisories; the full dev tree retains
 five high advisory entries in the picomatch dependency chain.
+
+### November 19 updater pilot (0.11.1-rc.2)
+
+The signed updater and release-candidate behavior are the same as the locally
+tested rc.1. Public rc.2 gives pilot installations a newer release to discover.
+Stable remains on its existing release. Runtime dependencies and the Managed
+catalog are unchanged.
+
+Fresh paginated metadata from the existing application provider covered 38
+Stable and 45 Beta tools. Stable definitions and guidance were unchanged from
+November 18. Beta added Shared Libraries (14 actions). These include workspace
+library discovery, installation/removal, importing resources, sharing versions
+and pushing changes to other sites. All remain outside the Managed catalog
+pending permission design and ownership checks. Four Beta Component action
+descriptions and the guide now cover read-only installed library components
+and the import prerequisite for insertion. Their argument shapes are unchanged.
+Defer those four catalog descriptions alongside Shared Libraries. The recorder
+checks the exact reviewed definitions for this RC and reports these gaps.
+Both channels retain the previously reviewed CMS fieldData export correction.
+
+Keep the dependency set tested in rc.1. The signing and SDK updates in #55
+are already shipped; TOML patch 3.3.2 remains for separate client-configuration
+compatibility testing. Defer Motion 14 (#35) and setup-node 7 (#32) for separate
+UI and CI migration validation.
