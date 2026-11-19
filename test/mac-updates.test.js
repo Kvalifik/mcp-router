@@ -65,6 +65,21 @@ for (const manualOnly of [true,false]) {
   });
 }
 
+test('release notes follow the offered version through download and readiness', async () => {
+  const started = Promise.withResolvers(), finish = Promise.withResolvers();
+  const f = fixture({}, {prepare:() => { started.resolve(); return finish.promise; }});
+  const check = f.updater.check();
+  await started.promise;
+  assert.equal(f.updater.releaseNotesUrl('2.0.0'), 'release');
+  assert.throws(() => f.updater.releaseNotesUrl('1.0.0'));
+  finish.resolve();
+  await check;
+  assert.equal(f.updater.releaseNotesUrl('2.0.0'), 'release');
+  assert.deepEqual(f.calls, []);
+  f.updater.skip('2.0.0');
+  assert.throws(() => f.updater.releaseNotesUrl('2.0.0'));
+});
+
 test('skip during download suppresses its completion and clears a concurrent manual offer', async () => {
   const start = Promise.withResolvers(), end = Promise.withResolvers();
   const f = fixture({}, {prepare:() => { start.resolve(); return end.promise; }});

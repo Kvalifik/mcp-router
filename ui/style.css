@@ -80,6 +80,10 @@ button:disabled { cursor:not-allowed; }
 
 /* One title bar; reserve space for native controls on each desktop platform. */
 .router-shell { display:flex; flex-direction:column; height:100dvh; }
+.update-banner-reveal { --reveal-gap:0px; }
+@starting-style {
+  .update-banner-reveal[data-open="true"] { grid-template-rows:0fr; opacity:0; }
+}
 .update-banner { display:flex; flex-wrap:wrap; align-items:center; gap:8px; flex:none; min-height:36px; padding:5px 12px; border-bottom:1px solid var(--border); background:var(--muted); }
 .router-main { flex:1; min-height:0; overflow-x:hidden; overflow-y:scroll; padding:0 16px 20px; overscroll-behavior:contain; }
 .app-header { flex:none; position:relative; z-index:60; height:64px; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:0 16px; border-bottom:1px solid var(--border); background:var(--app-background); }

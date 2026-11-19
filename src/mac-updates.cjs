@@ -76,10 +76,17 @@ function createAppUpdater({checker, autoUpdater, cache, arch, isSkipped, setSkip
     } catch { installError(); }
   }
 
-  function downloadUrl(version) {
-    if (state.state !== 'available' || state.version !== version || !checker.releaseUrl()) throw new Error('Update offer changed');
-    return checker.releaseUrl();
+  function releaseNotesUrl(version) {
+    if (!['available','downloading','ready'].includes(state.state) || state.version !== version) throw new Error('Update offer changed');
+    const url = checker.releaseUrl();
+    if (!url) throw new Error('Release notes unavailable');
+    return url;
   }
-  return {check, skip, install, downloadUrl};
+
+  function downloadUrl(version) {
+    if (state.state !== 'available') throw new Error('Update offer changed');
+    return releaseNotesUrl(version);
+  }
+  return {check, skip, install, downloadUrl, releaseNotesUrl};
 }
 module.exports = {createAppUpdater};

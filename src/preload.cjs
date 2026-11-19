@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld('routerDesktop', {
   skipUpdate: version => ipcRenderer.invoke('skip-update', version),
   installUpdate: version => ipcRenderer.invoke('install-update', version),
   onUpdateStatus: callback => { const handler = (_event,state) => callback(state); ipcRenderer.on('update-status',handler); return () => ipcRenderer.removeListener('update-status',handler); },
+  openUpdateNotes: version => ipcRenderer.invoke('open-update-notes', version),
   downloadUpdate: version => ipcRenderer.invoke('download-update', version),
   openPublisher: () => ipcRenderer.invoke('open-publisher'),
   openRepository: () => ipcRenderer.invoke('open-repository'),

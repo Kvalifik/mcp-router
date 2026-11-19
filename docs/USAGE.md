@@ -340,7 +340,8 @@ Use **Settings → Check for updates** to check the latest public GitHub release
 The desktop app also checks on startup and every six hours while it is open.
 
 Signed Mac builds download the update ZIP in the background and check its size and
-SHA-256. In the banner beneath the app title, choose **Update** when you are ready. Electron verifies the
+SHA-256. Select the version number in the banner to read that release’s notes on GitHub.
+In the banner beneath the app title, choose **Update** when you are ready. Electron verifies the
 app signature and restarts, briefly disconnecting active AI clients. Quitting
 normally keeps the current version. Your connections and settings stay saved.
 
