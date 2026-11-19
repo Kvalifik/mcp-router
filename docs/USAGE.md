@@ -17,7 +17,9 @@ name. Save a name or keep the current label. This prompt is shared by Stable and
 Beta and does not repeat when adding the other server or reconnecting. Existing
 connections are not prompted.
 
-**Add connection** explains access before opening Webflow. Select the projects
+**Add connection** brings the new row into view. The row shows when to finish
+authorization in the browser and when MCP Router is checking project access.
+The connection dialog explains access before opening Webflow. Select the projects
 you want to manage and allow the requested permissions for the full feature set,
 then use router permissions to limit AI access. Narrower authorization is supported;
 the router cannot grant access that Webflow did not authorize. New projects start
@@ -338,11 +340,11 @@ Use **Settings → Check for updates** to check the latest public GitHub release
 The desktop app also checks on startup and every six hours while it is open.
 
 Signed Mac builds download the update ZIP in the background and check its size and
-SHA-256. Choose **Restart to update** when you are ready. Electron verifies the
+SHA-256. In the banner beneath the app title, choose **Update** when you are ready. Electron verifies the
 app signature and restarts, briefly disconnecting active AI clients. Quitting
 normally keeps the current version. Your connections and settings stay saved.
 
-Choose **Skip this version** to silence that release across restarts. Newer
+Choose **Skip Version** to silence that release across restarts. Newer
 versions still appear. **Settings → Check for updates** offers the skipped
 version again if it is still current.
 
@@ -352,7 +354,7 @@ published candidates. It can update to `0.12.0-rc.2` or the final `0.12.0`.
 Once you install a stable version, checks follow stable releases again.
 
 Windows, development builds, and releases without a compatible update feed use
-**Download update**, which opens GitHub Releases for manual installation. Existing
+**Download**, which opens GitHub Releases for manual installation. Existing
 versions without updater support need one manual install of a signed version
 that includes it. Install the Mac app in Applications before using auto-updates.
 

@@ -194,9 +194,9 @@ version from the tested source with its own review, tag, ZIPs and checksums.
 Changing a release’s GitHub badge cannot change the version inside a signed app.
 
 Signed Macs discover compatible archives from published release metadata.
-They cache the ZIP and verify its size and SHA-256. Clicking **Restart to update**
+They cache the ZIP and verify its size and SHA-256. Clicking **Update**
 passes the cached bytes to Squirrel for signature verification and installation.
-Normal quit leaves the installed version alone. **Skip this version** suppresses
+Normal quit leaves the installed version alone. **Skip Version** suppresses
 automatic offers for that version, and a manual check can offer it again.
 A missing architecture feed or asset digest leaves manual download available.
 

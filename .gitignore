@@ -132,6 +132,7 @@
 !/ui/index.html
 !/ui/lib/utils.js
 !/ui/main.jsx
+!/ui/update-banner.jsx
 !/ui/permission-presets.js
 !/ui/permission-availability.js
 !/test/permission-availability.test.js

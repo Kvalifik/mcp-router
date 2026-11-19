@@ -46,7 +46,7 @@ Choose **mac-arm64** for Apple Silicon (M1 or later), or **mac-x64** for Intel M
 5. Open **Apps**, connect your AI app, and follow its restart/reload instructions.
 
 Signed Mac builds with updater support download new signed releases in the background.
-Choose **Restart to update** to install, or **Skip this version** to wait. Older versions need one
+In the header banner, choose **Update** to restart and install, or **Skip Version** to wait. Older versions need one
 manual installation of an updater-enabled build. See [update behavior](docs/USAGE.md#checking-for-updates).
 
 ## Install on Windows
@@ -65,8 +65,7 @@ Quit through the MCP Router menu before replacing the app folder during updates.
 ### Updating
 
 Signed Mac builds notify you when a download is ready and install it when you
-choose **Restart to update**. Windows and ad-hoc Mac builds offer **Download
-update** for manual installation. **Skip this version** hides that release;
+choose **Update**. Windows and ad-hoc Mac builds offer **Download** for manual installation. **Skip Version** hides that release;
 **Settings → Check for updates** lets you reconsider it. Later releases still appear.
 
 Update checks use public releases from `Kvalifik/mcp-router`.
