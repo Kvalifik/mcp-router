@@ -10,8 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { toast } from 'sonner';
-import { Toaster } from '@/components/ui/sonner';
+import { NotificationStrip, notice } from './notifications.jsx';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Label } from '@/components/ui/label';
@@ -106,14 +105,14 @@ function PublisherLink({ className = '', large = false, children }) {
   return <a href="https://kvalifik.dk" target="_blank" rel="noopener noreferrer" className={`inline-flex items-center gap-1 rounded-sm underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${className}`} onClick={async event => {
     if (!window.routerDesktop) return;
     event.preventDefault();
-    try { await window.routerDesktop.openPublisher(); } catch { toast.error('Could not open kvalifik.dk.'); }
+    try { await window.routerDesktop.openPublisher(); } catch { notice.error('Could not open kvalifik.dk.'); }
   }}>{children || <><img src={kvalifikLogo} alt="Kvalifik" className={`${large ? 'h-5' : 'h-[0.8em]'} w-auto dark:invert`} /><ArrowUpRight className="size-3.5" aria-hidden="true" /></>}</a>;
 }
 async function openGitHubIssues() {
   try {
     if(window.routerDesktop)await window.routerDesktop.openIssues();
     else window.open(`https://github.com/${appPackage.updateRepository}/issues`,'_blank','noopener,noreferrer');
-  } catch {toast.error('Could not open GitHub Issues.');}
+  } catch {notice.error('Could not open GitHub Issues.');}
 }
 function AboutPanel() {
   return <div className="space-y-6">
@@ -124,10 +123,10 @@ function AboutPanel() {
     <Button asChild variant="outline" className="w-full justify-between"><a href={`https://github.com/${appPackage.updateRepository}`} target="_blank" rel="noopener noreferrer" onClick={async event=>{
       if(!window.routerDesktop)return;
       event.preventDefault();
-      try {await window.routerDesktop.openRepository();} catch {toast.error('Could not open GitHub.');}
+      try {await window.routerDesktop.openRepository();} catch {notice.error('Could not open GitHub.');}
     }}><span className="flex items-center gap-2"><svg className="size-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .297C5.37.297 0 5.67 0 12.297c0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.043-1.61-4.043-1.61-.546-1.387-1.333-1.756-1.333-1.756-1.09-.745.083-.729.083-.729 1.205.084 1.838 1.237 1.838 1.237 1.07 1.835 2.809 1.305 3.495.998.108-.776.418-1.305.762-1.605-2.665-.3-5.467-1.334-5.467-5.931 0-1.31.469-2.381 1.236-3.221-.124-.303-.536-1.524.117-3.176 0 0 1.008-.322 3.301 1.23a11.52 11.52 0 013.003-.404c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.655 1.652.243 2.873.12 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.628-5.479 5.925.43.372.823 1.102.823 2.222 0 1.606-.015 2.898-.015 3.293 0 .322.216.694.825.576C20.565 22.092 24 17.597 24 12.297c0-6.627-5.373-12-12-12" /></svg>View on GitHub</span><ArrowUpRight className="size-4" /></a></Button>
     <Button asChild variant="outline" className="w-full justify-between"><a href={`https://github.com/${appPackage.updateRepository}/issues`} target="_blank" rel="noopener noreferrer" onClick={event=>{if(window.routerDesktop){event.preventDefault();openGitHubIssues();}}}><span className="flex items-center gap-2"><MessageSquare className="size-4" />Report a bug or suggest a feature</span><ArrowUpRight className="size-4" /></a></Button>
-    <Button variant="outline" className="w-full justify-between" onClick={async () => { try { await window.routerDesktop.openLicenses(); } catch { toast.error('Could not open third-party licenses.'); } }} disabled={!window.routerDesktop}><span className="flex items-center gap-2"><FileText className="size-4" />Third-party licenses</span><ArrowUpRight className="size-4" /></Button>
+    <Button variant="outline" className="w-full justify-between" onClick={async () => { try { await window.routerDesktop.openLicenses(); } catch { notice.error('Could not open third-party licenses.'); } }} disabled={!window.routerDesktop}><span className="flex items-center gap-2"><FileText className="size-4" />Third-party licenses</span><ArrowUpRight className="size-4" /></Button>
     <Button variant="outline" className="w-full" disabled={!window.routerDesktop} onClick={()=>checkForUpdates(true)}><RefreshCw className="size-4" />Check for updates</Button>
     <p className="text-xs text-muted-foreground">Version {appPackage.version} · © {new Date().getFullYear()} <PublisherLink>Kvalifik ApS</PublisherLink></p>
   </div>;
@@ -189,7 +188,7 @@ function ProjectLinks({project}) {
     if(!window.routerDesktop)return;
     e.preventDefault();
     try { await window.routerDesktop.openProject(slug,destination); }
-    catch { toast.error('Could not open the project link.'); }
+    catch { notice.error('Could not open the project link.'); }
   };
   return <div className="project-links flex shrink-0 items-center gap-0 text-xs text-muted-foreground">
     <Button asChild variant="ghost" size="icon-xs" className="project-site-link shrink-0 text-muted-foreground"><a href={`https://${slug}.webflow.io/`} target="_blank" rel="noopener noreferrer" title={`${slug}.webflow.io`} aria-label={`Open ${project.name} site (${slug}.webflow.io)`} onClick={open('site')}><span className="full-window-only truncate">{slug}.webflow.io</span><ArrowUpRight className="size-3.5" aria-hidden="true" /></a></Button>
@@ -220,11 +219,11 @@ function PermissionForm({ model, data, busy, perform, close, connect, refresh })
     if(requestedChannel===null)return;
     const state=connection?.channels?.[requestedEndpoint];
     if(!hasAccess(requestedEndpoint)){
-      if(authorizing&&state?.authorized&&!state.inventoryPending&&state.status==='connected'){setAuthorizing(false);toast.error(`Webflow did not authorize ${item.name}. Try again and include this project.`);}
+      if(authorizing&&state?.authorized&&!state.inventoryPending&&state.status==='connected'){setAuthorizing(false);notice.error(`Webflow did not authorize ${item.name}. Try again and include this project.`);}
       return;
     }
     setChannel(requestedChannel);setRequestedChannel(null);setAuthorizing(false);
-    toast.success(`${requestedEndpoint==='beta'?'β Beta':'Stable'} authorized. Save changes to use it for this project.`);
+    notice.success(`${requestedEndpoint==='beta'?'β Beta':'Stable'} authorized. Save changes to use it for this project.`);
   },[requestedChannel,requestedEndpoint,connection?.channels?.[requestedEndpoint]?.authorized,connection?.channels?.[requestedEndpoint]?.inventoryPending,JSON.stringify(connection?.channels?.[requestedEndpoint]?.siteIds)]);
   useEffect(()=>{
     if(!authorizing)return;
@@ -234,8 +233,8 @@ function PermissionForm({ model, data, busy, perform, close, connect, refresh })
     return()=>{active=false;clearInterval(timer);window.removeEventListener('focus',check);};
   },[authorizing]);
   async function authorizeRequested() {
-    try {await connect(item.connectionId,requestedEndpoint);setAuthorizing(true);toast.info('Complete authorization in your browser. Your project settings will stay open.');}
-    catch(e){setAuthorizing(false);toast.error(e.message);}
+    try {await connect(item.connectionId,requestedEndpoint);setAuthorizing(true);notice.info('Complete authorization in your browser. Your project settings will stay open.');}
+    catch(e){setAuthorizing(false);notice.error(e.message);}
   }
 
   const [useDefault,setUseDefault] = useState(false);
@@ -248,13 +247,13 @@ function PermissionForm({ model, data, busy, perform, close, connect, refresh })
   const preset = type => setGrants(presetGrants(keys, type));
   async function submit(e) {
     e.preventDefault();
-    if(requestedChannel!==null){toast.error('Complete or cancel authorization before saving.');return;}
+    if(requestedChannel!==null){notice.error('Complete or cancel authorization before saving.');return;}
     if(!defaults&&channel!==(item.channel||'inherit')&&!hasAccess(selectedChannel)){selectChannel(channel);return;}
     try {
       await perform(defaults ? '/api/settings/default-permissions' : `/api/projects/${item.id}/edit`, defaults ? { permissions:grants } : { permissions:grants, channel, ...(useDefault ? {useDefaultName:true} : name !== item.name ? {name} : {}) });
-      toast.success(defaults ? 'Default permissions saved.' : 'Project settings saved.');
+      notice.success(defaults ? 'Default permissions saved.' : 'Project settings saved.');
       close();
-    } catch(e) { toast.error(e.message); }
+    } catch(e) { notice.error(e.message); }
   }
   return <form className="dialog-form" onSubmit={submit}>
     {!defaults && <DialogHeader className="flex-row shrink-0 items-center gap-1 space-y-0 pr-6 text-left">
@@ -272,7 +271,7 @@ function PermissionForm({ model, data, busy, perform, close, connect, refresh })
         </TableBody></Table></div>
         {defaults&&<p className="shrink-0 text-xs text-muted-foreground">Applies to new projects and disabled projects still using defaults. New projects always start disabled.</p>}
     </div>
-    <DialogFooter className="shrink-0 border-t pt-4">{!defaults && <Button type="button" variant="outline" size="icon" aria-label={testing?'Testing connection…':testResult==='success'?'Connection test succeeded':testResult==='error'?'Connection test failed — retry':'Test connection'} aria-busy={testing} title={testing?'Testing connection…':testUnavailable || 'Test connection using saved permissions'} disabled={busy || testing || !!testUnavailable} onClick={async()=>{if(testing)return;setTestResult(null);setTesting(true);try{await perform('/api/read-project',{projectId:item.id});setTestResult('success');toast.success(`${item.name}: read succeeded.`);}catch(e){setTestResult('error');toast.error(e.message);}finally{setTesting(false);}}}><AnimatedSwap icon value={testing?'testing':testResult} className="size-4">{testing?<LoaderCircle className="size-4 animate-spin motion-reduce:animate-none" />:testResult==='success'?<Check className="size-4" />:testResult==='error'?<TriangleAlert className="size-4" />:<TestTubeDiagonal className="size-4" />}</AnimatedSwap></Button>}<Button type="button" variant="outline" disabled={busy} onClick={close}>Cancel</Button><Button disabled={busy || requestedChannel!==null || !defaults && !name.trim()}><AnimatedText>{busy?'Saving…':'Save changes'}</AnimatedText></Button></DialogFooter>
+    <DialogFooter className="shrink-0 border-t pt-4">{!defaults && <Button type="button" variant="outline" size="icon" aria-label={testing?'Testing connection…':testResult==='success'?'Connection test succeeded':testResult==='error'?'Connection test failed — retry':'Test connection'} aria-busy={testing} title={testing?'Testing connection…':testUnavailable || 'Test connection using saved permissions'} disabled={busy || testing || !!testUnavailable} onClick={async()=>{if(testing)return;setTestResult(null);setTesting(true);try{await perform('/api/read-project',{projectId:item.id});setTestResult('success');notice.success(`${item.name}: read succeeded.`);}catch(e){setTestResult('error');notice.error(e.message);}finally{setTesting(false);}}}><AnimatedSwap icon value={testing?'testing':testResult} className="size-4">{testing?<LoaderCircle className="size-4 animate-spin motion-reduce:animate-none" />:testResult==='success'?<Check className="size-4" />:testResult==='error'?<TriangleAlert className="size-4" />:<TestTubeDiagonal className="size-4" />}</AnimatedSwap></Button>}<Button type="button" variant="outline" disabled={busy} onClick={close}>Cancel</Button><Button disabled={busy || requestedChannel!==null || !defaults && !name.trim()}><AnimatedText>{busy?'Saving…':'Save changes'}</AnimatedText></Button></DialogFooter>
   </form>;
 }
 function WorkspacePermissionForm({connection,busy,perform,close}) {
@@ -281,8 +280,8 @@ function WorkspacePermissionForm({connection,busy,perform,close}) {
   const [accountGrants,setAccountGrants]=useState(connection.connectionPermissions||{});
   async function submit(event) {
     event.preventDefault();
-    try { await perform(`/api/connections/${connection.id}/edit`,{connectionPermissions:accountGrants,workspacePermissions:Object.fromEntries(workspaces.map(w=>[w.id,grants[w.id]||{}]))});toast.success('Workspace permissions saved.');close(); }
-    catch(error){toast.error(error.message);}
+    try { await perform(`/api/connections/${connection.id}/edit`,{connectionPermissions:accountGrants,workspacePermissions:Object.fromEntries(workspaces.map(w=>[w.id,grants[w.id]||{}]))});notice.success('Workspace permissions saved.');close(); }
+    catch(error){notice.error(error.message);}
   }
   return <form className="dialog-form" onSubmit={submit}>
     <p className="text-sm">Workspace permissions apply to the whole workspace, including sites that are disabled in this router. They are separate from each project’s Site Access permissions.</p>
@@ -302,7 +301,7 @@ function WorkspacePermissionForm({connection,busy,perform,close}) {
 }
 function AccessModeForm({connection,busy,perform,close}) {
   const [mode,setMode]=useState(connection.accessMode || 'managed');
-  return <form className="dialog-form" onSubmit={async event=>{event.preventDefault();try{await perform(`/api/connections/${connection.id}/edit`,{accessMode:mode});toast.success(`${connection.name}: ${mode==='direct'?'Direct Webflow':'Managed'} access saved.`);close();}catch(error){toast.error(error.message);}}}>
+  return <form className="dialog-form" onSubmit={async event=>{event.preventDefault();try{await perform(`/api/connections/${connection.id}/edit`,{accessMode:mode});notice.success(`${connection.name}: ${mode==='direct'?'Direct Webflow':'Managed'} access saved.`);close();}catch(error){notice.error(error.message);}}}>
     <div className="dialog-scroll space-y-4">
     <fieldset className="space-y-3" disabled={busy}><legend className="sr-only">Connection access mode</legend>
       {[['managed','Managed access','Recommended default. Router project switches, permissions and ownership checks apply.',ShieldCheck],['direct','Direct Webflow','Use live Webflow tools, including new tools not yet reviewed by the router.',Unplug]].map(([value,title,detail,Icon])=><label key={value} className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 ${mode===value?'border-foreground':''}`}><input type="radio" name="accessMode" value={value} checked={mode===value} onChange={()=>setMode(value)} className="mt-1" /><Icon className="mt-0.5 size-4 shrink-0" /><span><span className="block text-sm font-medium">{title}</span><span className="mt-1 block text-xs text-muted-foreground">{detail}</span></span></label>)}
@@ -320,9 +319,9 @@ function ClientConnections() {
   const icon=id=>id==='codex'||id==='claude-desktop'?'MessageSquare':id==='cursor'||id==='vscode'?'Code2':'Terminal';
   async function connect(client) {
     if(pending)return;
-    setPending(client.id);const notice=toast.loading(`Connecting ${client.name}…`);
-    try {const result=await window.routerDesktop.connectClient(client.id);if(!result.ok)throw new Error(result.error);toast.success(result.message,{id:notice,duration:10000});setClients(current=>current.map(c=>c.id===client.id?{...c,state:'configured'}:c));}
-    catch(e){toast.error(e.message,{id:notice,duration:10000});}finally{setPending(null);}
+    setPending(client.id);const noticeId=notice.loading(`Connecting ${client.name}…`);
+    try {const result=await window.routerDesktop.connectClient(client.id);if(!result.ok)throw new Error(result.error);notice.success(result.message,{id:noticeId,duration:10000});setClients(current=>current.map(c=>c.id===client.id?{...c,state:'configured'}:c));}
+    catch(e){notice.error(e.message,{id:noticeId,duration:10000});}finally{setPending(null);}
   }
   const items=[
     ...clients.filter(c=>c.installed).map(c=>({label:c.name,icon:c.state==='configured'?'Check':c.state==='needs-reconnect'?'TriangleAlert':undefined,children:[
@@ -331,9 +330,9 @@ function ClientConnections() {
       {id:`connect-${c.id}`,label:c.state==='configured'||c.state==='needs-reconnect'?'Reconnect':'Set up',icon:c.state==='configured'||c.state==='needs-reconnect'?'RefreshCw':'Plus',disabled:!!pending,onSelect:()=>connect(c)},
     ]})),
     ...(!clients.some(c=>c.installed)?[{id:'no-installed-apps',label:'No supported apps installed',disabled:true}]:[]),
-    ...(clients.some(c=>!c.installed)?[{label:'Not installed',icon:'Plus',children:clients.filter(c=>!c.installed).map(c=>({id:`download-${c.id}`,label:c.name,icon:icon(c.id),onSelect:async()=>{try{await window.routerDesktop.clientDownload(c.id);}catch{toast.error('Could not open the download page.');}}}))}]:[]),
+    ...(clients.some(c=>!c.installed)?[{label:'Not installed',icon:'Plus',children:clients.filter(c=>!c.installed).map(c=>({id:`download-${c.id}`,label:c.name,icon:icon(c.id),onSelect:async()=>{try{await window.routerDesktop.clientDownload(c.id);}catch{notice.error('Could not open the download page.');}}}))}]:[]),
     {separator:true},
-    {label:'Copy configuration',icon:'Copy',children:[['standard','Standard MCP'],['vscode','VS Code'],['agent','Agent setup snippet']].map(([format,label])=>({id:`copy-${format}`,label,icon:'Copy',onSelect:async()=>{try{await window.routerDesktop.copyClientConfig(format);toast.success(`${label}${format==='agent'?'':' configuration'} copied to clipboard.`,{duration:6000});}catch{toast.error('Could not copy configuration.',{duration:6000});}}}))},
+    {label:'Copy configuration',icon:'Copy',children:[['standard','Standard MCP'],['vscode','VS Code'],['agent','Agent setup snippet']].map(([format,label])=>({id:`copy-${format}`,label,icon:'Copy',onSelect:async()=>{try{await window.routerDesktop.copyClientConfig(format);notice.success(`${label}${format==='agent'?'':' configuration'} copied to clipboard.`,{duration:6000});}catch{notice.error('Could not copy configuration.',{duration:6000});}}}))},
   ];
   return <ActionMenu items={items} trigger={<Button className="app-client-menu" variant="outline" size="sm" aria-label="App connections" title="Apps" disabled={!!pending}><Sparkles className="size-4" /><span className="full-window-only">Apps</span><ChevronDown className="size-3" aria-hidden="true" /></Button>} />;
 }
@@ -361,7 +360,7 @@ function ConnectionOrderForm({connections,busy,perform,close}) {
     drag.current=null;setDragging(null);
     if(e.currentTarget.hasPointerCapture?.(e.pointerId))e.currentTarget.releasePointerCapture(e.pointerId);
   }
-  return <form className="dialog-form" onSubmit={async e=>{e.preventDefault();try{await perform('/api/settings/connection-order',{ids:items.map(c=>c.id)});toast.success('Connection order saved.');close();}catch(e){toast.error(e.message);}}}>
+  return <form className="dialog-form" onSubmit={async e=>{e.preventDefault();try{await perform('/api/settings/connection-order',{ids:items.map(c=>c.id)});notice.success('Connection order saved.');close();}catch(e){notice.error(e.message);}}}>
     <div ref={list} className="dialog-scroll space-y-2">{items.map((c,index)=><div key={c.id} data-connection-id={c.id} className={`flex items-center gap-2 rounded-md border p-2 ${dragging===c.id?'border-ring bg-accent shadow-sm':'bg-background'}`}><Button type="button" variant="ghost" size="icon-xs" disabled={busy} className="touch-none select-none cursor-grab active:cursor-grabbing text-muted-foreground" aria-label={`Drag ${c.name} to reorder`} title="Drag to reorder" onPointerDown={e=>start(e,c.id)} onPointerMove={update} onPointerUp={e=>finish(e)} onPointerCancel={e=>finish(e,true)} onLostPointerCapture={e=>finish(e)} onKeyDown={e=>{if(e.key==='ArrowUp'&&index>0){e.preventDefault();move(index,index-1);}if(e.key==='ArrowDown'&&index<items.length-1){e.preventDefault();move(index,index+1);}}}><GripVertical className="size-4 pointer-events-none" /></Button><span className="min-w-0 flex-1 truncate text-sm">{c.name}</span><Button type="button" variant="ghost" size="icon-xs" disabled={busy||index===0} aria-label={`Move ${c.name} up`} onClick={()=>move(index,index-1)}><ArrowUp className="size-4" /></Button><Button type="button" variant="ghost" size="icon-xs" disabled={busy||index===items.length-1} aria-label={`Move ${c.name} down`} onClick={()=>move(index,index+1)}><ArrowDown className="size-4" /></Button></div>)}</div>
     <DialogFooter><Button type="button" variant="outline" disabled={busy} onClick={close}>Cancel</Button><Button disabled={busy||!!dragging}>Save order</Button></DialogFooter>
   </form>;
@@ -388,8 +387,8 @@ function NameForm({ model, busy, perform, close }) {
   const [useDefault,setUseDefault] = useState(false);
   async function submit(e) {
     e.preventDefault();
-    try { await perform(`/api/${model.kind}/${item.id}/edit`, useDefault ? {useDefaultName:true} : {name}); if (!model.initialNaming) toast.success('Display name saved.'); close(true); }
-    catch(e) { toast.error(e.message); }
+    try { await perform(`/api/${model.kind}/${item.id}/edit`, useDefault ? {useDefaultName:true} : {name}); if (!model.initialNaming) notice.success('Display name saved.'); close(true); }
+    catch(e) { notice.error(e.message); }
   }
   return <form onSubmit={submit} className="space-y-4">
     <div className="space-y-2"><Label htmlFor="item-name" className="text-sm font-medium">Display name</Label><Input id="item-name" value={name} onClear={()=>{setName('');setUseDefault(false);}} onChange={e => {setName(e.target.value);setUseDefault(false);}} maxLength={80} required /></div>
@@ -400,7 +399,7 @@ function NameForm({ model, busy, perform, close }) {
 }
 function App() {
   useAnimatedScrollbars();
-  const {notice, check:checkForUpdates, report} = useUpdateBanner();
+  const {notice:updateNotice, check:checkForUpdates, report} = useUpdateBanner();
   const {theme,setTheme}=useTheme();
   const [toolbarDragging,setToolbarDragging]=useState(false);
   const revealConnection = useRef(null);
@@ -444,9 +443,9 @@ function App() {
     window.addEventListener('focus',refresh);
     return()=>window.removeEventListener('focus',refresh);
   },[]);
-  useEffect(() => {load().catch(() => {setBootFailed(true);toast.error('Cannot connect to the router. Reopen the app.');});const timer=setInterval(() => {if(!document.hidden&&(!modalRef.current||['channel','permissions','issues'].includes(modalRef.current.type)))load().catch(()=>{});},15000);return()=>clearInterval(timer);},[]);
+  useEffect(() => {load().catch(() => {setBootFailed(true);notice.error('Cannot connect to the router. Reopen the app.');});const timer=setInterval(() => {if(!document.hidden&&(!modalRef.current||['channel','permissions','issues'].includes(modalRef.current.type)))load().catch(()=>{});},15000);return()=>clearInterval(timer);},[]);
   async function perform(path,body={}) {setBusy(true);try{const r=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json','X-Router-CSRF':csrf.current},body:JSON.stringify(body)});const result=await r.json();if(!r.ok)throw new Error(result.error);await load();return result;}finally{setBusy(false);}}
-  async function action(work,success) {setBusy(true);try{await work();if(success)toast.success(success);}catch(e){toast.error(e.message);}finally{setBusy(false);}}
+  async function action(work,success) {setBusy(true);try{await work();if(success)notice.success(success);}catch(e){notice.error(e.message);}finally{setBusy(false);}}
   useEffect(() => {
     if (modal || !revealConnection.current) return;
     const row = mainRef.current?.querySelector(`[data-connection-header="${CSS.escape(revealConnection.current)}"]`);
@@ -462,13 +461,13 @@ function App() {
   },[data,modal,busy]);
   async function closeModal(saved = false) {
     if(busy)return;
-    if(modal?.initialNaming && saved !== true){try{await perform(`/api/connections/${modal.item.id}/edit`,{dismissNaming:true});}catch(e){toast.error(e.message);return;}}
+    if(modal?.initialNaming && saved !== true){try{await perform(`/api/connections/${modal.item.id}/edit`,{dismissNaming:true});}catch(e){notice.error(e.message);return;}}
     if (modal?.initialNaming) revealConnection.current = modal.item.id;
     setModal(null);
   }
   async function connect(id,channel) {const r=await perform(`/api/connections/${id}/authorize`,channel?{channel}:{});if(window.routerDesktop)await window.routerDesktop.openOAuth(r.url);else location.assign(r.url);}
-  useEffect(() => window.routerDesktop?.onShowAbout(() => { if (modalRef.current && modalRef.current.type !== 'about') { toast.info('Close the current dialog before opening About.'); return; } setModal({type:'about'}); }), []);
-  if(!data)return <div className="p-8 text-sm text-muted-foreground">{bootFailed ? <Button variant="outline" onClick={()=>{setBootFailed(false);load().catch(()=>{setBootFailed(true);toast.error('Cannot connect to the router. Reopen the app.');});}}>Retry connection</Button> : 'Opening connections…'}</div>;
+  useEffect(() => window.routerDesktop?.onShowAbout(() => { if (modalRef.current && modalRef.current.type !== 'about') { notice.info('Close the current dialog before opening About.'); return; } setModal({type:'about'}); }), []);
+  if(!data)return <><NotificationStrip /><div className="p-8 text-sm text-muted-foreground">{bootFailed ? <Button variant="outline" onClick={()=>{setBootFailed(false);load().catch(()=>{setBootFailed(true);notice.error('Cannot connect to the router. Reopen the app.');});}}>Retry connection</Button> : 'Opening connections…'}</div></>;
   const permissionKeys=data.permissionGroups.flatMap(g=>g.modes.map(m=>`${g.area}:${m}`));
   const readiness=data.accessStatus || {projects:0,enabledProjects:0,issues:[],readyProjectIds:[]};
   function resolveIssue(issue) {
@@ -493,8 +492,8 @@ function App() {
       const enabled=!startup.enabled;
       const next=await window.routerDesktop.setStartupSettings(enabled);
       setStartup(next);
-      if(next.requiresApproval)toast.info('Allow MCP Router in System Settings → General → Login Items.');
-      else if(next.enabled!==enabled)toast.error('Could not change launch at startup. Check your system login item settings.');
+      if(next.requiresApproval)notice.info('Allow MCP Router in System Settings → General → Login Items.');
+      else if(next.enabled!==enabled)notice.error('Could not change launch at startup. Check your system login item settings.');
     })},{separator:true}]:[]),
     {label:'Default MCP version',icon:'Server',children:['stable','beta'].map(channel=>({id:`channel-${channel}`,label:channel==='beta'?'β Beta':'Stable',checked:(data.settings.defaultChannel||'stable')===channel,onSelect:()=>action(()=>perform('/api/settings/default-channel',{channel}),'Default MCP version updated.')}))},
     {separator:true},
@@ -510,7 +509,8 @@ function App() {
   const filterActive=!!search||pinnedOnly;
   return <div className="router-shell">
     <header data-dragging={toolbarDragging} onPointerDown={beginToolbarDrag} onPointerMove={()=>{if(toolbarPointer.current!==null)window.routerDesktop.toolbarDrag('move');}} onPointerUp={endToolbarDrag} onPointerCancel={endToolbarDrag} onLostPointerCapture={endToolbarDrag} className={`app-header ${window.routerDesktop?.integratedTitleBar ? `app-header-integrated ${window.routerDesktop.titleBarPlatform === 'win32' ? 'app-header-windows' : 'app-header-mac'}` : ''}`}><div className="min-w-0"><div className="flex flex-wrap items-baseline gap-x-2"><h1 className="text-base font-semibold">MCP Router</h1><span className="app-publisher inline-flex items-baseline gap-1 text-sm"><span className="text-muted-foreground">by</span><PublisherLink className="font-semibold" /></span></div><p className="text-xs text-muted-foreground"><AnimatedText>{`${data.connections.length} ${data.connections.length===1?'connection':'connections'} · ${data.projects.length} ${data.projects.length===1?'project':'projects'}`}</AnimatedText></p></div><div className="app-header-actions"><ClientConnections /><SettingsMenu disabled={busy} items={settingsItems} />{window.routerDesktop?.openMainWindow&&<Button className="compact-window-only" variant="outline" size="icon" aria-label="Open main window" title="Open main window" onClick={()=>window.routerDesktop.openMainWindow()}><Maximize2 className="size-4" /></Button>}</div></header>
-    <UpdateBanner notice={notice} report={report} />
+    <UpdateBanner notice={updateNotice} report={report} />
+    {!modal && <NotificationStrip />}
     <main ref={mainRef} tabIndex={-1} className="router-main">
     <div className="router-toolbar flex flex-wrap items-center justify-between gap-2 py-4"><div className="flex min-w-0 flex-1 items-center gap-2"><div className="min-w-40 flex-1 max-w-xs"><Input search placeholder="Search projects…" aria-label="Search projects" value={query} onClear={()=>setQuery('')} onChange={e=>setQuery(e.target.value)} /></div><Button size="icon" aria-label="Show pinned projects" title="Show pinned projects" variant={pinnedOnly?'secondary':'outline'} aria-pressed={pinnedOnly} onClick={()=>setPinnedOnly(value=>!value)}><AnimatedSwap icon value={pinnedOnly} className="size-4"><Pin className={`size-4 ${pinnedOnly?'fill-current':''}`} /></AnimatedSwap></Button></div><Button variant="outline" size="icon" disabled={busy} aria-label="Add connection" title="Add connection" onClick={()=>setModal({type:'connect'})}><Plus className="size-4" /></Button></div>
     <Accordion type="multiple" className="space-y-3" aria-label="Connections and projects" value={grouped.filter(c=>expanded[`${filterActive ? `filter:${search}:${pinnedOnly}:` : ''}${c.id}`]??filterActive).map(c=>c.id)} onValueChange={ids=>setExpanded(prev=>({...prev,...Object.fromEntries(grouped.map(c=>[`${filterActive ? `filter:${search}:${pinnedOnly}:` : ''}${c.id}`,ids.includes(c.id)]))}))}>
@@ -546,7 +546,8 @@ function App() {
         </AnimatedProjectList></AccordionContent>
       </AnimatedConnection>;})}</AnimatePresence>
     </Accordion>
-    <Dialog open={!!modal} onOpenChange={open=>{if(!open&&!busy)void closeModal();}}><DialogContent onCloseAutoFocus={event=>{if(issueTriggerRef.current){event.preventDefault();const target=issueTriggerRef.current.isConnected?issueTriggerRef.current:mainRef.current;target?.focus({preventScroll:true});issueTriggerRef.current=null;}}} onInteractOutside={event=>{if(event.target.closest('[data-sonner-toaster]'))event.preventDefault();}} onOpenAutoFocus={event=>{if(['permissions','rename','issues'].includes(displayedModal?.type)){event.preventDefault();event.target.focus();}}} className={`dialog-shell ${['permissions','defaults'].includes(displayedModal?.type)?'permission-dialog sm:max-w-2xl':'sm:max-w-lg'}`}>{displayedModal?.type!=='permissions'&&<DialogHeader className="shrink-0 pr-6 text-left"><DialogTitle>{displayedModal?.initialNaming?'Name your connection':displayedModal&&titles[displayedModal.type]}</DialogTitle><DialogDescription className={['permissions','about'].includes(displayedModal?.type)?'sr-only':undefined}>{displayedModal?.initialNaming?'Webflow is connected. What would you like to call this connection?':displayedModal?.type==='issues'?(visibleIssues.length?issueDescription:'Your enabled projects are ready to use.'):displayedModal?.type==='accessMode'?`Choose how AI tools access ${displayedModal.item.name}.`:displayedModal?.type==='connect'?'Choose access in Webflow, then limit AI access here.':displayedModal?.type==='permissions'?'Edit the project name and permissions.':displayedModal?.type==='about'?'Application information and third-party licenses.':displayedModal?.type==='defaults'?'Starting permissions for automatically discovered projects.':displayedModal?.type==='delete'?`Remove ${displayedModal.item.name} from this router?`:displayedModal?.type==='channel'?'Review Stable and β Beta access and reconnect either version.':displayedModal?.type==='order'?'Drag connections or use the arrows to change their order.':displayedModal?.type==='diagnostics'?'Connection checks and recent activity.':'Change the local display name.'}</DialogDescription></DialogHeader>}
+    <Dialog open={!!modal} onOpenChange={open=>{if(!open&&!busy)void closeModal();}}><DialogContent onCloseAutoFocus={event=>{if(issueTriggerRef.current){event.preventDefault();const target=issueTriggerRef.current.isConnected?issueTriggerRef.current:mainRef.current;target?.focus({preventScroll:true});issueTriggerRef.current=null;}}} onOpenAutoFocus={event=>{if(['permissions','rename','issues'].includes(displayedModal?.type)){event.preventDefault();event.target.focus();}}} className={`dialog-shell ${['permissions','defaults'].includes(displayedModal?.type)?'permission-dialog sm:max-w-2xl':'sm:max-w-lg'}`}>{modal && <NotificationStrip />}
+    {displayedModal?.type!=='permissions'&&<DialogHeader className="shrink-0 pr-6 text-left"><DialogTitle>{displayedModal?.initialNaming?'Name your connection':displayedModal&&titles[displayedModal.type]}</DialogTitle><DialogDescription className={['permissions','about'].includes(displayedModal?.type)?'sr-only':undefined}>{displayedModal?.initialNaming?'Webflow is connected. What would you like to call this connection?':displayedModal?.type==='issues'?(visibleIssues.length?issueDescription:'Your enabled projects are ready to use.'):displayedModal?.type==='accessMode'?`Choose how AI tools access ${displayedModal.item.name}.`:displayedModal?.type==='connect'?'Choose access in Webflow, then limit AI access here.':displayedModal?.type==='permissions'?'Edit the project name and permissions.':displayedModal?.type==='about'?'Application information and third-party licenses.':displayedModal?.type==='defaults'?'Starting permissions for automatically discovered projects.':displayedModal?.type==='delete'?`Remove ${displayedModal.item.name} from this router?`:displayedModal?.type==='channel'?'Review Stable and β Beta access and reconnect either version.':displayedModal?.type==='order'?'Drag connections or use the arrows to change their order.':displayedModal?.type==='diagnostics'?'Connection checks and recent activity.':'Change the local display name.'}</DialogDescription></DialogHeader>}
       {displayedModal?.type==='issues'&&<>
         <div className="dialog-scroll divide-y">{visibleIssues.map(issue=><div key={`${issue.connectionId}:${issue.projectId||'connection'}:${issue.channel}`} className="space-y-3 py-4 first:pt-0 last:pb-0">
           <div><p className="text-sm font-medium">{issue.name}</p>{!displayedModal.connectionId&&issue.projectId&&<p className="mt-1 text-xs text-muted-foreground">{issue.connectionName}</p>}<p className="mt-1 text-sm text-muted-foreground">{issue.reason}</p></div>
@@ -589,5 +590,4 @@ function App() {
     </DialogContent></Dialog>
   </main></div>;
 }
-function ThemedToaster(){const {resolved}=useTheme();return <Toaster theme={resolved} position="bottom-right" closeButton duration={4500} />;}
-createRoot(document.getElementById('root')).render(<ThemeProvider><App /><ThemedToaster /></ThemeProvider>);
+createRoot(document.getElementById('root')).render(<ThemeProvider><App /></ThemeProvider>);

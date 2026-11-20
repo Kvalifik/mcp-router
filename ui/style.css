@@ -110,8 +110,6 @@ body:has([data-slot="dropdown-menu-content"]) .app-header-integrated, .app-heade
 :is(.permission-scroll, .project-list, .dialog-scroll, .router-main, .dialog-shell)::-webkit-scrollbar-corner { background:var(--secondary); }
 [data-slot="dialog-overlay"] { top:64px; }
 
-/* Radix modal layers disable body pointer events; toast controls remain interactive. */
-[data-sonner-toaster], [data-sonner-toast], [data-sonner-toast] [data-close-button] { pointer-events:auto; }
 
 /* The main desktop window cannot shrink below 640px. The menu bar loads this
    same interface at 400px; only its presentation changes. */
@@ -218,3 +216,6 @@ body:has([data-slot="dropdown-menu-content"]) .app-header-integrated, .app-heade
 @media (prefers-reduced-motion:reduce) {
   :is([data-slot="dialog-content"], [data-slot="dialog-overlay"], [data-slot="popover-content"], [data-slot="dropdown-menu-content"], [data-slot="dropdown-menu-sub-content"], [data-slot="tooltip-content"]) { animation:none; }
 }
+
+.dialog-shell > .update-banner-reveal[data-open="false"] { display:none; }
+.dialog-shell > .update-banner-reveal .update-banner { padding-right:2.5rem; }

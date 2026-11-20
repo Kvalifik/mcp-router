@@ -252,6 +252,11 @@ try {
     if(demo.state.connections[0].workspacePermissions?.['demo-workspace-studio']?.['workspace_members:read']!==true || JSON.stringify(demo.state.projects.map(project=>project.permissions))!==projectPermissionsBefore)throw new Error('Workspace permissions must save independently of project grants');
     if(demo.state.connections[0].workspacePermissions?.['demo-workspace-studio']?.['workspace_aeo:write']!==true)throw new Error('Workspace AEO grant must save independently');
     if(demo.state.connections[0].connectionPermissions?.['workspace_discovery:read']!==true)throw new Error('Account-wide grant must save independently');
+    await assertUI(`(() => {
+      const strip = document.querySelector('.router-shell > .update-banner-reveal[data-open="true"] [role="status"]');
+      return strip?.textContent === 'Workspace permissions saved.' &&
+        strip.getBoundingClientRect().bottom <= document.querySelector('.router-main').getBoundingClientRect().top;
+    })()`, 'save feedback must appear above the scrollable controls');
     demo.state.connections[0].connectionPermissions={};
     demo.state.connections[0].workspacePermissions={};
     const projectsBeforeDirect=JSON.stringify(demo.state.projects);
@@ -261,7 +266,7 @@ try {
     await assertUI(`document.querySelector('input[value="managed"]').checked`, 'connections must default to Managed');
     await click('input[name="accessMode"][value="direct"]');
     await assertUI(`document.querySelector('[role="dialog"]').textContent.includes('Project permissions don’t apply') && document.querySelector('[role="dialog"]').textContent.includes('other projects or workspaces')`, 'Direct scope must be explicit before saving');
-    await evaluate(`document.querySelectorAll('[data-sonner-toast] [data-close-button]').forEach(button=>button.click()); document.activeElement.blur()`);
+    await evaluate(`document.querySelectorAll('[aria-label="Dismiss notification"]').forEach(button=>button.click()); document.activeElement.blur()`);
     await capture('/tmp/mcp-router-direct-dialog.png');
     window.setWindowButtonVisibility(false);
     window.setSize(400,420);
@@ -275,7 +280,7 @@ try {
     if(demo.state.connections[0].accessMode!=='direct')throw new Error('Direct mode did not save');
     await assertUI(`document.querySelector('[aria-label="Enable Juniper & Kite"]').disabled && document.querySelector('[aria-label="Settings for Juniper & Kite"]').disabled`, 'project controls must be inactive in Direct mode');
     await assertUI(`document.querySelector('[aria-label="Direct Webflow — settings for Archive Concept"]') !== null`, 'disabled managed projects must show Direct access');
-    await evaluate(`document.querySelectorAll('[data-sonner-toast] [data-close-button]').forEach(button=>button.click()); document.activeElement.blur()`);
+    await evaluate(`document.querySelectorAll('[aria-label="Dismiss notification"]').forEach(button=>button.click()); document.activeElement.blur()`);
     await capture('/tmp/mcp-router-direct-overview.png');
     verificationMenuSelection='access-mode';
     await click('[aria-label="More options for Example Studio"]');

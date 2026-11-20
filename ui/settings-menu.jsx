@@ -3,7 +3,7 @@ import { ChevronDown, Settings2, SunMoon, PanelTop, Monitor, Server, ArrowDownUp
 import { AnimatedText } from './components/ui/animated-content.jsx';
 import { Button } from './components/ui/button.jsx';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuCheckboxItem } from './components/ui/dropdown-menu';
-import { toast } from 'sonner';
+import { notice } from './notifications.jsx';
 
 const icons={SunMoon,PanelTop,Monitor,Server,ArrowDownUp,ShieldCheck,Activity,RefreshCw,Info,Pencil,Trash2,MessageSquare,Code2,Terminal,Plus,Copy,Check,TriangleAlert,CloudOff,Eye,Ban,CheckCheck,Unplug,Split,Power};
 function ItemIcon({name}){const Icon=icons[name];return Icon?<Icon className="size-4" />:null;}
@@ -21,7 +21,7 @@ export function ActionMenu({items, trigger}) {
     try {
       const id=await window.routerDesktop.showNativeMenu({items:serialize(items),x:Math.round(rect.left),y:Math.round(rect.bottom+4)});
       if(id)await actions.get(id)?.();
-    } catch {toast.error('Could not open or apply the menu selection.');}
+    } catch {notice.error('Could not open or apply the menu selection.');}
   };
   const button = native ? React.cloneElement(trigger, {onClick:open,onKeyDown:event=>{if(event.key==='ArrowDown'){event.preventDefault();open(event);}},'aria-haspopup':'menu'}) : trigger;
   if(native)return button;

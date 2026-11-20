@@ -124,7 +124,6 @@
 !/ui/components/ui/input.jsx
 !/ui/components/ui/label.tsx
 !/ui/components/ui/popover.jsx
-!/ui/components/ui/sonner.tsx
 !/ui/components/ui/switch.jsx
 !/ui/components/ui/table.tsx
 !/ui/components/ui/tabs.tsx
@@ -132,6 +131,7 @@
 !/ui/index.html
 !/ui/lib/utils.js
 !/ui/main.jsx
+!/ui/notifications.jsx
 !/ui/update-banner.jsx
 !/ui/permission-presets.js
 !/ui/permission-availability.js

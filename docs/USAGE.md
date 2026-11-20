@@ -9,6 +9,8 @@ default browser, where you can find the source code, documentation, and issues.
 **Report a bug or suggest a feature** is available in both Settings and About MCP
 Router and opens the repository’s GitHub Issues page.
 
+Save confirmations and other app messages appear beneath the header. While a dialog is open, its messages appear inside it.
+
 ## Authorizing a connection
 
 After a new connection successfully discovers its projects, MCP Router asks for a
