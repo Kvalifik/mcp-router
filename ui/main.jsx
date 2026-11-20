@@ -316,7 +316,7 @@ function ClientConnections() {
   const [clients,setClients] = useState([]), [pending,setPending] = useState(null);
   useEffect(()=>{if(!window.routerDesktop)return;let alive=true;const refresh=()=>window.routerDesktop.clientStatus().then(result=>{if(alive)setClients(result);}).catch(()=>{});refresh();window.addEventListener('focus',refresh);const timer=setInterval(refresh,30000);return()=>{alive=false;clearInterval(timer);window.removeEventListener('focus',refresh);};},[]);
   if(!window.routerDesktop)return null;
-  const icon=id=>id==='codex'||id==='claude-desktop'?'MessageSquare':id==='cursor'||id==='vscode'?'Code2':'Terminal';
+  const icon=id=>id==='codex'||id==='claude-desktop'?'MessageSquare':id==='cursor'||id==='vscode'||id==='antigravity'?'Code2':'Terminal';
   async function connect(client) {
     if(pending)return;
     setPending(client.id);const noticeId=notice.loading(`Connecting ${client.name}…`);

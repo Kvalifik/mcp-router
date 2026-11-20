@@ -34,14 +34,14 @@ test('IPC rejects missing or incorrect credentials before executing operations',
 test('Windows discovery handles desktop executables and npm CLI registrations without a shell',async t=>{
  const home=fs.mkdtempSync(path.join(os.tmpdir(),'router-windows-'));t.after(()=>fs.rmSync(home,{recursive:true,force:true}));
  const appData=path.join(home,'Roaming'),localAppData=path.join(home,'Local'),bin=path.join(appData,'npm');
- for(const file of [path.join(localAppData,'AnthropicClaude/claude.exe'),path.join(localAppData,'Programs/cursor/Cursor.exe'),path.join(localAppData,'Programs/Microsoft VS Code/Code.exe'),path.join(bin,'codex.cmd'),path.join(bin,'node_modules/@openai/codex/bin/codex.js'),path.join(bin,'claude.cmd'),path.join(bin,'gemini.cmd')]){fs.mkdirSync(path.dirname(file),{recursive:true});fs.writeFileSync(file,'');}
+ for(const file of [path.join(localAppData,'AnthropicClaude/claude.exe'),path.join(localAppData,'Programs/cursor/Cursor.exe'),path.join(localAppData,'Programs/Microsoft VS Code/Code.exe'),path.join(localAppData,'Programs/Antigravity/Antigravity.exe'),path.join(bin,'codex.cmd'),path.join(bin,'node_modules/@openai/codex/bin/codex.js'),path.join(bin,'claude.cmd'),path.join(bin,'gemini.cmd')]){fs.mkdirSync(path.dirname(file),{recursive:true});fs.writeFileSync(file,'');}
  const executable=path.join(home,'MCP Router.exe'),script=path.join(home,'stdio.js'),socket=path.join(home,'router.sock');
  const expected={command:executable,args:[script],env:{ELECTRON_RUN_AS_NODE:'1',ROUTER_SOCKET:socket}};
  const calls=[];let connected=false;
  const client=integrations.createIntegrations({home,appData,localAppData,getWindowsPackageRoots:async()=>{throw new Error("Package service unavailable");},programFiles:path.join(home,'Program Files'),platform:'win32',binaryDirs:[bin],executable,script,socket,run:async(command,args,options)=>{calls.push({command,args,options});if(args.includes('add')){connected=true;return {stdout:''};}if(!connected)throw Object.assign(new Error(),{stderr:'not found'});return {stdout:JSON.stringify({transport:expected})};}});
- assert.deepEqual((await client.status()).map(x=>x.installed),Array(6).fill(true));
- for(const id of ['codex','claude-desktop','claude-code','cursor','vscode','gemini'])assert.equal((await client.connect(id)).ok,true,id);
- assert.deepEqual((await client.status()).map(x=>x.state),Array(6).fill('configured'));
+ assert.deepEqual((await client.status()).map(x=>x.installed),Array(7).fill(true));
+ for(const id of ['codex','claude-desktop','claude-code','cursor','vscode','gemini','antigravity'])assert.equal((await client.connect(id)).ok,true,id);
+ assert.deepEqual((await client.status()).map(x=>x.state),Array(7).fill('configured'));
  assert.ok(calls.every(c=>c.command===executable && c.args[0].endsWith('codex.js') && !c.options.shell));
  const config=integrations.readConfig(path.join(appData,'Claude/claude_desktop_config.json')).data;
  assert.deepEqual(config.mcpServers[integrations.NAME],expected);

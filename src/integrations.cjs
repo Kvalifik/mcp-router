@@ -75,7 +75,8 @@ function createIntegrations({home,appData,executable,script,socket,run,getWindow
   const windowsApps = {
     Claude:[path.join(localAppData,'AnthropicClaude/claude.exe'),path.join(localAppData,'Programs/Claude/Claude.exe')],
     Cursor:[path.join(localAppData,'Programs/cursor/Cursor.exe'),path.join(programFiles,'cursor/Cursor.exe')],
-    'Visual Studio Code':[path.join(localAppData,'Programs/Microsoft VS Code/Code.exe'),path.join(programFiles,'Microsoft VS Code/Code.exe')]
+    'Visual Studio Code':[path.join(localAppData,'Programs/Microsoft VS Code/Code.exe'),path.join(programFiles,'Microsoft VS Code/Code.exe')],
+    Antigravity:[path.join(localAppData,'Programs/Antigravity/Antigravity.exe'),path.join(programFiles,'Antigravity/Antigravity.exe')]
   };
   const appPath=name=>first(windows ? windowsApps[name] || [] : applicationsDirs.map(dir=>path.join(dir,name+'.app')));
   const dirs = windows ? [...binaryDirs,path.join(appData,'npm'),path.join(home,'.local/bin')] : binaryDirs;
@@ -111,7 +112,8 @@ function createIntegrations({home,appData,executable,script,socket,run,getWindow
       {id:'claude-code',name:'Claude Code',installed:!!binary('claude'),file:path.join(home,'.claude.json'),download:'https://code.claude.com/docs/en/setup',hint:'Start a new Claude Code session. Project-specific overrides still apply.'},
       {id:'cursor',name:'Cursor',installed:!!appPath('Cursor'),file:path.join(home,'.cursor/mcp.json'),comments:true,download:'https://cursor.com/download',hint:'Enable the server in Cursor Settings → Tools & MCP. Project overrides still apply.'},
       {id:'vscode',name:'VS Code / Copilot',installed:!!appPath('Visual Studio Code'),file:path.join(appData,'Code/User/mcp.json'),key:'servers',comments:true,download:'https://code.visualstudio.com/download',hint:'Added to the default VS Code profile. Use MCP: List Servers to start and trust it. Other profiles need their own configuration.'},
-      {id:'gemini',name:'Gemini CLI',installed:!!binary('gemini'),file:path.join(home,'.gemini/settings.json'),comments:true,download:'https://geminicli.com/docs/get-started/installation/',hint:'Start a new Gemini CLI session in a trusted folder. Existing tool restrictions still apply.'}
+      {id:'gemini',name:'Gemini CLI',installed:!!binary('gemini'),file:path.join(home,'.gemini/settings.json'),comments:true,download:'https://geminicli.com/docs/get-started/installation/',hint:'Start a new Gemini CLI session in a trusted folder. Existing tool restrictions still apply.'},
+      {id:'antigravity',name:'Antigravity',installed:!!appPath('Antigravity'),file:path.join(home,'.gemini/config/mcp_config.json'),download:'https://antigravity.google/download',hint:'Open MCP Servers → Manage MCP Servers in Antigravity and refresh to load the connection. Workspace overrides still apply.'}
     ];
   }
   async function status(c) {

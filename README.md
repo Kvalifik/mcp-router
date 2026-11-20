@@ -13,7 +13,7 @@ same time through one MCP connection, with access controls for each project.
 - **Change permissions in seconds.** Adjust access without reauthorizing, within your existing Webflow grant.
 - **Open the site or Designer directly.** Jump from a project in the app to its website or Webflow Designer.
 - **Switch between Stable and Beta quickly.** Choose which MCP version a project uses once you’ve authorized both.
-- **Connect your AI apps with one click.** Set up the connection for Codex, Claude Desktop, Claude Code, Cursor, VS Code, or Gemini CLI, then follow the app’s restart or reload instructions.
+- **Connect your AI apps with one click.** Set up the connection for Codex, Claude Desktop, Claude Code, Cursor, VS Code, Gemini CLI, or Antigravity, then follow the app’s restart or reload instructions.
 - **Run it locally, for free.** No Kvalifik account, subscription, paid tiers, or feature limits.
 
 MCP Router is independent software. It is not affiliated with, endorsed by,
