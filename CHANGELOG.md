@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.11.2-rc.1 — Connect Antigravity
+
+### What’s new
+
+- **Connect Antigravity with one click.** MCP Router can now add itself to Antigravity's MCP settings. Refresh the server list in Antigravity afterwards.
+
 ## 0.11.1 — Choose when to update
 
 MCP Router keeps your connection switches within reach and lets you choose when to restart for an update.
