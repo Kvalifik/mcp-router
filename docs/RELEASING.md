@@ -653,3 +653,42 @@ Keep the dependency set exercised by the signed rc.3 build. The SDK and
 signing changes in #55 have shipped; defer its remaining TOML patch for
 client-configuration testing. Defer the Motion (#35) and setup-node (#32)
 major upgrades for their own UI and CI migration checks.
+
+### November 23 compatibility and dependency review (0.11.2)
+
+Fresh, fully paginated captures from the existing application provider covered
+38 Stable and 47 Beta tools, with both guides. Regenerate the reviewed changes
+with `python3 scripts/build-catalog.py --refresh-0112 STABLE.json BETA.json`.
+The command checks targeting and stops on any unlisted schema change.
+
+Included: Beta split Forms, AEO, AEO brand presences and Recommendations into
+read and write tools and removed the old names. Their action schemas match the
+previous ones apart from descriptions that name the new tools. The catalog
+records each rename in `channelTools`, so operation IDs, saved grants and
+ownership checks are unchanged; the router resolves the upstream tool for the
+project's channel, including ownership listings. Beta removed `asset_tool`,
+which is now Stable-only. robots.txt replace/update/delete use the new `allows`
+and `disallows` rule fields on both channels, and `update_301_redirect` accepts
+partial updates. Campaign, firewall, agent-instruction and Release change
+history descriptions were refreshed; `get_campaign_task_status` gains an
+optional task `type`.
+
+New operations: four Campaign publish/unpublish actions on both channels use a
+new default-off `campaigns:publish` grant plus Pages Publish and Custom code
+Write. Custom domains must belong to the selected site and variation IDs to the
+campaign. Beta `import_image_from_url` uses Assets Write with page ownership.
+Beta `delete_site_branch_page` uses Pages Delete and must name a working page in
+one of the site's open Releases, not a main-site page.
+
+Deferred: Beta Shared Libraries (14 actions) and the four Beta Component
+description changes, unchanged from the 0.11.1 review (same definition digest).
+Retain the narrow CMS fieldData correction and the existing utility exclusions.
+Neither channel was unavailable.
+
+Dependencies (#70 replaces #66 and #67): lucide-react 1.76.0, tailwind-merge
+3.7.1, Tailwind 4.3.5, plugin-react 6.3.0, Vite 8.3.8 and TOML patch 3.3.3. TOML
+patch only fixes table patching; the writer still requires an exact round-trip.
+Notices now include supplemental MIT texts for the bundled Tailwind WebAssembly
+fallback. Close #55 once #70 merges, since its remaining TOML update is included.
+Motion 14 (#68, #35) and setup-node 7 (#32) stay deferred for their own UI and CI
+migration checks.
