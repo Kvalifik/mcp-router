@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.11.2-rc.2 — Connect Antigravity
+
+### What’s new
+
+- **Connect Antigravity with one click.** MCP Router can now add itself to Antigravity's MCP settings, including when Antigravity has created an empty settings file. Refresh the server list in Antigravity afterwards.
+
 ## 0.11.2-rc.1 — Connect Antigravity
 
 ### What’s new

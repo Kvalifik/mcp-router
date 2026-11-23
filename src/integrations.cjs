@@ -8,6 +8,7 @@ const { currentSocket } = require('./paths.cjs');
 const isObject = x => x && typeof x === 'object' && !Array.isArray(x);
 function readConfig(file, key = 'mcpServers', comments = false) {
   let raw; try { raw = fs.readFileSync(file, 'utf8'); } catch (e) { if (e.code === 'ENOENT') return { raw:null, data:{} }; throw e; }
+  if (!raw.trim()) return { raw, data:{} }; // Some apps create an empty placeholder file.
   const errors=[];
   const data = comments ? jsonc.parse(raw,errors,{allowTrailingComma:true}) : JSON.parse(raw);
   if (errors.length || !isObject(data) || (data[key] !== undefined && !isObject(data[key]))) throw new Error('Invalid MCP configuration');
@@ -19,7 +20,7 @@ function writeRegistration(file, entry, key = 'mcpServers', comments = false) {
   const merged = {...(isObject(data[key]?.[NAME]) ? data[key][NAME] : {}), ...entry};
   delete merged.url; delete merged.httpUrl;
   data[key] = {...data[key], [NAME]:merged};
-  const output = comments && raw !== null ? jsonc.applyEdits(raw,jsonc.modify(raw,[key,NAME],merged,{formattingOptions:{insertSpaces:true,tabSize:2}})) : JSON.stringify(data,null,2)+'\n';
+  const output = comments && raw?.trim() ? jsonc.applyEdits(raw,jsonc.modify(raw,[key,NAME],merged,{formattingOptions:{insertSpaces:true,tabSize:2}})) : JSON.stringify(data,null,2)+'\n';
   fs.mkdirSync(path.dirname(file), {recursive:true, mode:0o700});
   const temp = `${file}.router-${randomUUID()}.tmp`;
   try {

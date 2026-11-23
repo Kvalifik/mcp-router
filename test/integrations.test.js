@@ -57,6 +57,14 @@ test('Antigravity registration uses its global MCP config without a transport ty
  const data=readConfig(file).data;assert.deepEqual(data.mcpServers[NAME],expected);assert.equal(data.mcpServers.other.serverUrl,'https://example.test/mcp');
  assert.equal((await client.status()).find(c=>c.id==='antigravity').state,'configured');
 });
+test('empty placeholder configurations are filled and backed up',async t=>{
+ const {client,home,appData,expected}=fixture(t);
+ for(const [id,file] of [['antigravity',path.join(home,'.gemini/config/mcp_config.json')],['cursor',path.join(home,'.cursor/mcp.json')]]){
+  fs.mkdirSync(path.dirname(file),{recursive:true});fs.writeFileSync(file,id==='cursor'?'\n':'');
+  assert.equal((await client.connect(id)).ok,true,id);assert.deepEqual(readConfig(file).data.mcpServers[NAME].command,expected.command);
+  assert.ok(fs.readdirSync(path.dirname(file)).some(f=>f.includes('mcp-router-backup')));
+ }
+});
 test('missing applications are rediscovered after installation',async t=>{
  const {client,home}=fixture(t);const binary=path.join(home,'.local/bin/gemini');fs.unlinkSync(binary);
  assert.equal((await client.status()).find(c=>c.id==='gemini').installed,false);assert.equal((await client.connect('gemini')).ok,false);
