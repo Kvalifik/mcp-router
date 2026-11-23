@@ -72,6 +72,9 @@
 !/licenses/react-remove-scroll-bar.txt
 !/licenses/rolldown.txt
 !/licenses/shadcn-ui.txt
+!/licenses/napi-rs.txt
+!/licenses/tailwindcss.txt
+!/licenses/wasm-util.txt
 !/package-lock.json
 !/package.json
 !/packaging.mjs

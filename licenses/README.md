@@ -7,3 +7,6 @@ License texts for copied UI components and dependencies whose installed packages
 - err-code: https://raw.githubusercontent.com/IndigoUnited/js-err-code/master/LICENSE
 - electron-extract-zip: https://raw.githubusercontent.com/electron/extract-zip/main/LICENSE
 - rolldown: https://raw.githubusercontent.com/rolldown/rolldown/main/LICENSE
+- tailwindcss (for @tailwindcss/oxide-wasm32-wasi; identical to the tailwindcss package LICENSE): https://github.com/tailwindlabs/tailwindcss/blob/main/LICENSE
+- napi-rs (for @napi-rs/wasm-runtime, retrieved 23 November 2026): https://github.com/napi-rs/napi-rs/blob/main/LICENSE
+- wasm-util (for @tybys/wasm-util, retrieved 23 November 2026): https://github.com/toyobayashi/wasm-util/blob/main/LICENSE

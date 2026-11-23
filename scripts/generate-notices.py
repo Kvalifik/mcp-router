@@ -3,7 +3,7 @@ import json,re
 r=Path(__file__).resolve().parents[1]
 supplement=r/"licenses"
 lock=json.loads((r/'package-lock.json').read_text());parts=['# Third-party notices\n\nThe pinned Webflow operation schema in src/catalog.json is derived from Webflow MCP tool metadata. Webflow retains any applicable rights in that metadata.\n\nThird-party components retain their own licenses, including commercial-use permissions. The router license does not replace them. This inventory covers installed runtime and build dependencies; some platform-specific optional packages are absent. Rebuild notices when dependencies or target platforms change. Electron and Chromium include additional notices with the packaged runtime. Preserve those when distributing binaries.\n\nLocally copied shadcn/ui components are derived from shadcn/ui under MIT; see licenses/shadcn-ui.txt. Vendor trademarks are not licensed by these software licenses.\n']
-fallback={'@electron-internal/extract-zip':'electron-extract-zip','@rolldown/binding-darwin-arm64':'rolldown','err-code':'err-code','react-remove-scroll-bar':'react-remove-scroll-bar'}
+fallback={'@electron-internal/extract-zip':'electron-extract-zip','@rolldown/binding-darwin-arm64':'rolldown','err-code':'err-code','react-remove-scroll-bar':'react-remove-scroll-bar','@tailwindcss/oxide-wasm32-wasi':'tailwindcss','@napi-rs/wasm-runtime':'napi-rs','@tybys/wasm-util':'wasm-util'}
 missing=[]
 for rel,entry in sorted(lock['packages'].items()):
  root=r/rel
