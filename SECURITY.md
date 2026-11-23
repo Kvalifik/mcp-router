@@ -136,7 +136,10 @@ response bodies are added to audit events.
 
 Campaign IDs are checked against the selected site; variation/field/suggestion IDs
 are verified under that campaign, and personalization is confined to its landing
-page. Campaign creation/deletion also requires page and asset grants. Workspace
+page. Campaign creation/deletion also requires page and asset grants. Publishing or
+unpublishing campaigns and page variations requires a separate, default-off
+`campaigns:publish` grant plus Pages Publish and Custom code Write; custom domains
+must belong to the selected site. Workspace
 Campaign Hub discovery is verified against the selected site's live workspace and
 reconstructed to include only the selected site. Optimize account discovery is
 reconstructed similarly; external sites and ambiguous Optimize IDs fail closed.
@@ -241,6 +244,13 @@ Beta Release ownership uses the new read tool, including CMS branch IDs. Merged
 history authorizes only history/detail reads. Conflict resolutions must appear in
 the owned Release's preview. New component page/asset links and CMS selections are
 checked against project resources. Channel-specific schemas stay separate.
+
+Deleting a Beta Release page requires Pages Delete; the page must be a working page
+of one of the selected site's open Releases, not a main-site page.
+
+Webflow may rename a tool on one channel (Beta split Forms, AEO and Recommendations
+into read and write tools). The catalog records the reviewed rename per channel, so
+operation IDs, grants and ownership checks are unchanged.
 
 Merging a Release additionally requires default-off `release_merge:publish` plus
 Pages Publish because it promotes all resource types into main. Performance

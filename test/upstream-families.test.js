@@ -42,9 +42,9 @@ function fixture(t) {
  return {router,store,c,calls,grant,workspace,read,write,setIntercept:fn=>intercept=fn};
 }
 
-test('all 56 reviewed actions are classified on both channels, and workspace grants stay out of project presets',()=>{
+test('all 60 reviewed actions are classified on both channels, and workspace grants stay out of project presets',()=>{
  const tools=['data_apps_tool','data_campaigns_tool','data_members_tool','data_optimize_tool'];
- const ops=CATALOG.filter(op=>tools.includes(op.tool)&&!op.upstreamAlias&&op.action!=='bulk_remove_workspace_members');assert.equal(ops.length,56);
+ const ops=CATALOG.filter(op=>tools.includes(op.tool)&&!op.upstreamAlias&&op.action!=='bulk_remove_workspace_members');assert.equal(ops.length,60);
  assert(ops.every(op=>op.channels.includes('stable')&&op.channels.includes('beta')));
  assert(!PERMISSIONS.some(k=>k.startsWith('workspace_members:')));assert(!GROUPS.some(g=>g.area==='workspace_members'));
  assert(ops.filter(op=>op.mode!=='read').every(op=>op.extraPermissions.includes('agent_instructions:read')));
@@ -286,4 +286,57 @@ test('AEO settings writes require their own grant and remain site-pinned and Bet
  f.grant(['recommendations:write']);await f.write(op,{recurringAuditsEnabled:false});assert.equal(f.calls.at(-1).params.site_id,'site');
  await assert.rejects(f.write(op,{site_id:'foreign-site',recurringAuditsEnabled:true}));
  f.store.data.projects.project.channel='stable';await assert.rejects(f.write(op,{recurringAuditsEnabled:true}),/unavailable/);
+});
+
+test('campaign publishing needs its own default-off grant and stays on the selected site',async t=>{
+ const f=fixture(t);
+ for(const action of ['publish_campaign','unpublish_campaign','publish_page_variations','unpublish_page_variations']){
+  const op=operation('data_campaigns_tool.'+action);
+  assert.equal(op.permission,'campaigns:publish');assert.deepEqual(op.channels,['stable','beta']);
+  for(const key of ['agent_instructions:read','scripts:write','pages:publish'])assert(op.extraPermissions.includes(key),action+' '+key);
+ }
+ f.grant(['campaigns:read','campaigns:write','campaigns:delete','scripts:write','pages:publish']);
+ await assert.rejects(f.write('data_campaigns_tool.publish_campaign',{campaign_id:'campaign',publish_to_webflow_subdomain:true}));
+ f.grant(['campaigns:publish','scripts:write','pages:publish']);
+ f.setIntercept((tool,action,params)=>action==='get_site'?envelope(action,{id:params.site_id,workspaceId:'workspace',customDomains:[{id:'domain'}]}):undefined);
+ await f.write('data_campaigns_tool.publish_campaign',{campaign_id:'campaign',custom_domain:'domain'});
+ assert.equal(f.calls.at(-1).action,'publish_campaign');assert.equal(f.calls.at(-1).params.site_id,'site');
+ await assert.rejects(f.write('data_campaigns_tool.unpublish_campaign',{campaign_id:'campaign',custom_domain:'foreign-domain'}));
+ await f.write('data_campaigns_tool.publish_page_variations',{campaign_id:'campaign',page_variation_ids:['variation']});
+ await assert.rejects(f.write('data_campaigns_tool.unpublish_page_variations',{campaign_id:'campaign',page_variation_ids:['variation','foreign']}));
+ f.setIntercept((tool,action)=>action==='get_campaign'?envelope(action,{id:'campaign',siteId:'foreign-site'}):undefined);
+ await assert.rejects(f.write('data_campaigns_tool.publish_campaign',{campaign_id:'campaign',publish_to_webflow_subdomain:true}));
+});
+
+test('Beta split tools keep operation IDs and grants while calling the renamed upstream tools',async t=>{
+ const f=fixture(t);f.c.beta={tokens:{access_token:'synthetic-beta'},sites:[{id:'site',name:'Example',workspaceId:'workspace'}]};
+ f.router.edit('projects','project',{channel:'beta'});
+ f.grant(['forms:read','forms:write','analyze:read','recommendations:write']);
+ f.setIntercept((tool,action)=>action==='list_forms'?envelope(action,{forms:[{id:'form'}],pagination:{total:1}}):undefined);
+ await f.read('data_forms_tool.list_forms',{});assert.equal(f.calls.at(-1).tool,'data_forms_read_tool');
+ await f.write('data_forms_tool.update_form_submission',{form_submission_id:'submission',form_id:'form',fieldData:{}}).catch(()=>{});
+ const ownership=f.calls.filter(c=>c.action==='list_forms');assert(ownership.length&&ownership.every(c=>c.tool==='data_forms_read_tool'));
+ await f.read('data_aeo_tool.get_query_guide',{});assert.equal(f.calls.at(-1).tool,'data_aeo_read_tool');
+ await f.write('data_recommendations_tool.update_recommendation_settings',{ruleConfig:{}}).catch(()=>{});
+ assert(f.calls.some(c=>c.tool==='data_recommendations_write_tool'&&c.action==='update_recommendation_settings'));
+ assert(!f.calls.some(c=>['data_forms_tool','data_aeo_tool','data_recommendations_tool'].includes(c.tool)));
+ assert.equal(operation('asset_tool.upload_image_by_url').channels.join(),'stable');
+ f.grant(['assets:write']);
+ await f.write('data_assets_tool.import_image_from_url',{page_id:'page',url:'https://example.test/image.png'});assert.equal(f.calls.at(-1).tool,'data_assets_tool');
+ await assert.rejects(f.write('data_assets_tool.import_image_from_url',{page_id:'foreign-page',url:'https://example.test/image.png'}));
+});
+
+test('Beta Release page deletion accepts only working pages from this site’s open Releases',async t=>{
+ const f=fixture(t);f.c.beta={tokens:{access_token:'synthetic-beta'},sites:[{id:'site',name:'Example',workspaceId:'workspace'}]};
+ f.router.edit('projects','project',{channel:'beta'});f.grant(['pages:delete']);
+ f.setIntercept((tool,action,params)=>{
+  if(action==='list_site_branches')return envelope(action,{branches:[{id:'release'}],pagination:{hasMore:false}});
+  if(action==='list_pages')return envelope(action,params.site_branch_id==='release'?{pages:[{id:'release-page'}],pagination:{total:1}}:{pages:[{id:'page'}],pagination:{total:1}});
+ });
+ await f.write('data_releases_write_tool.delete_site_branch_page',{page_id:'release-page'});
+ assert.equal(f.calls.at(-1).action,'delete_site_branch_page');assert.equal(f.calls.at(-1).params.site_id,'site');
+ await assert.rejects(f.write('data_releases_write_tool.delete_site_branch_page',{page_id:'page'}));
+ await assert.rejects(f.write('data_releases_write_tool.delete_site_branch_page',{page_id:'foreign-page'}));
+ f.router.edit('projects','project',{channel:'stable'});
+ await assert.rejects(f.write('data_releases_write_tool.delete_site_branch_page',{page_id:'release-page'}));
 });
