@@ -19,6 +19,23 @@ export function validatePermissions(value) {
 const ajv = new Ajv({ strict: false, validateFormats: false, allErrors: false });
 const validators = new WeakMap();
 export function operation(id, channel='stable') { const op=CATALOG.find(o=>o.id===id); if(!op)throw new Error('Unknown operation');const {channelSchemas,...selected}=op;return {...selected,schema:channelSchemas?.[channel]||op.schema}; }
+// Webflow may rename a tool on one channel. Calls keep the catalog's family name
+// (operation IDs, grants and ownership checks) and resolve the upstream tool here.
+export function upstreamTool(tool, args, channel) {
+  const actions=Array.isArray(args?.actions)?args.actions:[];
+  const names=new Set(actions.map(entry=>{
+    const action=entry&&typeof entry==='object'?Object.keys(entry).find(key=>key!=='label'):undefined;
+    return CATALOG.find(op=>op.tool===tool&&op.action===action)?.channelTools?.[channel]||tool;
+  }));
+  if(names.size>1)throw new Error('Actions must use one upstream tool');
+  return names.size?[...names][0]:tool;
+}
+export function channelClient(client, channel) {
+  return new Proxy(client,{get(target,key){
+    if(key==='call')return (name,args)=>target.call(upstreamTool(name,args,channel),args);
+    const value=target[key];return typeof value==='function'?value.bind(target):value;
+  }});
+}
 export function allowed(p,op,workspace={},connection={}) { const grants=permissions(p);return (op.scope==='connection'?connection[op.permission]===true:op.scope==='workspace'?workspace[op.permission]===true:grants[op.permission]===true)&&op.extraPermissions.every(key=>grants[key]===true); }
 export function validateWorkspacePermissions(value, sites) {
   if(!value || typeof value!=='object'||Array.isArray(value))throw new Error('Invalid workspace permissions');
@@ -234,6 +251,31 @@ export async function checkOwnership(client, op, value, siteId, pageId) {
     const preview=resultOf(await client.call('data_releases_read_tool',{actions:[{label:'Verify Release conflicts',preview_site_branch_update:{site_id:siteId,site_branch_id:value.site_branch_id}}]}),'preview_site_branch_update');
     if(!Array.isArray(preview?.report?.conflicts) || value.resolutions.some(r=>!preview.report.conflicts.some(c=>c.type===r.type&&c.id===r.id)))throw new Error('Conflict does not belong to this Release');
   }
+  // A Release working page is not in the main page list. Find it in this site's
+  // open Releases; never accept a main-site page or another site's Release.
+  let walked=value;
+  if(op.tool==='data_releases_write_tool' && op.action==='delete_site_branch_page') {
+    if(typeof value.page_id!=='string'||!value.page_id)throw new Error('Invalid resource ID');
+    const listing=resultOf(await client.call('data_releases_read_tool',{actions:[{label:'Verify project Release ownership',list_site_branches:{site_id:siteId}}]}),'list_site_branches');
+    const branches=Array.isArray(listing)?listing:listing?.branches || listing?.siteBranches;
+    if(!Array.isArray(branches)||branches.some(branch=>typeof branch?.id!=='string')||listing.pagination?.hasMore||listing.pagination?.nextCursor)throw new Error('Cannot verify resource ownership');
+    let found=false;
+    for(const branch of branches) {
+      for(let offset=0,page=0;!found;page++) {
+        if(page===100)throw new Error('Ownership listing incomplete');
+        const result=resultOf(await client.call('data_pages_tool',{actions:[{label:'Verify Release page ownership',list_pages:{site_id:siteId,site_branch_id:branch.id,limit:100,offset}}]}),'list_pages');
+        const rows=Array.isArray(result)?result:result?.pages;
+        if(!Array.isArray(rows))throw new Error('Cannot verify resource ownership');
+        found=rows.some(row=>row?.id===value.page_id);offset+=rows.length;
+        const pg=result.pagination;
+        if(!pg || pg.hasMore===false || (Number.isFinite(pg.total)&&offset>=pg.total) || (pg.hasMore!==true&&rows.length<100))break;
+        if(!rows.length)throw new Error('Ownership listing incomplete');
+      }
+      if(found)break;
+    }
+    if(!found)throw new Error('Resource does not belong to this project');
+    const {page_id,...rest}=value;walked=rest;
+  }
   const filterResponse=await checkProjectResources(client,op,value,siteId,owns,resultOf);
   async function walk(node,parent='') {
     if(!node||typeof node!=='object')return;
@@ -251,6 +293,6 @@ export async function checkOwnership(client, op, value, siteId, pageId) {
       await walk(v,Array.isArray(node)?parent:key);
     }
   }
-  await walk(value);
+  await walk(walked);
   return filterResponse;
 }

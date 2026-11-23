@@ -104,6 +104,84 @@ if sys.argv[1]=='--refresh-november':
  alias['schema']=copy.deepcopy(maps[1]['data_apps_tool.create_app'][0]);del alias['schema']['properties']['site_id']
  Path('src/catalog.json').write_text(json.dumps(catalog,indent=2)+'\n')
  print(len(catalog),'reviewed operations');sys.exit(0)
+# 0.11.2 compatibility refresh. Beta split Forms, AEO and Recommendations into
+# read/write tools; operation IDs and grants stay the same, with the Beta upstream
+# tool recorded in channelTools. Reviewed schema changes are listed explicitly.
+if sys.argv[1]=='--refresh-0112':
+ sources=[json.load(open(f)) for f in sys.argv[2:4]]
+ catalog=json.loads(Path('src/catalog.json').read_text())
+ splits={'data_forms_tool':'data_forms','data_aeo_tool':'data_aeo','data_aeo_brand_presences_tool':'data_aeo_brand_presences','data_recommendations_tool':'data_recommendations'}
+ refreshed={'data_agent_instructions_tool.generate_instruction','data_cms_tool.create_collection_items','data_releases_read_tool.list_site_branch_changes',
+  *['data_campaigns_tool.'+a for a in ['bulk_update_page_variations','create_campaign','create_page_variation','delete_campaign','delete_page_variation','get_campaign','get_campaign_task_status','get_engaged_accounts','get_form_submissions_count','get_opportunity_summary','get_page_variation_suggestions','get_page_variations','get_time_series','list_campaigns','personalize_element','personalize_property','unlink_delete_personalized_field','update_campaign','update_personalized_field']],
+  *['data_enterprise_tool.'+a for a in ['delete_robots_txt','replace_robots_txt','update_robots_txt','update_301_redirect','delete_waf_rule','get_waf_rules','suggest_waf_changes','test_waf_rules','test_waf_settings','update_waf_rule','update_waf_settings','validate_waf_rule']]}
+ # Description-only Beta changes that point at Shared Libraries stay deferred with that family.
+ deferred={'data_component_tool.'+a for a in ['get_all_components','get_component','insert_component_instance','query_components']}
+ maps=[]
+ for source in sources:
+  entries={}
+  for tool in source:
+   props=tool['inputSchema'].get('properties',{});items=props.get('actions',{}).get('items')
+   if not items or tool['name'] in ['data_element_builder','data_component_builder','data_whtml_builder']:continue
+   for variant in items.get('anyOf',items.get('oneOf',[items])):
+    for action,schema in variant['properties'].items():
+     if action!='label':entries[tool['name']+'.'+action]=(schema,props,tool['inputSchema'].get('required',[]))
+  maps.append(entries)
+ def corrected(op,schema):
+  schema=copy.deepcopy(schema)
+  if op['id']=='data_cms_tool.create_collection_items':
+   request=schema['properties']['request']['properties']
+   for field in [request['items']['items']['properties']['fieldData'],request['fieldData']['items']]:
+    record,closed=field['allOf']
+    if record.get('additionalProperties')!={} or set(closed.get('properties',{}))!={'name','slug'} or closed.get('additionalProperties') is not False:raise ValueError('CMS correction changed')
+    del closed['additionalProperties']
+  return schema
+ for op in catalog:
+  if op.get('upstreamAlias'):continue # Derived from data_apps_tool.create_app, checked below.
+  if op['tool']=='asset_tool':
+   if 'asset_tool.'+op['action'] in maps[1]:raise ValueError('Review restored Beta asset_tool')
+   op['channels']=['stable'];continue
+  if op['tool'] in splits and (not op.get('channels') or 'beta' in op['channels']):
+   tool=splits[op['tool']]+('_read_tool' if op['mode']=='read' else '_write_tool')
+   if tool+'.'+op['action'] not in maps[1]:raise ValueError('Review Beta split: '+op['id'])
+   op['channelTools']={'beta':tool}
+  schemas={}
+  for channel,entries in zip(['stable','beta'],maps):
+   if op.get('channels') and channel not in op['channels']:continue
+   key=op.get('channelTools',{}).get(channel,op['tool'])+'.'+op['action']
+   if key not in entries:continue
+   schema,props,required=entries[key]
+   if op['topSite']!=('siteId' if 'siteId' in props else None) or op['page']!=('pageId' in props):raise ValueError('Review changed targeting: '+op['id'])
+   pinned=op.get('channelSchemas',{}).get(channel,op['schema'])
+   live=corrected(op,schema)
+   split_description=op['tool'] in splits and channel=='beta'
+   if live!=pinned and op['id'] not in refreshed and not split_description:
+    if op['id'] in deferred and channel=='beta':live=pinned
+    else:raise ValueError('Unreviewed schema change: '+channel+' '+op['id'])
+   schemas[channel]=live
+  if not schemas:continue
+  base=schemas.get('stable',schemas.get('beta'))
+  op['schema']=base;op.pop('channelSchemas',None)
+  if 'beta' in schemas and schemas['beta']!=base:op['channelSchemas']={'beta':schemas['beta']}
+ def add(key,area,title,mode,extra,channels):
+  tool,action=key.split('.');schemas={}
+  for channel,entries in zip(['stable','beta'],maps):
+   if key not in entries:continue
+   schema,props,required=entries[key]
+   if set(required)!={'actions','session_id','agent_id','context'} or 'siteId' in props or 'pageId' in props or 'site_id' not in schema.get('required',[]):raise ValueError('Review new targeting: '+key)
+   schemas[channel]=schema
+  if list(schemas)!=channels:raise ValueError('Review channel availability: '+key)
+  op={'id':key,'tool':tool,'action':action,'area':area,'title':title,'mode':mode,'permission':area+':'+mode,'extraPermissions':extra,'topSite':None,'page':False,'builder':False,'direct':False,'channels':channels,'schema':schemas[channels[0]]}
+  if 'beta' in schemas and schemas['beta']!=op['schema']:op['channelSchemas']={'beta':schemas['beta']}
+  catalog[:]=[o for o in catalog if o['id']!=key];catalog.append(op)
+ alias=next(o for o in catalog if o.get('upstreamAlias') and o['action']=='create_app')
+ expected=copy.deepcopy(maps[1]['data_apps_tool.create_app'][0]);del expected['properties']['site_id']
+ if alias['schema']!=expected:raise ValueError('Review standalone app alias')
+ for action in ['publish_campaign','unpublish_campaign','publish_page_variations','unpublish_page_variations']:
+  add('data_campaigns_tool.'+action,'campaigns','Campaigns','publish',['agent_instructions:read','scripts:write','pages:publish'],['stable','beta'])
+ add('data_assets_tool.import_image_from_url','assets','Assets','write',['agent_instructions:read'],['beta'])
+ add('data_releases_write_tool.delete_site_branch_page','pages','Pages','delete',['agent_instructions:read'],['beta'])
+ Path('src/catalog.json').write_text(json.dumps(catalog,indent=2)+'\n')
+ print(len(catalog),'reviewed operations');sys.exit(0)
 if sys.argv[1]=='--refresh-beta-tools':
  stable,beta=[json.load(open(f)) for f in sys.argv[2:4]]
  tools={t['name']:t for t in beta};shared={t['name']:t for t in stable}

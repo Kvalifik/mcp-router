@@ -7,7 +7,7 @@ import integrations from '../src/integrations.cjs';
 const {createIntegrations,writeRegistration,readConfig,NAME}=integrations;
 function fixture(t) {
  const home=fs.mkdtempSync(path.join(os.tmpdir(),'wfr-clients-'));t.after(()=>fs.rmSync(home,{recursive:true,force:true}));
- fs.mkdirSync(path.join(home,'.local/bin'),{recursive:true});for(const n of ['codex','claude','gemini'])fs.writeFileSync(path.join(home,'.local/bin',n),'');for(const n of ['Claude','Cursor','Visual Studio Code'])fs.mkdirSync(path.join(home,'Applications',n+'.app'),{recursive:true});
+ fs.mkdirSync(path.join(home,'.local/bin'),{recursive:true});for(const n of ['codex','claude','gemini'])fs.writeFileSync(path.join(home,'.local/bin',n),'');for(const n of ['Claude','Cursor','Visual Studio Code','Antigravity'])fs.mkdirSync(path.join(home,'Applications',n+'.app'),{recursive:true});
  const appData=path.join(home,'Library/Application Support'),expected={command:'/Router.app/Contents/MacOS/Router',args:['/Router.app/Contents/Resources/app/src/stdio.js'],env:{ELECTRON_RUN_AS_NODE:'1',ROUTER_SOCKET:'/private/router.sock'}};
  let codexConfig=null;const calls=[];
  const client=createIntegrations({home,appData,platform:'darwin',applicationsDirs:[path.join(home,'Applications')],binaryDirs:[path.join(home,'.local/bin')],executable:expected.command,script:expected.args[0],socket:expected.env.ROUTER_SOCKET,run:async(command,args)=>{calls.push(args);if(args[1]==='add'){codexConfig={enabled:true,transport:expected};return {stdout:''};}if(!codexConfig)throw Object.assign(new Error('missing'),{stderr:'No MCP server named webflow_router_poc found.'});return {stdout:JSON.stringify(codexConfig)};}});
@@ -22,10 +22,10 @@ test('malformed settings are left untouched',t=>{
  const {home,expected}=fixture(t),file=path.join(home,'bad.json');for(const raw of ['{broken','[]','{"mcpServers":[]}']){fs.writeFileSync(file,raw);assert.throws(()=>writeRegistration(file,expected));assert.equal(fs.readFileSync(file,'utf8'),raw);}
 });
 test('all clients report registration state and connect only the selected app',async t=>{
- const {client,home,appData}=fixture(t);assert.deepEqual((await client.status()).map(c=>c.state),Array(6).fill('not-connected'));
+ const {client,home,appData}=fixture(t);assert.deepEqual((await client.status()).map(c=>c.state),Array(7).fill('not-connected'));
  assert.equal((await client.connect('claude-desktop')).ok,true);assert.equal(fs.existsSync(path.join(home,'.claude.json')),false);assert.ok(readConfig(path.join(appData,'Claude/claude_desktop_config.json')).data.mcpServers[NAME]);
  assert.equal((await client.connect('claude-code')).ok,true);assert.equal(readConfig(path.join(home,'.claude.json')).data.mcpServers[NAME].type,'stdio');assert.equal((await client.connect('codex')).ok,true);
- assert.deepEqual((await client.status()).map(c=>c.state),['configured','configured','configured','not-connected','not-connected','not-connected']);assert.equal((await client.connect('unknown')).ok,false);
+ assert.deepEqual((await client.status()).map(c=>c.state),['configured','configured','configured','not-connected','not-connected','not-connected','not-connected']);assert.equal((await client.connect('unknown')).ok,false);
 });
 test('disabled or stale Codex registration offers reconnect; malformed config is an error',async t=>{
  const {client,expected,setCodex,home}=fixture(t);setCodex({enabled:false,transport:expected});assert.equal((await client.status())[0].state,'needs-reconnect');setCodex({enabled:true,transport:{...expected,args:['/old/path']}});assert.equal((await client.status())[0].state,'needs-reconnect');
@@ -49,6 +49,21 @@ test('configuration exports use the right root and contain only local launch dat
  const embedded=snippet.match(/```json\n([\s\S]*?)\n```/);
  assert.ok(embedded);assert.deepEqual(JSON.parse(embedded[1]),JSON.parse(client.configuration()));
  assert.throws(()=>client.configuration('other'));assert.equal(client.download('unknown'),undefined);
+});
+test('Antigravity registration uses its global MCP config without a transport type',async t=>{
+ const {client,home,expected}=fixture(t),file=path.join(home,'.gemini/config/mcp_config.json');
+ fs.mkdirSync(path.dirname(file),{recursive:true});fs.writeFileSync(file,JSON.stringify({mcpServers:{other:{serverUrl:'https://example.test/mcp'}}}));
+ assert.equal((await client.connect('antigravity')).ok,true);
+ const data=readConfig(file).data;assert.deepEqual(data.mcpServers[NAME],expected);assert.equal(data.mcpServers.other.serverUrl,'https://example.test/mcp');
+ assert.equal((await client.status()).find(c=>c.id==='antigravity').state,'configured');
+});
+test('empty placeholder configurations are filled and backed up',async t=>{
+ const {client,home,appData,expected}=fixture(t);
+ for(const [id,file] of [['antigravity',path.join(home,'.gemini/config/mcp_config.json')],['cursor',path.join(home,'.cursor/mcp.json')]]){
+  fs.mkdirSync(path.dirname(file),{recursive:true});fs.writeFileSync(file,id==='cursor'?'\n':'');
+  assert.equal((await client.connect(id)).ok,true,id);assert.deepEqual(readConfig(file).data.mcpServers[NAME].command,expected.command);
+  assert.ok(fs.readdirSync(path.dirname(file)).some(f=>f.includes('mcp-router-backup')));
+ }
 });
 test('missing applications are rediscovered after installation',async t=>{
  const {client,home}=fixture(t);const binary=path.join(home,'.local/bin/gemini');fs.unlinkSync(binary);

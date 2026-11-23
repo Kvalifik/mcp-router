@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.11.2 — Connect Antigravity and publish campaigns
+
+MCP Router now connects to Antigravity and keeps up with Webflow's latest MCP changes.
+
+### What’s new
+
+- **Connect Antigravity with one click.** Choose **Apps → Antigravity**, then refresh the MCP server list in Antigravity. Setup also works when an app has created an empty settings file.
+- **Messages stay in view.** Save confirmations and other messages now appear beneath the header, or inside the open dialog, instead of floating over your work.
+- **Publish campaigns when you allow it.** A new **Campaigns → Publish** permission lets agents publish or unpublish campaign landing pages and page variations. It starts off for your existing projects and saved defaults, and it also needs Pages Publish and Custom code Write.
+- **robots.txt and redirect edits work again.** Agents use Webflow's updated robots.txt rules and can change one side of a 301 redirect at a time.
+- **Beta Forms, AEO and Recommendations work again.** Webflow split these tools on Beta. Your existing permissions keep working without changes.
+- **More on Beta.** Agents can import an image from a public URL into the asset library and delete a page from an open Release, each under your existing Assets and Pages permissions.
+- **Reliability updates.** The app's build tools and configuration library are up to date.
+
 ## 0.11.1 — Choose when to update
 
 MCP Router keeps your connection switches within reach and lets you choose when to restart for an update.

@@ -1,7 +1,7 @@
 import { runReadCode } from './read-code.js';
 import { AgentError, authorizationRequired, upstreamError, checkUpstreamResponse, upstreamDiagnostics, transientUpstreamRead } from './agent-errors.js';
 import { initializeInventory, syncProjects, setDefaults, purgeConnection } from './discovery.js';
-import { CATALOG, permissions, validatePermissions, validateWorkspacePermissions, validateConnectionPermissions, operation, allowed, requirePermissions, prepareArguments, checkOwnership, resultOf } from './permissions.js';
+import { CATALOG, permissions, validatePermissions, validateWorkspacePermissions, validateConnectionPermissions, operation, allowed, requirePermissions, prepareArguments, checkOwnership, resultOf, channelClient } from './permissions.js';
 import { randomUUID } from 'node:crypto';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
@@ -364,14 +364,14 @@ export class Router {
       try {
         const channel=this.channel(p);
         if(!session(this.store,p.connectionId,channel).tokens)throw authorizationRequired();
-        client=await read('upstream_connect',()=>this.open(this.oauth.provider(p.connectionId,false,channel)));
+        client=channelClient(await read('upstream_connect',()=>this.open(this.oauth.provider(p.connectionId,false,channel))),channel);
         stage='project_authorization';
         if(channel==='beta' && !(await client.listSites()).some(s=>s.id===p.siteId))throw authorizationRequired('Project is not authorized on Beta. Reconnect and include this project.');
         let guidance;
         if(name==='get_project_guidance' || name==='prepare_project') {
           const permitted = CATALOG.filter(candidate=>available(candidate)&&allowed(p,candidate,workspacePolicy().permissions,workspacePolicy().connectionPermissions));
-          const tools = (await read('tool_discovery',()=>client.listTools?.()) || []).filter(tool=>permitted.some(candidate=>candidate.tool===tool.name))
-            .map(({name,title,description})=>({name,title,description,operationIds:permitted.filter(candidate=>candidate.tool===name).map(candidate=>candidate.id)}));
+          const tools = (await read('tool_discovery',()=>client.listTools?.()) || []).filter(tool=>permitted.some(candidate=>(candidate.channelTools?.[channel]||candidate.tool)===tool.name))
+            .map(({name,title,description})=>({name,title,description,operationIds:permitted.filter(candidate=>(candidate.channelTools?.[channel]||candidate.tool)===name).map(candidate=>candidate.id)}));
           recheck();
           guidance={projectId:p.id,channel,instructions:client.instructions || '',tools};
           if(name==='get_project_guidance') return {...guidance,guide:client.guide};

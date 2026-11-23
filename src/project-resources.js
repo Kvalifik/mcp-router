@@ -109,9 +109,9 @@ export async function checkProjectResources(client, op, value, siteId, owns, res
         if(value.element_id.component!==campaign.landingPage?.pageId)denied();
         await owns('page',value.element_id.component);
       }
-      if(value.page_variation_id || value.variations || value.field_slug) {
+      if(value.page_variation_id || value.variations || value.page_variation_ids || value.field_slug) {
         const listing=await offsetRows('get_page_variations',{site_id:siteId,campaign_id:value.campaign_id},'variations');
-        const ids=[...(value.page_variation_id?[value.page_variation_id]:[]),...(value.variations||[]).map(v=>v.page_variation_id)];
+        const ids=[...(value.page_variation_id?[value.page_variation_id]:[]),...(value.variations||[]).map(v=>v.page_variation_id),...(value.page_variation_ids||[])];
         if(ids.some(target=>!listing.rows.some(v=>v.pageVariationId===target)))denied();
         if(value.field_slug && (!Array.isArray(listing.fields)||!listing.fields.some(f=>f.fieldSlug===value.field_slug)))denied();
       }
@@ -119,6 +119,12 @@ export async function checkProjectResources(client, op, value, siteId, owns, res
         const result=await read(op.tool,'get_page_variation_suggestions',{site_id:siteId,campaign_id:value.campaign_id});
         if(!Array.isArray(result?.suggestions)||!result.suggestions.some(s=>s.pageVariationSuggestionId===value.page_variation_suggestion_id))denied();
       }
+    }
+    // Campaign publishing targets one of the selected site's own custom domains.
+    if(value.custom_domain!==undefined) {
+      const site=await read('data_sites_tool','get_site',{site_id:siteId});
+      if(site?.id!==siteId || !Array.isArray(site.customDomains))invalid();
+      if(!site.customDomains.some(domain=>id(domain?.id)&&domain.id===value.custom_domain))denied();
     }
     // Task status is explicitly site-bound upstream; no unscoped task lookup.
   }

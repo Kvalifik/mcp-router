@@ -8,6 +8,7 @@ const { currentSocket } = require('./paths.cjs');
 const isObject = x => x && typeof x === 'object' && !Array.isArray(x);
 function readConfig(file, key = 'mcpServers', comments = false) {
   let raw; try { raw = fs.readFileSync(file, 'utf8'); } catch (e) { if (e.code === 'ENOENT') return { raw:null, data:{} }; throw e; }
+  if (!raw.trim()) return { raw, data:{} }; // Some apps create an empty placeholder file.
   const errors=[];
   const data = comments ? jsonc.parse(raw,errors,{allowTrailingComma:true}) : JSON.parse(raw);
   if (errors.length || !isObject(data) || (data[key] !== undefined && !isObject(data[key]))) throw new Error('Invalid MCP configuration');
@@ -19,7 +20,7 @@ function writeRegistration(file, entry, key = 'mcpServers', comments = false) {
   const merged = {...(isObject(data[key]?.[NAME]) ? data[key][NAME] : {}), ...entry};
   delete merged.url; delete merged.httpUrl;
   data[key] = {...data[key], [NAME]:merged};
-  const output = comments && raw !== null ? jsonc.applyEdits(raw,jsonc.modify(raw,[key,NAME],merged,{formattingOptions:{insertSpaces:true,tabSize:2}})) : JSON.stringify(data,null,2)+'\n';
+  const output = comments && raw?.trim() ? jsonc.applyEdits(raw,jsonc.modify(raw,[key,NAME],merged,{formattingOptions:{insertSpaces:true,tabSize:2}})) : JSON.stringify(data,null,2)+'\n';
   fs.mkdirSync(path.dirname(file), {recursive:true, mode:0o700});
   const temp = `${file}.router-${randomUUID()}.tmp`;
   try {
@@ -75,7 +76,8 @@ function createIntegrations({home,appData,executable,script,socket,run,getWindow
   const windowsApps = {
     Claude:[path.join(localAppData,'AnthropicClaude/claude.exe'),path.join(localAppData,'Programs/Claude/Claude.exe')],
     Cursor:[path.join(localAppData,'Programs/cursor/Cursor.exe'),path.join(programFiles,'cursor/Cursor.exe')],
-    'Visual Studio Code':[path.join(localAppData,'Programs/Microsoft VS Code/Code.exe'),path.join(programFiles,'Microsoft VS Code/Code.exe')]
+    'Visual Studio Code':[path.join(localAppData,'Programs/Microsoft VS Code/Code.exe'),path.join(programFiles,'Microsoft VS Code/Code.exe')],
+    Antigravity:[path.join(localAppData,'Programs/Antigravity/Antigravity.exe'),path.join(programFiles,'Antigravity/Antigravity.exe')]
   };
   const appPath=name=>first(windows ? windowsApps[name] || [] : applicationsDirs.map(dir=>path.join(dir,name+'.app')));
   const dirs = windows ? [...binaryDirs,path.join(appData,'npm'),path.join(home,'.local/bin')] : binaryDirs;
@@ -111,7 +113,8 @@ function createIntegrations({home,appData,executable,script,socket,run,getWindow
       {id:'claude-code',name:'Claude Code',installed:!!binary('claude'),file:path.join(home,'.claude.json'),download:'https://code.claude.com/docs/en/setup',hint:'Start a new Claude Code session. Project-specific overrides still apply.'},
       {id:'cursor',name:'Cursor',installed:!!appPath('Cursor'),file:path.join(home,'.cursor/mcp.json'),comments:true,download:'https://cursor.com/download',hint:'Enable the server in Cursor Settings → Tools & MCP. Project overrides still apply.'},
       {id:'vscode',name:'VS Code / Copilot',installed:!!appPath('Visual Studio Code'),file:path.join(appData,'Code/User/mcp.json'),key:'servers',comments:true,download:'https://code.visualstudio.com/download',hint:'Added to the default VS Code profile. Use MCP: List Servers to start and trust it. Other profiles need their own configuration.'},
-      {id:'gemini',name:'Gemini CLI',installed:!!binary('gemini'),file:path.join(home,'.gemini/settings.json'),comments:true,download:'https://geminicli.com/docs/get-started/installation/',hint:'Start a new Gemini CLI session in a trusted folder. Existing tool restrictions still apply.'}
+      {id:'gemini',name:'Gemini CLI',installed:!!binary('gemini'),file:path.join(home,'.gemini/settings.json'),comments:true,download:'https://geminicli.com/docs/get-started/installation/',hint:'Start a new Gemini CLI session in a trusted folder. Existing tool restrictions still apply.'},
+      {id:'antigravity',name:'Antigravity',installed:!!appPath('Antigravity'),file:path.join(home,'.gemini/config/mcp_config.json'),download:'https://antigravity.google/download',hint:'Open MCP Servers → Manage MCP Servers in Antigravity and refresh to load the connection. Workspace overrides still apply.'}
     ];
   }
   async function status(c) {

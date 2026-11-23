@@ -240,7 +240,7 @@
           "additionalProperties": false
         }
       ],
-      "description": "Generate an agent-instruction skill from site or CMS collection evidence. To start generation, provide site_id, instruction_type, and optional context_sources. Generation is asynchronous and saves a draft; call this same action again with site_id and task_id set to the returned taskId until the status is 'finished' or 'failed'. A finished result includes the draft path and resourceUri. CMS guidelines require context_sources.primary with kind cms-collection and a collectionId. Starting requires agent_instructions:write; checking status requires agent_instructions:read."
+      "description": "Generate an agent-instruction skill from site or CMS collection evidence. To start generation, provide site_id, instruction_type, and optional context_sources. Generation is asynchronous and saves a draft; call this same action again with site_id and task_id set to the returned taskId until the status is 'finished' or 'failed'. A finished result includes the draft path and resourceUri. CMS guidelines require context_sources.primary with kind cms-collection and a collectionId."
     }
   },
   {
@@ -5808,8 +5808,6 @@
           "description": "The site's unique ID, used to remove entries from its robots.txt."
         },
         "rules": {
-          "description": "Rules to remove from robots.txt. Omit when removing only a sitemap URL.",
-          "minItems": 1,
           "type": "array",
           "items": {
             "type": "object",
@@ -5818,39 +5816,45 @@
                 "type": "string",
                 "description": "The user agent for the rule to remove (e.g., '*', 'Googlebot')."
               },
-              "allow": {
+              "allows": {
                 "type": "array",
                 "items": {
                   "type": "string"
                 },
-                "description": "Allowed URL paths in the rule to remove."
+                "description": "Allowed URL paths to remove. Required: pass [] to remove none."
               },
-              "disallow": {
+              "disallows": {
                 "type": "array",
                 "items": {
                   "type": "string"
                 },
-                "description": "Disallowed URL paths in the rule to remove."
+                "description": "Disallowed URL paths to remove. Required: pass [] to remove none."
+              },
+              "contentSignal": {
+                "description": "Present means remove this user agent's Content-Signal directive. Omit to leave it in place.",
+                "type": "string"
               }
             },
             "required": [
               "userAgent",
-              "allow",
-              "disallow"
+              "allows",
+              "disallows"
             ],
             "additionalProperties": false
-          }
+          },
+          "description": "Rules to remove, matched by user agent. Required: pass [] to remove only the sitemap, which the API allows only while the file still has at least one rule. Empty allows and disallows remove the whole user-agent block; listed paths remove those."
         },
         "sitemap": {
-          "description": "Sitemap URL to remove. Omit when removing only rules.",
+          "description": "The sitemap URL already in robots.txt, to keep it. Omit to remove the sitemap.",
           "type": "string"
         }
       },
       "required": [
-        "site_id"
+        "site_id",
+        "rules"
       ],
       "additionalProperties": false,
-      "description": "Remove specified rules and/or a sitemap URL from robots.txt. This does not delete the entire robots.txt file."
+      "description": "Remove rules and/or the sitemap from robots.txt. Does not delete the whole file. The sitemap survives only when `sitemap` repeats the URL already in the file, so read it with get_robots_txt and pass it back unless you mean to remove it."
     }
   },
   {
@@ -6006,7 +6010,6 @@
           "description": "The site's unique ID, used to replace its robots.txt."
         },
         "rules": {
-          "description": "Array of rules to apply to the robots.txt file.",
           "type": "array",
           "items": {
             "type": "object",
@@ -6015,39 +6018,45 @@
                 "type": "string",
                 "description": "The user agent to apply rules to (e.g., '*', 'Googlebot')."
               },
-              "allow": {
+              "allows": {
                 "type": "array",
                 "items": {
                   "type": "string"
                 },
-                "description": "Array of URL paths to allow."
+                "description": "URL paths to allow. Required on every rule: pass [] when it allows none."
               },
-              "disallow": {
+              "disallows": {
                 "type": "array",
                 "items": {
                   "type": "string"
                 },
-                "description": "Array of URL paths to disallow."
+                "description": "URL paths to disallow. Required on every rule: pass [] when it disallows none."
+              },
+              "contentSignal": {
+                "description": "Content-Signal directive for this user agent (e.g. 'ai-train=no, search=yes'). Pass back what get_robots_txt returned, or the directive is dropped from the file.",
+                "type": "string"
               }
             },
             "required": [
               "userAgent",
-              "allow",
-              "disallow"
+              "allows",
+              "disallows"
             ],
             "additionalProperties": false
-          }
+          },
+          "description": "The complete rule set to write, replacing every existing rule. Required. An empty array removes all rules."
         },
         "sitemap": {
-          "description": "URL to the sitemap (e.g., 'https://example.com/sitemap.xml').",
+          "description": "URL to the sitemap (e.g., 'https://example.com/sitemap.xml'). Omitting it removes the sitemap from the file.",
           "type": "string"
         }
       },
       "required": [
-        "site_id"
+        "site_id",
+        "rules"
       ],
       "additionalProperties": false,
-      "description": "Completely replace the robots.txt file (PUT operation)."
+      "description": "Completely replace the robots.txt file (PUT operation). Whatever is sent becomes the whole file, so read it with get_robots_txt first and send back the rules and sitemap you want to keep. Use update_robots_txt to change part of it."
     }
   },
   {
@@ -6077,22 +6086,20 @@
           "description": "The redirect's unique ID, used to identify which redirect to update."
         },
         "fromUrl": {
-          "type": "string",
-          "description": "The source URL path that will be redirected (e.g., '/old-page')."
+          "description": "The source URL path that will be redirected (e.g., '/old-page'). Omit to keep the current source.",
+          "type": "string"
         },
         "toUrl": {
-          "type": "string",
-          "description": "The destination URL path where requests will be redirected to (e.g., '/new-page')."
+          "description": "The destination URL path where requests will be redirected to (e.g., '/new-page'). Omit to keep the current destination.",
+          "type": "string"
         }
       },
       "required": [
         "site_id",
-        "redirect_id",
-        "fromUrl",
-        "toUrl"
+        "redirect_id"
       ],
       "additionalProperties": false,
-      "description": "Update an existing 301 redirect."
+      "description": "Update an existing 301 redirect. Send only the fields to change."
     }
   },
   {
@@ -6118,7 +6125,6 @@
           "description": "The site's unique ID, used to update its robots.txt."
         },
         "rules": {
-          "description": "Array of rules to apply to the robots.txt file.",
           "type": "array",
           "items": {
             "type": "object",
@@ -6127,36 +6133,42 @@
                 "type": "string",
                 "description": "The user agent to apply rules to (e.g., '*', 'Googlebot')."
               },
-              "allow": {
+              "allows": {
                 "type": "array",
                 "items": {
                   "type": "string"
                 },
-                "description": "Array of URL paths to allow."
+                "description": "URL paths to allow. Required on every rule: pass [] when it allows none."
               },
-              "disallow": {
+              "disallows": {
                 "type": "array",
                 "items": {
                   "type": "string"
                 },
-                "description": "Array of URL paths to disallow."
+                "description": "URL paths to disallow. Required on every rule: pass [] when it disallows none."
+              },
+              "contentSignal": {
+                "description": "Content-Signal directive for this user agent (e.g. 'ai-train=no, search=yes'). Pass back what get_robots_txt returned, or the directive is dropped from the file.",
+                "type": "string"
               }
             },
             "required": [
               "userAgent",
-              "allow",
-              "disallow"
+              "allows",
+              "disallows"
             ],
             "additionalProperties": false
-          }
+          },
+          "description": "Rules to merge, matched by user agent; a user agent not already in the file is added. A non-empty allows or disallows replaces that list, an empty one leaves it as it is, so this cannot clear a list \u2014 use replace_robots_txt or delete_robots_txt for that. Rules not named here are untouched. Required: pass [] to change only the sitemap."
         },
         "sitemap": {
-          "description": "URL to the sitemap (e.g., 'https://example.com/sitemap.xml').",
+          "description": "URL to the sitemap (e.g., 'https://example.com/sitemap.xml'). Omitting it leaves the current sitemap in place.",
           "type": "string"
         }
       },
       "required": [
-        "site_id"
+        "site_id",
+        "rules"
       ],
       "additionalProperties": false,
       "description": "Partially update the robots.txt file (PATCH operation)."
@@ -6195,6 +6207,9 @@
       ],
       "additionalProperties": false,
       "description": "Delete a form submission. DESTRUCTIVE and not reversible \u2014 confirm with the user before calling."
+    },
+    "channelTools": {
+      "beta": "data_forms_write_tool"
     }
   },
   {
@@ -6223,6 +6238,9 @@
       ],
       "additionalProperties": false,
       "description": "Get the schema for a single form, including field definitions and form metadata. Pass form_id (the form's ObjectId, discoverable via list_forms)."
+    },
+    "channelTools": {
+      "beta": "data_forms_read_tool"
     }
   },
   {
@@ -6256,6 +6274,9 @@
       ],
       "additionalProperties": false,
       "description": "Get a single form submission by ID. Returns the submission's field values and metadata."
+    },
+    "channelTools": {
+      "beta": "data_forms_read_tool"
     }
   },
   {
@@ -6301,6 +6322,9 @@
       ],
       "additionalProperties": false,
       "description": "List submissions for a specific form on a site. Pass site_id and form_id (ObjectId). Supports pagination via limit and offset."
+    },
+    "channelTools": {
+      "beta": "data_forms_read_tool"
     }
   },
   {
@@ -6341,6 +6365,9 @@
       ],
       "additionalProperties": false,
       "description": "List forms on a site. Returns form metadata (id, displayName, fields, etc.). Supports pagination via limit and offset."
+    },
+    "channelTools": {
+      "beta": "data_forms_read_tool"
     }
   },
   {
@@ -6389,6 +6416,9 @@
       ],
       "additionalProperties": false,
       "description": "List form submissions across an entire site. Optionally filter by element_id (the form element GUID, NOT a form ObjectId) to scope to a specific form element, or locale_id to scope to a locale. Supports pagination via limit and offset."
+    },
+    "channelTools": {
+      "beta": "data_forms_read_tool"
     }
   },
   {
@@ -6433,6 +6463,9 @@
       ],
       "additionalProperties": false,
       "description": "Update user-hidden field values on a form submission. Pass site_id, form_submission_id, and form_submission_data (an object mapping field name \u2192 value). Only user-hidden fields are writable."
+    },
+    "channelTools": {
+      "beta": "data_forms_write_tool"
     }
   },
   {
@@ -15966,7 +15999,10 @@
       ],
       "additionalProperties": false,
       "description": "Create a Webflow asset from a publicly accessible remote image URL. By default the asset's display name is derived from the URL (without extension). Optionally override the asset's display name and alt text. Returns the new asset's info (id, name, mimeType, url, altText)."
-    }
+    },
+    "channels": [
+      "stable"
+    ]
   },
   {
     "id": "element_snapshot_tool.snapshot",
@@ -17006,6 +17042,9 @@
       ],
       "additionalProperties": false,
       "description": "Get total LLM crawler request count for a site over a window. Optional botProviders (repeated slugs) and botCategory filter the total. This is crawler analytics, not prompt-pipeline data \u2014 it does not require the workspace AI/copilot gate. Named API errors include invalid_time_range, time_range_too_wide, end_time_too_recent, and unsupported_bot_provider."
+    },
+    "channelTools": {
+      "beta": "data_aeo_read_tool"
     }
   },
   {
@@ -17087,6 +17126,9 @@
       ],
       "additionalProperties": false,
       "description": "Get the pages LLM crawlers requested most, ranked by request count. Optional botProviders (repeated slugs), botCategory, and limit (1-100). endTime must not be later than 00:00:00.000Z today UTC. This is crawler analytics, not prompt-pipeline data \u2014 it does not require the workspace AI/copilot gate. Named API errors include invalid_time_range, time_range_too_wide, end_time_too_recent, and unsupported_bot_provider."
+    },
+    "channelTools": {
+      "beta": "data_aeo_read_tool"
     }
   },
   {
@@ -17174,6 +17216,9 @@
       ],
       "additionalProperties": false,
       "description": "Get citation rate grouped by topic or prompt. Uses the workspace AI/copilot gate. Owned domains are server-resolved; callers must not send domains. Those hosts are Optimize allowed domains, every custom domain, and the webflow.io subdomain, not published hosts only. An empty host list returns 200 with data: [], not 400."
+    },
+    "channelTools": {
+      "beta": "data_aeo_read_tool"
     }
   },
   {
@@ -17265,6 +17310,9 @@
       ],
       "additionalProperties": false,
       "description": "Get individual citations (limit 1-1000, default 100) with uncapped non-negative offset. Uses the workspace AI/copilot gate. This feed is not limited to the site's owned hosts, and domains is not a parameter. hasMore can be true at limit=1000 even when the next page is empty because Polar clamps the lookahead. The response does not include totalRows."
+    },
+    "channelTools": {
+      "beta": "data_aeo_read_tool"
     }
   },
   {
@@ -17340,6 +17388,9 @@
       ],
       "additionalProperties": false,
       "description": "Get cited paths for one caller-supplied bare domain (no scheme, path, or port). Uses the workspace AI/copilot gate. The domain is the caller-supplied hostname, not the site's owned-host list."
+    },
+    "channelTools": {
+      "beta": "data_aeo_read_tool"
     }
   },
   {
@@ -17414,6 +17465,9 @@
       ],
       "additionalProperties": false,
       "description": "Get citation rows for server-resolved competitor hosts (limit 1-1000, default 10): timestamp, topic, prompt, answer engine, and cited URLs. Uses the workspace AI/copilot gate. Brand, owned domains, and competitor hosts are server-resolved; callers must not send them. Returns brand_not_configured or competitors_not_configured. The response includes competitorDomains and does not include hasMore."
+    },
+    "channelTools": {
+      "beta": "data_aeo_read_tool"
     }
   },
   {
@@ -17491,6 +17545,9 @@
       ],
       "additionalProperties": false,
       "description": "Get citation share for a page, optionally scoped to one CMS item and broken down by prompt. Uses the workspace AI/copilot gate. collectionId and itemSlug must be sent together. Owned domains are server-resolved; callers must not send them. title may be omitted. An empty owned-host list still returns 200. Owned hosts are Optimize allowed domains, every custom domain, and the webflow.io subdomain, not published hosts only."
+    },
+    "channelTools": {
+      "beta": "data_aeo_read_tool"
     }
   },
   {
@@ -17525,6 +17582,9 @@
       ],
       "additionalProperties": false,
       "description": "Get one prompt execution by id, including the full rawResponse when it is still stored. list_prompt_executions with includeRawResponse=true returns full text on each list row. Unknown ids return 404 from the API. A malformed executionId is rejected by this tool's schema (24-character hex ObjectId) and the API is not called. Archived ids still return 200; rawResponse is omitted if the archive job already purged it. The list never includes archived rows. The REST path still uses execution_id; pass executionId here."
+    },
+    "channelTools": {
+      "beta": "data_aeo_read_tool"
     }
   },
   {
@@ -17545,6 +17605,17 @@
       "properties": {},
       "additionalProperties": false,
       "description": "Returns static guidance for constructing data_aeo_tool queries \u2014 how to resolve site IDs, date windows, prompt/topic IDs, botProviders repeats, and when to use includeRawResponse on the execution list. Takes no arguments and makes no API calls."
+    },
+    "channelTools": {
+      "beta": "data_aeo_read_tool"
+    },
+    "channelSchemas": {
+      "beta": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false,
+        "description": "Returns static guidance for constructing data_aeo_read_tool queries \u2014 how to resolve site IDs, date windows, prompt/topic IDs, botProviders repeats, and when to use includeRawResponse on the execution list. Takes no arguments and makes no API calls."
+      }
     }
   },
   {
@@ -17619,6 +17690,9 @@
       ],
       "additionalProperties": false,
       "description": "Get the most-cited domains for a site (limit 1-100, default 5). Uses the workspace AI/copilot gate. Owned domains are server-resolved. Those hosts are Optimize allowed domains, every custom domain, and the webflow.io subdomain, not published hosts only. An empty host list returns 200 with data: []."
+    },
+    "channelTools": {
+      "beta": "data_aeo_read_tool"
     }
   },
   {
@@ -17716,6 +17790,9 @@
       ],
       "additionalProperties": false,
       "description": "Get aggregate brand visibility for a site. Optional timeseries is {granularityPeriod: day|week, bucketTimeZone: IANA zone}; omit it for one score. Uses the workspace AI/copilot gate. Brand and owned domains are resolved by the server; callers must not send brandNames or domains. Returns brand_not_configured when the site has no configured brand."
+    },
+    "channelTools": {
+      "beta": "data_aeo_read_tool"
     }
   },
   {
@@ -17805,6 +17882,9 @@
       ],
       "additionalProperties": false,
       "description": "Get brand visibility grouped by topic or prompt. Omitted limit returns every grouped row. Uses the workspace AI/copilot gate. Brand and owned domains are server-resolved; callers must not send them. Returns brand_not_configured when no brand is configured."
+    },
+    "channelTools": {
+      "beta": "data_aeo_read_tool"
     }
   },
   {
@@ -17879,6 +17959,9 @@
       ],
       "additionalProperties": false,
       "description": "List prompt execution history for a site. promptId is optional \u2014 omit it for site-wide history. topicId and answerEngine (chat-gpt|gemini|claude|perplexity) are extra filters. Do not send promptId and topicId together. Default rows include preview text and omit rawResponse. includeRawResponse=true adds the full answer text on each list row. Limit is 1-25 always. Optional window is at most 90 days; omitted endTime is now and omitted startTime is end minus 90 days. Archived rows are omitted; get_prompt_execution still returns them by id. Named API errors include invalid_time_range, time_range_too_wide, conflicting_scope_filters, and aeo_input_validation."
+    },
+    "channelTools": {
+      "beta": "data_aeo_read_tool"
     }
   },
   {
@@ -17933,6 +18016,9 @@
       ],
       "additionalProperties": false,
       "description": "List tracked AEO prompts for a site. Each row includes id, text, status, and topic: {id, name}, so this one action covers prompt and topic lookup. Use the returned IDs as promptId or topicId on list_prompt_executions \u2014 never both. Optional filters: topicId, status (active|paused|pending|archived|all), limit (1-100), cursor."
+    },
+    "channelTools": {
+      "beta": "data_aeo_read_tool"
     }
   },
   {
@@ -17970,7 +18056,10 @@
     },
     "channels": [
       "beta"
-    ]
+    ],
+    "channelTools": {
+      "beta": "data_recommendations_read_tool"
+    }
   },
   {
     "id": "data_recommendations_tool.get_recommendation_settings",
@@ -18001,7 +18090,10 @@
     },
     "channels": [
       "beta"
-    ]
+    ],
+    "channelTools": {
+      "beta": "data_recommendations_read_tool"
+    }
   },
   {
     "id": "data_recommendations_tool.get_recommendations_guide",
@@ -18020,11 +18112,14 @@
       "type": "object",
       "properties": {},
       "additionalProperties": false,
-      "description": "Returns static guidance for data_recommendations_tool: what a recommendation and a proposal are, which actions to call, how filters and settings writes work, and that apply, dismiss, restore, and audit are not in this tool. Takes no arguments and makes no API calls."
+      "description": "Returns static guidance for data_recommendations_read_tool and data_recommendations_write_tool: what a recommendation and a proposal are, which actions to call, how filters and settings writes work, and that apply, dismiss, restore, and audit are not in these tools. Takes no arguments and makes no API calls."
     },
     "channels": [
       "beta"
-    ]
+    ],
+    "channelTools": {
+      "beta": "data_recommendations_read_tool"
+    }
   },
   {
     "id": "data_recommendations_tool.get_recommendations_summary",
@@ -18055,7 +18150,10 @@
     },
     "channels": [
       "beta"
-    ]
+    ],
+    "channelTools": {
+      "beta": "data_recommendations_read_tool"
+    }
   },
   {
     "id": "data_recommendations_tool.list_recommendations",
@@ -18174,7 +18272,10 @@
     },
     "channels": [
       "beta"
-    ]
+    ],
+    "channelTools": {
+      "beta": "data_recommendations_read_tool"
+    }
   },
   {
     "id": "data_interactions_tool.guide",
@@ -20069,7 +20170,7 @@
       "properties": {
         "site_id": {
           "type": "string",
-          "description": "Campaign Hub site id from list_campaign_hub_sites (not every list_sites id qualifies \u2014 campaign calls return 404 if the workspace lacks campaigns)."
+          "description": "Site ID from list_campaign_hub_sites."
         },
         "campaign_id": {
           "type": "string",
@@ -20106,11 +20207,19 @@
       "properties": {
         "site_id": {
           "type": "string",
-          "description": "Campaign Hub site id from list_campaign_hub_sites (not every list_sites id qualifies \u2014 campaign calls return 404 if the workspace lacks campaigns)."
+          "description": "Site ID from list_campaign_hub_sites."
         },
         "task_id": {
           "type": "string",
-          "description": "taskId from create_campaign (UUID, not campaign id)."
+          "description": "taskId from create_campaign or publish_campaign (UUID, not campaign id)."
+        },
+        "type": {
+          "description": "Task family to look up. Omit or create_campaign for page generation; publish_campaign for a publish task.",
+          "type": "string",
+          "enum": [
+            "create_campaign",
+            "publish_campaign"
+          ]
         }
       },
       "required": [
@@ -20118,7 +20227,7 @@
         "task_id"
       ],
       "additionalProperties": false,
-      "description": "Poll async landing-page generation from create_campaign (taskId) until finished/failed. ONLY signal generation is done \u2014 presence in get/list_campaigns or having a landingPage.pageId does not indicate completion. Status: queued/started means poll again (1s, 2s, up to 10s, max 10 min); finished returns campaignId & pageId; failed returns error.message & instruction. After 10 min still in progress is not failed; do not create_campaign again for same job. Returns 404 if the task does not exist, belongs to a different site, or is not a campaign generation task."
+      "description": "Poll an async campaign task (create_campaign page generation or publish_campaign) by taskId until finished/failed. Pass optional type (create_campaign default when omitted, or publish_campaign). ONLY completion signal \u2014 get/list_campaigns or landingPage.pageId do not mean the task finished. Status: queued/started means poll again (1s, 2s, up to 10s, max 10 min); finished returns campaignId & pageId; failed returns error.message & instruction. Response always includes type. After 10 min still in progress is not failed; do not start another job for the same task. Returns 404 if unknown, wrong site, wrong type pairing, or not a campaign task."
     }
   },
   {
@@ -20143,7 +20252,7 @@
       "properties": {
         "site_id": {
           "type": "string",
-          "description": "Campaign Hub site id from list_campaign_hub_sites (not every list_sites id qualifies \u2014 campaign calls return 404 if the workspace lacks campaigns)."
+          "description": "Site ID from list_campaign_hub_sites."
         },
         "campaign_id": {
           "type": "string",
@@ -20223,7 +20332,7 @@
       "properties": {
         "site_id": {
           "type": "string",
-          "description": "Campaign Hub site id from list_campaign_hub_sites (not every list_sites id qualifies \u2014 campaign calls return 404 if the workspace lacks campaigns)."
+          "description": "Site ID from list_campaign_hub_sites."
         },
         "campaign_id": {
           "type": "string",
@@ -20250,6 +20359,41 @@
       ],
       "additionalProperties": false,
       "description": "Aggregate form submit count for a campaign landing page (Webflow & CRM-attributed). Returns { formSubmissionsCount }. Not individual records \u2014 use data_forms_tool for those. Pass site_id, campaign_id, start_time, end_time; optional page_variation_id. Published site with analytics required; zero is valid. Returns 404 if the campaign does not exist or belongs to a different site."
+    },
+    "channelSchemas": {
+      "beta": {
+        "type": "object",
+        "properties": {
+          "site_id": {
+            "type": "string",
+            "description": "Site ID from list_campaign_hub_sites."
+          },
+          "campaign_id": {
+            "type": "string",
+            "description": "Campaign id."
+          },
+          "start_time": {
+            "type": "string",
+            "description": "UTC ISO 8601 ending in Z (e.g. 2026-04-01T00:00:00Z); no numeric offsets. start_time \u2265 2025-04-09. Window from start_time to end_time \u2264 100 days."
+          },
+          "end_time": {
+            "type": "string",
+            "description": "UTC ISO 8601 ending in Z; \u2265 2025-04-09. Must be > start_time. Window \u2264 100 days."
+          },
+          "page_variation_id": {
+            "type": "string",
+            "description": "Page variation id to scope analytics (only for campaigns with variations); omit for all variations."
+          }
+        },
+        "required": [
+          "site_id",
+          "campaign_id",
+          "start_time",
+          "end_time"
+        ],
+        "additionalProperties": false,
+        "description": "Aggregate form submit count for a campaign landing page (Webflow & CRM-attributed). Returns { formSubmissionsCount }. Not individual records \u2014 use data_forms_read_tool for those. Pass site_id, campaign_id, start_time, end_time; optional page_variation_id. Published site with analytics required; zero is valid. Returns 404 if the campaign does not exist or belongs to a different site."
+      }
     }
   },
   {
@@ -20274,7 +20418,7 @@
       "properties": {
         "site_id": {
           "type": "string",
-          "description": "Campaign Hub site id from list_campaign_hub_sites (not every list_sites id qualifies \u2014 campaign calls return 404 if the workspace lacks campaigns)."
+          "description": "Site ID from list_campaign_hub_sites."
         },
         "campaign_id": {
           "type": "string",
@@ -20334,7 +20478,7 @@
       "properties": {
         "site_id": {
           "type": "string",
-          "description": "Campaign Hub site id from list_campaign_hub_sites (not every list_sites id qualifies \u2014 campaign calls return 404 if the workspace lacks campaigns)."
+          "description": "Site ID from list_campaign_hub_sites."
         },
         "campaign_id": {
           "type": "string",
@@ -20371,7 +20515,7 @@
       "properties": {
         "site_id": {
           "type": "string",
-          "description": "Campaign Hub site id from list_campaign_hub_sites (not every list_sites id qualifies \u2014 campaign calls return 404 if the workspace lacks campaigns)."
+          "description": "Site ID from list_campaign_hub_sites."
         },
         "campaign_id": {
           "type": "string",
@@ -20419,7 +20563,7 @@
       "properties": {
         "site_id": {
           "type": "string",
-          "description": "Campaign Hub site id from list_campaign_hub_sites (not every list_sites id qualifies \u2014 campaign calls return 404 if the workspace lacks campaigns)."
+          "description": "Site ID from list_campaign_hub_sites."
         },
         "campaign_id": {
           "type": "string",
@@ -20525,7 +20669,7 @@
       "properties": {
         "site_id": {
           "type": "string",
-          "description": "Campaign Hub site id from list_campaign_hub_sites (not every list_sites id qualifies \u2014 campaign calls return 404 if the workspace lacks campaigns)."
+          "description": "Site ID from list_campaign_hub_sites."
         },
         "limit": {
           "description": "Max campaigns (1\u2013100, default 100).",
@@ -20571,7 +20715,7 @@
       "properties": {
         "site_id": {
           "type": "string",
-          "description": "Campaign Hub site id from list_campaign_hub_sites (not every list_sites id qualifies \u2014 campaign calls return 404 if the workspace lacks campaigns)."
+          "description": "Site ID from list_campaign_hub_sites."
         },
         "campaign_id": {
           "type": "string",
@@ -20654,7 +20798,7 @@
       "properties": {
         "site_id": {
           "type": "string",
-          "description": "Campaign Hub site id from list_campaign_hub_sites (not every list_sites id qualifies \u2014 campaign calls return 404 if the workspace lacks campaigns)."
+          "description": "Site ID from list_campaign_hub_sites."
         },
         "markdown_brief": {
           "type": "string",
@@ -20683,7 +20827,7 @@
         "campaign_description"
       ],
       "additionalProperties": false,
-      "description": "Create a campaign & landing page from a user-confirmed markdown_brief (see webflow_guide_tool Campaigns > markdown_brief). Returns { taskId, statusUrl }; poll get_campaign_task_status with site_id & taskId. Campaign/page appear in get/list immediately but that does not mean page content was generated. On failure, ask before retrying."
+      "description": "Create a campaign & landing page from a user-confirmed markdown_brief (see webflow_guide_tool Campaigns > markdown_brief). Returns { taskId, statusUrl }; poll get_campaign_task_status with site_id, taskId, and type=create_campaign. Campaign/page appear in get/list immediately but that does not mean page content was generated. On failure, ask before retrying."
     }
   },
   {
@@ -20711,7 +20855,7 @@
       "properties": {
         "site_id": {
           "type": "string",
-          "description": "Campaign Hub site id from list_campaign_hub_sites (not every list_sites id qualifies \u2014 campaign calls return 404 if the workspace lacks campaigns)."
+          "description": "Site ID from list_campaign_hub_sites."
         },
         "campaign_id": {
           "type": "string",
@@ -20777,7 +20921,7 @@
       "properties": {
         "site_id": {
           "type": "string",
-          "description": "Campaign Hub site id from list_campaign_hub_sites (not every list_sites id qualifies \u2014 campaign calls return 404 if the workspace lacks campaigns)."
+          "description": "Site ID from list_campaign_hub_sites."
         },
         "campaign_id": {
           "type": "string",
@@ -20871,7 +21015,7 @@
       "properties": {
         "site_id": {
           "type": "string",
-          "description": "Campaign Hub site id from list_campaign_hub_sites (not every list_sites id qualifies \u2014 campaign calls return 404 if the workspace lacks campaigns)."
+          "description": "Site ID from list_campaign_hub_sites."
         },
         "campaign_id": {
           "type": "string",
@@ -20965,7 +21109,7 @@
       "properties": {
         "site_id": {
           "type": "string",
-          "description": "Campaign Hub site id from list_campaign_hub_sites (not every list_sites id qualifies \u2014 campaign calls return 404 if the workspace lacks campaigns)."
+          "description": "Site ID from list_campaign_hub_sites."
         },
         "campaign_id": {
           "type": "string",
@@ -21016,7 +21160,7 @@
       "properties": {
         "site_id": {
           "type": "string",
-          "description": "Campaign Hub site id from list_campaign_hub_sites (not every list_sites id qualifies \u2014 campaign calls return 404 if the workspace lacks campaigns)."
+          "description": "Site ID from list_campaign_hub_sites."
         },
         "campaign_id": {
           "type": "string",
@@ -21070,7 +21214,7 @@
       "properties": {
         "site_id": {
           "type": "string",
-          "description": "Campaign Hub site id from list_campaign_hub_sites (not every list_sites id qualifies \u2014 campaign calls return 404 if the workspace lacks campaigns)."
+          "description": "Site ID from list_campaign_hub_sites."
         },
         "campaign_id": {
           "type": "string",
@@ -21109,7 +21253,7 @@
       "properties": {
         "site_id": {
           "type": "string",
-          "description": "Campaign Hub site id from list_campaign_hub_sites (not every list_sites id qualifies \u2014 campaign calls return 404 if the workspace lacks campaigns)."
+          "description": "Site ID from list_campaign_hub_sites."
         },
         "campaign_id": {
           "type": "string",
@@ -21126,7 +21270,7 @@
         "page_variation_id"
       ],
       "additionalProperties": false,
-      "description": "Permanently delete a page variation. Pass site_id, campaign_id, page_variation_id. Irreversible; published variations cannot be deleted. The API returns 204 on success; this action responds with { deleted: true, pageVariationId }. Returns 404 if the campaign or variation does not exist."
+      "description": "Permanently delete a page variation. Pass site_id, campaign_id, page_variation_id. Irreversible; currently published variations and the last remaining variation cannot be deleted. The API returns 204 on success; this action responds with { deleted: true, pageVariationId }. Returns 404 if the campaign or variation does not exist."
     }
   },
   {
@@ -21153,7 +21297,7 @@
       "properties": {
         "site_id": {
           "type": "string",
-          "description": "Campaign Hub site id from list_campaign_hub_sites (not every list_sites id qualifies \u2014 campaign calls return 404 if the workspace lacks campaigns)."
+          "description": "Site ID from list_campaign_hub_sites."
         },
         "campaign_id": {
           "type": "string",
@@ -22369,7 +22513,10 @@
         "site_id"
       ],
       "additionalProperties": false,
-      "description": "Partially update a site's AEO recommendation settings. Provide at least one of ruleConfig or recurringAuditsEnabled. Omitted fields stay unchanged. Returns the fully resolved settings document. Requires sites:write. This writes to the live site configuration."
+      "description": "Partially update a site's AEO recommendation settings. Provide at least one of ruleConfig or recurringAuditsEnabled. Omitted fields stay unchanged. Returns the fully resolved settings document. This writes to the live site configuration."
+    },
+    "channelTools": {
+      "beta": "data_recommendations_write_tool"
     }
   },
   {
@@ -22740,7 +22887,7 @@
         "site_id"
       ],
       "additionalProperties": false,
-      "description": "Read a site's WAF rules and bot bypass settings: byDomain (each connected custom domain's config, null when it has none), rules (the shared config as rules.waf when uniform is true), bypassVerifiedBots and bypassAuthorizedBots in each byDomain config and in rules.waf, hostnamesApplied, hostnameStages, and siteStateHash. test_waf_rules, update_waf_rule, delete_waf_rule, test_waf_settings, and update_waf_settings require that siteStateHash as expectedSiteStateHash and are refused with WafSiteStateChanged once the site changes. Read-only. Requires site_config:read."
+      "description": "Read a site's WAF rules and bot bypass settings: byDomain (each connected custom domain's config, null when it has none), rules (the shared config as rules.waf when uniform is true), bypassVerifiedBots and bypassAuthorizedBots in each byDomain config and in rules.waf, hostnamesApplied, hostnameStages, and siteStateHash. test_waf_rules, update_waf_rule, delete_waf_rule, test_waf_settings, and update_waf_settings require that siteStateHash as expectedSiteStateHash and are refused with WafSiteStateChanged once the site changes. Read-only."
     }
   },
   {
@@ -22773,7 +22920,7 @@
         "site_id"
       ],
       "additionalProperties": false,
-      "description": "Suggest WAF rule changes for a site from its current rules. Applies nothing: a suggestion takes effect only through test_waf_rules and update_waf_rule. Read-only. Requires site_config:read."
+      "description": "Suggest WAF rule changes for a site from its current rules. Applies nothing: a suggestion takes effect only through test_waf_rules and update_waf_rule. Read-only."
     }
   },
   {
@@ -22843,7 +22990,7 @@
         "config"
       ],
       "additionalProperties": false,
-      "description": "Check a rule config with the same checks as test_waf_rules, but without a siteStateHash, preview, or write. Use it before test_waf_rules whenever you build or edit a config. On success: false, fix error.details; error.schema, when present, shows the exact config shape. On success: true, check that explanation matches what the user asked for; any riskFindings mean applying will need the high-risk confirmation. Read-only. Requires site_config:read."
+      "description": "Check a rule config with the same checks as test_waf_rules, but without a siteStateHash, preview, or write. Use it before test_waf_rules whenever you build or edit a config. On success: false, fix error.details; error.schema, when present, shows the exact config shape. On success: true, check that explanation matches what the user asked for; any riskFindings mean applying will need the high-risk confirmation. Read-only."
     }
   },
   {
@@ -22926,7 +23073,7 @@
         "expectedSiteStateHash"
       ],
       "additionalProperties": false,
-      "description": "Preview an update or deletion of one rule type without changing anything. Returns per-domain targets (current and candidate hash, size against the limit), riskFindings, evidence limits, and a short-lived previewToken bound to this exact change. Apply it with update_waf_rule (same ruleType, config, domains, and previousDomains) or delete_waf_rule (same ruleType and domains) plus that previewToken. Expected failures return success: false with error.name and error.message. Requires site_config:write."
+      "description": "Preview an update or deletion of one rule type without changing anything. Returns per-domain targets (current and candidate hash, size against the limit), riskFindings, evidence limits, and a short-lived previewToken bound to this exact change. Apply it with update_waf_rule (same ruleType, config, domains, and previousDomains) or delete_waf_rule (same ruleType and domains) plus that previewToken. Expected failures return success: false with error.name and error.message."
     }
   },
   {
@@ -22981,7 +23128,7 @@
         "expectedSiteStateHash"
       ],
       "additionalProperties": false,
-      "description": "Preview site-wide bot bypass without writing. Returns targets, size, skipped hostnames, previewToken, and expiresAt. The token binds update_waf_settings to the same site, settings, and expectedSiteStateHash. Checks configuration, not traffic. Requires site_config:write."
+      "description": "Preview site-wide bot bypass without writing. Returns targets, size, skipped hostnames, previewToken, and expiresAt. The token binds update_waf_settings to the same site, settings, and expectedSiteStateHash. Checks configuration, not traffic."
     }
   },
   {
@@ -23118,7 +23265,7 @@
         "expectedSiteStateHash"
       ],
       "additionalProperties": false,
-      "description": "Replace the WHOLE configuration of one rule type, site-wide or on the listed domains, on the live firewall: entries left out of config are removed, so start from the current config in get_waf_rules. Default flow: get_waf_rules, then test_waf_rules, then this action with the returned previewToken. directApply skips the preview and is for an explicit user request to skip testing; previewToken and directApply together are refused. A HighRiskWafChange result changes nothing: show error.highRiskChange (targets, risks, confirmationPhrase) to the user, and only after the user confirms, resend the same request with highRiskChangeConfirmation filled from it, values copied exactly, confirmationToken included. Other expected failures return success: false with error.name, such as WafSiteStateChanged (read again), WafPreviewStale (test again), WafPartialMutation (error.recovery lists per-host results; read again and reconcile), and WafMutationRateLimited (retryAfterSeconds). Takes effect on live traffic immediately. Requires site_config:write."
+      "description": "Replace the WHOLE configuration of one rule type, site-wide or on the listed domains, on the live firewall: entries left out of config are removed, so start from the current config in get_waf_rules. Default flow: get_waf_rules, then test_waf_rules, then this action with the returned previewToken. directApply skips the preview and is for an explicit user request to skip testing; previewToken and directApply together are refused. A HighRiskWafChange result changes nothing: show error.highRiskChange (targets, risks, confirmationPhrase) to the user, and only after the user confirms, resend the same request with highRiskChangeConfirmation filled from it, values copied exactly, confirmationToken included. Other expected failures return success: false with error.name, such as WafSiteStateChanged (read again), WafPreviewStale (test again), WafPartialMutation (error.recovery lists per-host results; read again and reconcile), and WafMutationRateLimited (retryAfterSeconds). Takes effect on live traffic immediately."
     }
   },
   {
@@ -23185,7 +23332,7 @@
         "expectedSiteStateHash"
       ],
       "additionalProperties": false,
-      "description": "Change site-wide bot bypass immediately, preserving rules, omitted settings, and bot tokens. Requires a matching test_waf_settings previewToken, or directApply:true without a token. Stale state or previews are refused. Failures return success:false and error.name/message. Requires site_config:write."
+      "description": "Change site-wide bot bypass immediately, preserving rules, omitted settings, and bot tokens. Requires a matching test_waf_settings previewToken, or directApply:true without a token. Stale state or previews are refused. Failures return success:false and error.name/message."
     }
   },
   {
@@ -23256,7 +23403,7 @@
         "expectedSiteStateHash"
       ],
       "additionalProperties": false,
-      "description": "Delete one rule type, site-wide or from the listed domains, on the live firewall, keeping the other rule types, settings, and bot access. Default flow: get_waf_rules, then test_waf_rules with operation delete, then this action with the returned previewToken. directApply skips the preview and is for an explicit user request to skip testing; previewToken and directApply together are refused. Expected failures return success: false with error.name and error.message. Takes effect on live traffic immediately. Requires site_config:write."
+      "description": "Delete one rule type, site-wide or from the listed domains, on the live firewall, keeping the other rule types, settings, and bot access. Default flow: get_waf_rules, then test_waf_rules with operation delete, then this action with the returned previewToken. directApply skips the preview and is for an explicit user request to skip testing; previewToken and directApply together are refused. Expected failures return success: false with error.name and error.message. Takes effect on live traffic immediately."
     }
   },
   {
@@ -23286,7 +23433,7 @@
         "brand_presence_id": {
           "type": "string",
           "pattern": "^[a-f0-9]{24}$",
-          "description": "Brand presence id from list_brand_presences. Must be a 24-character hex Mongo ObjectId."
+          "description": "Brand presence id from data_aeo_brand_presences_read_tool > list_brand_presences. Must be a 24-character hex Mongo ObjectId."
         }
       },
       "required": [
@@ -23296,7 +23443,10 @@
       "additionalProperties": false,
       "description": "Get one brand presence by id. Returns id, workspaceId, customerId, createdOn, and lastUpdated. An id that is archived, unknown, or in another workspace returns 404."
     },
-    "scope": "workspace"
+    "scope": "workspace",
+    "channelTools": {
+      "beta": "data_aeo_brand_presences_read_tool"
+    }
   },
   {
     "id": "data_aeo_brand_presences_tool.get_prompt",
@@ -23325,12 +23475,12 @@
         "brand_presence_id": {
           "type": "string",
           "pattern": "^[a-f0-9]{24}$",
-          "description": "Brand presence id from list_brand_presences. Must be a 24-character hex Mongo ObjectId."
+          "description": "Brand presence id from data_aeo_brand_presences_read_tool > list_brand_presences. Must be a 24-character hex Mongo ObjectId."
         },
         "prompt_id": {
           "type": "string",
           "pattern": "^[a-f0-9]{24}$",
-          "description": "Prompt id from this tool's list_prompts. Must be a 24-character hex Mongo ObjectId."
+          "description": "Prompt id from data_aeo_brand_presences_read_tool > list_prompts. Must be a 24-character hex Mongo ObjectId."
         }
       },
       "required": [
@@ -23341,7 +23491,10 @@
       "additionalProperties": false,
       "description": "Get one tracked prompt by id. Returns id, topicId, promptText, createdOn, and lastUpdated. A prompt id that is unknown, archived, or in another brand presence returns 404."
     },
-    "scope": "workspace"
+    "scope": "workspace",
+    "channelTools": {
+      "beta": "data_aeo_brand_presences_read_tool"
+    }
   },
   {
     "id": "data_aeo_brand_presences_tool.get_topic",
@@ -23370,12 +23523,12 @@
         "brand_presence_id": {
           "type": "string",
           "pattern": "^[a-f0-9]{24}$",
-          "description": "Brand presence id from list_brand_presences. Must be a 24-character hex Mongo ObjectId."
+          "description": "Brand presence id from data_aeo_brand_presences_read_tool > list_brand_presences. Must be a 24-character hex Mongo ObjectId."
         },
         "topic_id": {
           "type": "string",
           "pattern": "^[a-f0-9]{24}$",
-          "description": "Topic id from list_topics. Must be a 24-character hex Mongo ObjectId."
+          "description": "Topic id from data_aeo_brand_presences_read_tool > list_topics. Must be a 24-character hex Mongo ObjectId."
         }
       },
       "required": [
@@ -23386,7 +23539,10 @@
       "additionalProperties": false,
       "description": "Get one topic by id. Returns id, name, createdOn, and lastUpdated. A topic id that is unknown, archived, or in another brand presence returns 404."
     },
-    "scope": "workspace"
+    "scope": "workspace",
+    "channelTools": {
+      "beta": "data_aeo_brand_presences_read_tool"
+    }
   },
   {
     "id": "data_aeo_brand_presences_tool.list_brand_presences",
@@ -23419,7 +23575,10 @@
       "additionalProperties": false,
       "description": "List the brand presences in a workspace. Returns { brandPresences }, each with id, workspaceId, customerId, createdOn, and lastUpdated. Archived brand presences are not listed. The list is not paginated. Use a returned id as brand_presence_id on get_brand_presence."
     },
-    "scope": "workspace"
+    "scope": "workspace",
+    "channelTools": {
+      "beta": "data_aeo_brand_presences_read_tool"
+    }
   },
   {
     "id": "data_aeo_brand_presences_tool.list_prompts",
@@ -23448,7 +23607,7 @@
         "brand_presence_id": {
           "type": "string",
           "pattern": "^[a-f0-9]{24}$",
-          "description": "Brand presence id from list_brand_presences. Must be a 24-character hex Mongo ObjectId."
+          "description": "Brand presence id from data_aeo_brand_presences_read_tool > list_brand_presences. Must be a 24-character hex Mongo ObjectId."
         },
         "topicId": {
           "description": "Return only prompts in this topic. Topic id from list_topics, a 24-character hex Mongo ObjectId. Omit to list every topic's prompts.",
@@ -23461,9 +23620,12 @@
         "brand_presence_id"
       ],
       "additionalProperties": false,
-      "description": "List the active prompts tracked in a brand presence, optionally for one topic. Returns { prompts }, each with id, topicId, promptText, createdOn, and lastUpdated. Archived prompts are not listed. The list is not paginated. These are the brand presence's tracked prompts; data_aeo_tool > list_prompts lists a site's report prompts instead."
+      "description": "List the active prompts tracked in a brand presence, optionally for one topic. Returns { prompts }, each with id, topicId, promptText, createdOn, and lastUpdated. Archived prompts are not listed. The list is not paginated. These are the brand presence's tracked prompts; data_aeo_read_tool > list_prompts lists a site's report prompts instead."
     },
-    "scope": "workspace"
+    "scope": "workspace",
+    "channelTools": {
+      "beta": "data_aeo_brand_presences_read_tool"
+    }
   },
   {
     "id": "data_aeo_brand_presences_tool.list_topics",
@@ -23492,7 +23654,7 @@
         "brand_presence_id": {
           "type": "string",
           "pattern": "^[a-f0-9]{24}$",
-          "description": "Brand presence id from list_brand_presences. Must be a 24-character hex Mongo ObjectId."
+          "description": "Brand presence id from data_aeo_brand_presences_read_tool > list_brand_presences. Must be a 24-character hex Mongo ObjectId."
         }
       },
       "required": [
@@ -23502,7 +23664,10 @@
       "additionalProperties": false,
       "description": "List the active topics in a brand presence. A topic is a named group of tracked prompts. Returns { topics }, each with id, name, createdOn, and lastUpdated. Archived topics are not listed. The list is not paginated."
     },
-    "scope": "workspace"
+    "scope": "workspace",
+    "channelTools": {
+      "beta": "data_aeo_brand_presences_read_tool"
+    }
   },
   {
     "id": "data_aeo_brand_presences_tool.bulk_create_prompts",
@@ -23533,7 +23698,7 @@
         "brand_presence_id": {
           "type": "string",
           "pattern": "^[a-f0-9]{24}$",
-          "description": "Brand presence id from list_brand_presences. Must be a 24-character hex Mongo ObjectId."
+          "description": "Brand presence id from data_aeo_brand_presences_read_tool > list_brand_presences. Must be a 24-character hex Mongo ObjectId."
         },
         "prompts": {
           "minItems": 1,
@@ -23545,7 +23710,7 @@
               "topicId": {
                 "type": "string",
                 "pattern": "^[a-f0-9]{24}$",
-                "description": "Topic to add this prompt to. Topic id from list_topics or create_topic, a 24-character hex Mongo ObjectId."
+                "description": "Topic to add this prompt to. Topic id from data_aeo_brand_presences_read_tool > list_topics or create_topic, a 24-character hex Mongo ObjectId."
               },
               "promptText": {
                 "type": "string",
@@ -23572,7 +23737,10 @@
       "additionalProperties": false,
       "description": "Create up to 100 tracked prompts in one call. Each item is saved on its own, so some can fail while the rest save. Returns 200 with summary { created, failed } and results in request order: each result has index and outcome; a created item carries prompt (id, topicId, promptText, createdOn, lastUpdated), and a failed item carries error { code, message }, for example resource_not_found for an unknown or archived topicId. A retry can resend only the failed items. Limited to 10 requests per minute per workspace."
     },
-    "scope": "workspace"
+    "scope": "workspace",
+    "channelTools": {
+      "beta": "data_aeo_brand_presences_write_tool"
+    }
   },
   {
     "id": "data_aeo_brand_presences_tool.create_prompt",
@@ -23603,12 +23771,12 @@
         "brand_presence_id": {
           "type": "string",
           "pattern": "^[a-f0-9]{24}$",
-          "description": "Brand presence id from list_brand_presences. Must be a 24-character hex Mongo ObjectId."
+          "description": "Brand presence id from data_aeo_brand_presences_read_tool > list_brand_presences. Must be a 24-character hex Mongo ObjectId."
         },
         "topicId": {
           "type": "string",
           "pattern": "^[a-f0-9]{24}$",
-          "description": "Topic to add the prompt to. Topic id from list_topics or create_topic, a 24-character hex Mongo ObjectId."
+          "description": "Topic to add the prompt to. Topic id from data_aeo_brand_presences_read_tool > list_topics or create_topic, a 24-character hex Mongo ObjectId."
         },
         "promptText": {
           "type": "string",
@@ -23626,7 +23794,10 @@
       "additionalProperties": false,
       "description": "Create one tracked prompt in a topic. Returns the new prompt with id, topicId, promptText, createdOn, and lastUpdated. A topicId that is unknown, archived, or in another brand presence returns 404 resource_not_found. Limited to 30 writes per minute per workspace."
     },
-    "scope": "workspace"
+    "scope": "workspace",
+    "channelTools": {
+      "beta": "data_aeo_brand_presences_write_tool"
+    }
   },
   {
     "id": "data_aeo_brand_presences_tool.create_topic",
@@ -23657,7 +23828,7 @@
         "brand_presence_id": {
           "type": "string",
           "pattern": "^[a-f0-9]{24}$",
-          "description": "Brand presence id from list_brand_presences. Must be a 24-character hex Mongo ObjectId."
+          "description": "Brand presence id from data_aeo_brand_presences_read_tool > list_brand_presences. Must be a 24-character hex Mongo ObjectId."
         },
         "name": {
           "type": "string",
@@ -23674,7 +23845,10 @@
       "additionalProperties": false,
       "description": "Create a topic in a brand presence. Topic names are unique among the brand presence's active topics: a name already in use returns 409 conflict. Returns the new topic with id, name, createdOn, and lastUpdated. Limited to 30 writes per minute per workspace."
     },
-    "scope": "workspace"
+    "scope": "workspace",
+    "channelTools": {
+      "beta": "data_aeo_brand_presences_write_tool"
+    }
   },
   {
     "id": "performance_audits_tool.audit_site_performance",
@@ -23877,7 +24051,7 @@
         "site_branch_id"
       ],
       "additionalProperties": false,
-      "description": "Read-only. List the pages, components, styles, and CMS items a Release (site branch) touched, newest first. Returns { changes, pagination }; while pagination.hasMore, pass pagination.nextCursor as cursor (a page can hold fewer than limit). Resources edited while paging move to the front and can be missed; restart for a full view. Each change has resourceType, resourceId, action (added|changed|removed), name, locales edited, and contributors. A change was written in the branch; it may no longer differ from main. Works for merged branches."
+      "description": "Read-only. List the pages, components, styles, and CMS items a Release (site branch) touched, newest first. Returns { changes, pagination }; while pagination.hasMore, pass pagination.nextCursor as cursor (a page can hold fewer than limit). Resources edited while paging move to the front and can be missed; restart for a full view. Each change has resourceType, resourceId, action (added|changed|removed), name, locales edited, and contributors; added and removed rows list no locales, as they apply in every locale. A listed change may no longer differ from main. Works for merged branches."
     }
   },
   {
@@ -24384,6 +24558,297 @@
       ],
       "additionalProperties": false,
       "description": "List a site's page folders, including folders that contain no pages. Returns each folder's id, parent folder id, title and slug; use a returned id as parentFolderId in create_page or update_page_settings."
+    }
+  },
+  {
+    "id": "data_campaigns_tool.publish_campaign",
+    "tool": "data_campaigns_tool",
+    "action": "publish_campaign",
+    "area": "campaigns",
+    "title": "Campaigns",
+    "mode": "publish",
+    "permission": "campaigns:publish",
+    "extraPermissions": [
+      "agent_instructions:read",
+      "scripts:write",
+      "pages:publish"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Site ID from list_campaign_hub_sites."
+        },
+        "campaign_id": {
+          "type": "string",
+          "description": "Campaign id."
+        },
+        "custom_domain": {
+          "description": "Custom domain id (customDomains[].id from data_sites_tool > get_site).",
+          "type": "string"
+        },
+        "publish_to_webflow_subdomain": {
+          "description": "Target the site's webflow.io subdomain.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "site_id",
+        "campaign_id"
+      ],
+      "additionalProperties": false,
+      "description": "Publish (launch) a campaign's landing page to exactly one target: custom_domain or publish_to_webflow_subdomain=true. Personalized campaigns: only the template page publishes, not page-variation changes. Returns { taskId, statusUrl }; poll get_campaign_task_status with type=publish_campaign (statusUrl isn't callable here). Confirmation on clients with form support. Max 1 publish per site per minute, across all campaigns."
+    }
+  },
+  {
+    "id": "data_campaigns_tool.unpublish_campaign",
+    "tool": "data_campaigns_tool",
+    "action": "unpublish_campaign",
+    "area": "campaigns",
+    "title": "Campaigns",
+    "mode": "publish",
+    "permission": "campaigns:publish",
+    "extraPermissions": [
+      "agent_instructions:read",
+      "scripts:write",
+      "pages:publish"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Site ID from list_campaign_hub_sites."
+        },
+        "campaign_id": {
+          "type": "string",
+          "description": "Campaign id."
+        },
+        "custom_domain": {
+          "description": "Custom domain id (customDomains[].id from data_sites_tool > get_site).",
+          "type": "string"
+        },
+        "unpublish_from_webflow_subdomain": {
+          "description": "Target the site's webflow.io subdomain.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "site_id",
+        "campaign_id"
+      ],
+      "additionalProperties": false,
+      "description": "Unpublish a static campaign's landing page from exactly one target: custom_domain or unpublish_from_webflow_subdomain=true. Synchronous: returns { campaignId, pageId }; no polling. Personalized campaigns return 400. Page variations are unpublished with unpublish_page_variations. 404 if the campaign is missing or not live on that target. Confirmation on clients with form support. Max 1 unpublish per site per minute, across all campaigns."
+    }
+  },
+  {
+    "id": "data_campaigns_tool.publish_page_variations",
+    "tool": "data_campaigns_tool",
+    "action": "publish_page_variations",
+    "area": "campaigns",
+    "title": "Campaigns",
+    "mode": "publish",
+    "permission": "campaigns:publish",
+    "extraPermissions": [
+      "agent_instructions:read",
+      "scripts:write",
+      "pages:publish"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Site ID from list_campaign_hub_sites."
+        },
+        "campaign_id": {
+          "type": "string",
+          "description": "Campaign id."
+        },
+        "page_variation_ids": {
+          "minItems": 1,
+          "maxItems": 100,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "Page variation id. Discover via get_page_variations or create_page_variation."
+          },
+          "description": "Page variation ids; discover via get_page_variations or create_page_variation."
+        },
+        "publish_all_variations": {
+          "description": "Publish all variations instead of listing ids.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "site_id",
+        "campaign_id"
+      ],
+      "additionalProperties": false,
+      "description": "Publish page variations for a personalized campaign. Pass page_variation_ids or publish_all_variations=true. Synchronous: returns { publishedPageVariationIds, errors }; per-item failures in errors. The campaign must already be published \u2014 409 otherwise. 400 non-personalized; 404 missing. Confirmation on clients with form support. Rate limit: 30/site/min."
+    }
+  },
+  {
+    "id": "data_campaigns_tool.unpublish_page_variations",
+    "tool": "data_campaigns_tool",
+    "action": "unpublish_page_variations",
+    "area": "campaigns",
+    "title": "Campaigns",
+    "mode": "publish",
+    "permission": "campaigns:publish",
+    "extraPermissions": [
+      "agent_instructions:read",
+      "scripts:write",
+      "pages:publish"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Site ID from list_campaign_hub_sites."
+        },
+        "campaign_id": {
+          "type": "string",
+          "description": "Campaign id."
+        },
+        "page_variation_ids": {
+          "minItems": 1,
+          "maxItems": 100,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "Page variation id. Discover via get_page_variations or create_page_variation."
+          },
+          "description": "Page variation ids; discover via get_page_variations or create_page_variation."
+        },
+        "unpublish_all_variations": {
+          "description": "Unpublish all variations instead of listing ids.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "site_id",
+        "campaign_id"
+      ],
+      "additionalProperties": false,
+      "description": "Unpublish page variations for a personalized campaign. Pass page_variation_ids or unpublish_all_variations=true. Synchronous: returns { unpublishedPageVariationIds, errors }; per-item failures in errors. Only live variations are unpublished. They stay in the campaign and can be published again. 400 non-personalized; 404 missing. Confirmation on clients with form support. Rate limit: 30/site/min."
+    }
+  },
+  {
+    "id": "data_assets_tool.import_image_from_url",
+    "tool": "data_assets_tool",
+    "action": "import_image_from_url",
+    "area": "assets",
+    "title": "Assets",
+    "mode": "write",
+    "permission": "assets:write",
+    "extraPermissions": [
+      "agent_instructions:read"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "The site ID."
+        },
+        "page_id": {
+          "type": "string",
+          "description": "The ID of any page on the site. The import does not change the page."
+        },
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Public http(s) URL of the image."
+        }
+      },
+      "required": [
+        "site_id",
+        "page_id",
+        "url"
+      ],
+      "additionalProperties": false,
+      "description": "Import an image from a public URL into the site asset library, without the Designer open. Returns the new asset_id; in a later call, pass it to data_element_builder set_image_asset for a new Image, or data_element_tool > set_image_asset for an existing one. PNG, JPEG, GIF, WebP, and AVIF only, up to 4MB. Importing the same image again returns the existing asset."
+    }
+  },
+  {
+    "id": "data_releases_write_tool.delete_site_branch_page",
+    "tool": "data_releases_write_tool",
+    "action": "delete_site_branch_page",
+    "area": "pages",
+    "title": "Pages",
+    "mode": "delete",
+    "permission": "pages:delete",
+    "extraPermissions": [
+      "agent_instructions:read"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "Webflow site ID. Use list_sites to discover site IDs."
+        },
+        "page_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Working page id from list_pages with site_branch_id."
+        }
+      },
+      "required": [
+        "site_id",
+        "page_id"
+      ],
+      "additionalProperties": false,
+      "description": "Delete a page in a Release (site branch). page_id is the Release's working page id from list_pages with site_branch_id; a main-site page id returns 400. The main-site page is not changed until the Release merges. Sync; empty body on success. 409: a folder, the home page, or a merged Release. 409 branch_merge_in_progress: a merge is running; the message says when to retry."
     }
   }
 ]

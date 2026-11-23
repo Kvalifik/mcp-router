@@ -8,7 +8,8 @@ const builders = new Set(['data_element_builder', 'data_component_builder', 'dat
 
 export function compareCatalog(snapshot, catalog, channel) {
   catalog=catalog.filter(op=>!op.upstreamAlias);
-  if(channel) catalog=catalog.filter(op=>!op.channels || op.channels.includes(channel)).map(op=>({...op,schema:op.channelSchemas?.[channel]||op.schema}));
+  // channelTools records a reviewed upstream rename for one channel; IDs and grants stay stable.
+  if(channel) catalog=catalog.filter(op=>!op.channels || op.channels.includes(channel)).map(op=>{const tool=op.channelTools?.[channel];return {...op,...(tool?{tool,id:`${tool}.${op.action}`}:{}),schema:op.channelSchemas?.[channel]||op.schema};});
   const tools = Array.isArray(snapshot) ? snapshot : snapshot?.tools;
   if (!Array.isArray(tools) || !tools.length || snapshot?.nextCursor) throw Error('A complete, nonempty tools/list snapshot is required');
   const upstream = new Map(), seen = new Set(), unclassifiedTools = [];
