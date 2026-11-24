@@ -40,10 +40,10 @@ async function main() {
       .png().toFile(path.join(out,'menubar',`MCPRouterTemplate${scale>1?`@${scale}x`:''}.png`));
   }
   const template = path.join(out, 'menubar', 'MCPRouterTemplate@3x.png');
-  const markAlpha = await sharp(template).extract({left:6,top:6,width:54,height:54}).extractChannel('alpha').raw().toBuffer();
+  const markAlpha = await sharp(template).extract({left:1,top:1,width:64,height:64}).extractChannel('alpha').raw().toBuffer();
   for (const color of ['black','white']) {
-    await sharp({create:{width:54,height:54,channels:3,background:color}})
-      .joinChannel(markAlpha,{raw:{width:54,height:54,channels:1}})
+    await sharp({create:{width:64,height:64,channels:3,background:color}})
+      .joinChannel(markAlpha,{raw:{width:64,height:64,channels:1}})
       .png().toFile(path.join(out,`mark-menubar-${color}.png`));
   }
   for (const color of ['black','white']) await sharp(path.join(out,`mark-${color}.svg`),{density:288}).resize(1024,1024).png().toFile(path.join(out,`mark-${color}.png`));

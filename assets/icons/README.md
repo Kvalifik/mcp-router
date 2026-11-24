@@ -13,7 +13,7 @@ Brand artwork: a dark outlined AI spark above two curved branches and two outlin
 - `mark-black.svg`, `mark-white.svg`: fixed-colour vector marks.
 - `mark-black.png`, `mark-white.png`: transparent 1024px monochrome exports.
 - `mark-menubar.svg`: optically strengthened menu-bar master, with approximately 1.2pt outlines and a 1pt gap between branches and workspace nodes at its 18pt display size. Used by normal, warning and update templates; the app icon and general-purpose monochrome marks retain their original weights.
-- `mark-menubar-black.png`, `mark-menubar-white.png`: transparent 54px harness favicons using the 3× menu-bar template with its status-item padding removed.
+- `mark-menubar-black.png`, `mark-menubar-white.png`: transparent 64px harness favicons using the 54px menu-bar mark with a 5px margin on each side to clear rounded client masks.
 - `menubar/MCPRouterTemplate.png`, `@2x.png`, `@3x.png`: 22pt macOS template assets with an 18pt black mark and transparent padding. Use as a template image so macOS supplies the appropriate tint.
 
 - `menubar/MCPRouterWarningTemplate.png`, `@2x.png`, `@3x.png`: 25 × 24pt warning variant, with a transparent mask separating the triangle from the router mark. Rendered from the vector composition in `scripts/build-tray-warning.cjs`.
