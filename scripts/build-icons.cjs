@@ -39,6 +39,13 @@ async function main() {
       .extend({top:2*scale,bottom:2*scale,left:2*scale,right:2*scale,background:{r:0,g:0,b:0,alpha:0}})
       .png().toFile(path.join(out,'menubar',`MCPRouterTemplate${scale>1?`@${scale}x`:''}.png`));
   }
+  const template = path.join(out, 'menubar', 'MCPRouterTemplate@3x.png');
+  const markAlpha = await sharp(template).extract({left:6,top:6,width:54,height:54}).extractChannel('alpha').raw().toBuffer();
+  for (const color of ['black','white']) {
+    await sharp({create:{width:54,height:54,channels:3,background:color}})
+      .joinChannel(markAlpha,{raw:{width:54,height:54,channels:1}})
+      .png().toFile(path.join(out,`mark-menubar-${color}.png`));
+  }
   for (const color of ['black','white']) await sharp(path.join(out,`mark-${color}.svg`),{density:288}).resize(1024,1024).png().toFile(path.join(out,`mark-${color}.png`));
   writeWindowsIcon();
   execFileSync('iconutil',['-c','icns',path.join(out,'MCPRouter.iconset'),'-o',path.join(out,'MCPRouter.icns')],{stdio:'inherit'});
