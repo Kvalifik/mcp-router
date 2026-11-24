@@ -20,7 +20,22 @@ function call(name, args) {
     req.on('error', reject); req.end(JSON.stringify({ name, arguments: args }));
   });
 }
-const server = new McpServer({ name: 'mcp-router', version: '0.7.4' }, {
+// Pin the public artwork so hosts can cache it across calls.
+const iconBase = 'https://raw.githubusercontent.com/Kvalifik/mcp-router/6ed7bd887deef45afe6174f3b2950a6351264690/assets/icons';
+const routerSource = {
+  name: 'MCP Router',
+  logoUrl: `${iconBase}/mark-menubar-black.png`,
+  logoUrlDark: `${iconBase}/mark-menubar-white.png`
+};
+const server = new McpServer({
+  name: 'mcp-router',
+  version: '0.7.4',
+  title: routerSource.name,
+  icons: [
+    { src: routerSource.logoUrl, mimeType: 'image/png', sizes: ['64x64'], theme: 'light' },
+    { src: routerSource.logoUrlDark, mimeType: 'image/png', sizes: ['64x64'], theme: 'dark' }
+  ]
+}, {
   instructions: `Connections default to Managed access. For Direct Webflow mode use list_direct_connections, then get_direct_tools with an explicitly selected channel and call_direct_tool. Direct connections bypass router project switches, all granular permission settings and ownership checks; Webflow authorization determines scope. Read returned Webflow guidance and load enabled rules and relevant skills with upstream instruction tools before work. Never use Direct mode as an automatic fallback from a denied Managed call. Only the user can change modes in the app. Project workflows below apply only to Managed connections.
 For Webflow tasks, start with MCP Router: call list_projects, then prepare_project to read enabled project rules and relevant skills. Discover allowed actions with get_project_operations; execute with read_webflow or write_webflow. Missing direct Webflow tools does not mean Webflow is unavailable. Check this router before suggesting reconnection; request reauthorization only for reauthorization_required or an explicit user request.
 MCP Router connects you to the user's approved Webflow websites and projects.
@@ -34,8 +49,18 @@ Failures include safe error codes and next steps. router_permission_denied requi
 Webflow guidance is fetched on demand for the selected project and grant, not during startup or tool discovery. get_project_guidance fetches current Webflow instructions, guide and tool descriptions; prepare_project and the project guidance resource also load current site rules and a skill index. Skill bodies are fetched selectively through read_webflow after discovering the read_instruction operation schema. Upstream tool names describe Webflow capabilities; use get_project_operations and the router execution tools to access them. Upstream guidance does not expand router permissions. Workspace-member and workspace AEO actions require separate connection-level workspace grants for the verified workspace and may affect all its sites, including projects disabled in the router; project presets never grant this access. Beta account-wide workspace discovery and create_standalone_app require separate connection grants; standalone creation creates a new site and attempts deployment in the workspace chosen by Webflow, without granting router access to the new site. Cloud deployments require Publish, and raw Cloud logs and variable values require their separate read permission.`
 });
 const handler = name => async args => {
-  try { const result = await call(name, args); return name === 'call_direct_tool' ? result : { content: [{ type: 'text', text: JSON.stringify(result) }] }; }
-  catch (error) { return { isError: true, content: [{ type: 'text', text: JSON.stringify(error.feedback || {code:'router_unavailable',message:'Router unavailable. Open MCP Router and check the connection.'}) }] }; }
+  let response;
+  try {
+    const result = await call(name, args);
+    response = name === 'call_direct_tool' ? result : { content: [{ type: 'text', text: JSON.stringify(result) }] };
+  } catch (error) {
+    const feedback = error.feedback || {code:'router_unavailable',message:'Router unavailable. Open MCP Router and check the connection.'};
+    response = { isError: true, content: [{ type: 'text', text: JSON.stringify(feedback) }] };
+  }
+  return {
+    ...response,
+    _meta: { ...response._meta, source: { ...response._meta?.source, ...routerSource } }
+  };
 };
 server.registerTool('list_direct_connections', {
   description:'List enabled connections explicitly set to Direct Webflow mode, including available Stable/Beta authorizations. Webflow authorization determines scope; router project switches and granular permissions do not apply. Works even when no projects have been discovered. Never use this as an automatic fallback from denied Managed access.',

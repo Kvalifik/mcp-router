@@ -31,6 +31,10 @@
   and record how to restore them. Include private/ignored artifacts in the
   preservation assessment, but never commit them or expose their contents.
   Do not blindly apply an old mixed-work stash onto a newer release.
+- For a macOS release candidate built and installed on the same computer, use
+  the installed app’s Developer ID team and `MAC_SIGNING_MODE=developer-id-local`.
+  Skip notarization for this local install. Use the signed and notarized release
+  workflow for candidates shared with testers, published updates, or Gatekeeper testing.
 - Before replacing an installed app, compare its version and source baseline
   with the proposed build. Preserve newer shipped features; do not install an
   older checkout unless the user explicitly chooses a downgrade. Build and

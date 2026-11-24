@@ -1,7 +1,7 @@
 {
-  "version": "0.11.2",
-  "reviewedAt": "2026-11-23T11:15:21.693Z",
-  "sourceDigest": "dc762584a9f868df516279bf3382a236716f7ec728691b03ee83d73e9b77b3db",
+  "version": "0.11.3",
+  "reviewedAt": "2026-11-24T12:02:31.946Z",
+  "sourceDigest": "eef4e085f147c914ef866914d712938bd950597cfde2da873f26a5a3d78e1d58",
   "channels": {
     "stable": {
       "status": "reviewed",
@@ -25,7 +25,7 @@
     "beta": {
       "status": "reviewed",
       "toolCount": 47,
-      "snapshotSha256": "9c1e60f8e4b9eee8ec09e8db81288ae43cc706276f5d8ac435493ec80a501c24",
+      "snapshotSha256": "8f991f80aa161c55af1ac97fadba8d5249ee7d32f13bd895549223035a084298",
       "supportedOperations": 355,
       "missing": [
         "data_libraries_tool"

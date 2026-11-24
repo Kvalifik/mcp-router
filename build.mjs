@@ -39,7 +39,7 @@ for (const output of paths) {
 // This signed resource enables native updates only in Developer ID builds.
 if (platform === 'darwin') {
   for (const output of paths) await fs.writeFile(path.join(resourcesFor(output), 'mac-update.json'),
-    JSON.stringify({ enabled: signing.mode === 'developer-id' }));
+    JSON.stringify({ enabled: signing.mode !== 'adhoc' }));
 }
 // Sign and notarize only after all bundle resources are final.
 if (platform === 'darwin') {

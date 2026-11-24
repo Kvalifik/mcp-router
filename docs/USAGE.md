@@ -4,6 +4,11 @@ MCP Router brings projects from multiple Webflow workspaces into one MCP
 connection for your AI tools. Add the Webflow authorizations you need, then
 enable the projects and permissions you want available at the same time.
 
+T3 Code’s Codex activity rows and MCP clients that support server icons can
+show the router’s menu-bar mark. The router provides a black mark for light
+backgrounds and a white mark for dark backgrounds. Clients that display it
+can fetch the artwork from the project’s public GitHub repository.
+
 Select **Settings → About MCP Router → View on GitHub** to open the MCP Router repository in your
 default browser, where you can find the source code, documentation, and issues.
 **Report a bug or suggest a feature** is available in both Settings and About MCP

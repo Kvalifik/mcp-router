@@ -23,3 +23,10 @@ test('Developer ID mode fails closed for missing credentials or development cert
     keychainProfile: 'test-profile', keychain: env.MAC_SIGNING_KEYCHAIN,
   });
 });
+
+test('local Developer ID signing requires an identity and omits notarization credentials', () => {
+  const env = { MAC_SIGNING_MODE: 'developer-id-local', MAC_NOTARY_PROFILE: 'unused' };
+  assert.throws(() => macSigningConfig(env), /certificate name/);
+  env.MAC_SIGNING_IDENTITY = 'Developer ID Application: Example Developer (A1B2C3D4E5)';
+  assert.deepEqual(macSigningConfig(env), { mode: env.MAC_SIGNING_MODE, identity: env.MAC_SIGNING_IDENTITY, keychain: undefined });
+});
