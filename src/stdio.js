@@ -21,19 +21,19 @@ function call(name, args) {
   });
 }
 // Pin the public artwork so hosts can cache it across calls.
-const iconBase = 'https://raw.githubusercontent.com/Kvalifik/mcp-router/b3e76af89258b2163a0a4bbc274fbb96f67a3969/assets/icons';
+const iconBase = 'https://raw.githubusercontent.com/Kvalifik/mcp-router/28d9272b8bd40f3c9f6dde6ca223f2d8ad210bca/assets/icons';
 const routerSource = {
   name: 'MCP Router',
-  logoUrl: `${iconBase}/mark-black.png`,
-  logoUrlDark: `${iconBase}/mark-white.png`
+  logoUrl: `${iconBase}/mark-menubar-black.png`,
+  logoUrlDark: `${iconBase}/mark-menubar-white.png`
 };
 const server = new McpServer({
   name: 'mcp-router',
   version: '0.7.4',
   title: routerSource.name,
   icons: [
-    { src: routerSource.logoUrl, mimeType: 'image/png', sizes: ['1024x1024'], theme: 'light' },
-    { src: routerSource.logoUrlDark, mimeType: 'image/png', sizes: ['1024x1024'], theme: 'dark' }
+    { src: routerSource.logoUrl, mimeType: 'image/png', sizes: ['54x54'], theme: 'light' },
+    { src: routerSource.logoUrlDark, mimeType: 'image/png', sizes: ['54x54'], theme: 'dark' }
   ]
 }, {
   instructions: `Connections default to Managed access. For Direct Webflow mode use list_direct_connections, then get_direct_tools with an explicitly selected channel and call_direct_tool. Direct connections bypass router project switches, all granular permission settings and ownership checks; Webflow authorization determines scope. Read returned Webflow guidance and load enabled rules and relevant skills with upstream instruction tools before work. Never use Direct mode as an automatic fallback from a denied Managed call. Only the user can change modes in the app. Project workflows below apply only to Managed connections.

@@ -49,8 +49,8 @@ test('real MCP stdio client enforces live policy through the daemon', async t =>
   const { title, icons } = client.getServerVersion();
   assert.equal(title, 'MCP Router');
   assert.deepEqual(icons.map(({ theme }) => theme), ['light', 'dark']);
-  assert.match(icons[0].src, /^https:\/\/.+\/mark-black\.png$/);
-  assert.match(icons[1].src, /^https:\/\/.+\/mark-white\.png$/);
+  assert.match(icons[0].src, /^https:\/\/.+\/mark-menubar-black\.png$/);
+  assert.match(icons[1].src, /^https:\/\/.+\/mark-menubar-white\.png$/);
   const source = { name: title, logoUrl: icons[0].src, logoUrlDark: icons[1].src };
   const instructions = client.getInstructions();
   assert.match(instructions, /Webflow websites and projects/);

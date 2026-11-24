@@ -1,7 +1,7 @@
 {
-  "version": "0.11.3-rc.1",
-  "reviewedAt": "2026-11-24T11:03:04.001Z",
-  "sourceDigest": "283e66263e46d74169a2d9131914270c793cdbfe8d561e2dcd8799f2acc31fc2",
+  "version": "0.11.3-rc.2",
+  "reviewedAt": "2026-11-24T11:16:36.716Z",
+  "sourceDigest": "8b999db1f918e5e6a94c549048d4ec00c4a96e93525e20f25f464dbb90d10cc5",
   "channels": {
     "stable": {
       "status": "reviewed",

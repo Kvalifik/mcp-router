@@ -5,7 +5,7 @@ connection for your AI tools. Add the Webflow authorizations you need, then
 enable the projects and permissions you want available at the same time.
 
 T3 Code’s Codex activity rows and MCP clients that support server icons can
-show the router’s standalone mark. The router provides a black mark for light
+show the router’s menu-bar mark. The router provides a black mark for light
 backgrounds and a white mark for dark backgrounds. Clients that display it
 can fetch the artwork from the project’s public GitHub repository.
 

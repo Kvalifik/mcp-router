@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.11.3-rc.2 — Bolder router icon
+
+### What’s new
+
+- AI tools now show the heavier menu-bar mark so the router is easier to recognize at small sizes in both light and dark themes.
+
 ## 0.11.3-rc.1 — Router icons in AI tools
 
 ### What’s new
