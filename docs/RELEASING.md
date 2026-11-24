@@ -183,6 +183,11 @@ the exact versioned GitHub ZIP URL, SHA-256, and byte size. Publish these JSON f
 alongside the ZIPs; the draft workflow includes them automatically. Ad-hoc builds
 never generate update feeds. Do not replace an existing version's assets.
 
+For a candidate built and installed on the same Mac, set `MAC_SIGNING_MODE=developer-id-local`
+and `MAC_SIGNING_IDENTITY`, then run `npm run build:desktop`. This signs with Developer ID,
+verifies the bundle, and enables the native updater. It skips the notarization upload.
+Use `developer-id` for distribution to testers and for testing Gatekeeper on a downloaded ZIP.
+
 For a pilot, give the candidate its own package and lockfile version (for
 example, `npm version 0.12.0-rc.1 --no-git-tag-version`) and matching changelog
 heading. RC numbers run from 1 through 255. Use the same release review, signing
