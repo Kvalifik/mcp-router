@@ -11,6 +11,7 @@ same time through one MCP connection, with access controls for each project.
 - **Connect multiple workspaces at once.** Use projects across your Webflow workspaces through one MCP connection.
 - **Set permissions per project.** Give projects different access levels, even within the same workspace.
 - **Change permissions in seconds.** Adjust access without reauthorizing, within your existing Webflow grant.
+- **See what the router is doing.** Open the live graph beside search to see which connections and projects are active, inspect a busy minute, or explore your weekly rhythm.
 - **Open the site or Designer directly.** Jump from a project in the app to its website or Webflow Designer.
 - **Switch between Stable and Beta quickly.** Choose which MCP version a project uses once you’ve authorized both.
 - **Connect your AI apps with one click.** Set up the connection for Codex, Claude Desktop, Claude Code, Cursor, VS Code, Gemini CLI, or Antigravity, then follow the app’s restart or reload instructions.
@@ -20,7 +21,7 @@ MCP Router is independent software. It is not affiliated with, endorsed by,
 sponsored by, or approved by Webflow, OpenAI, Anthropic, or the other services
 it connects to. Product names identify compatible services only.
 
-<img src="docs/images/project-overview.png" width="720" alt="MCP Router showing fictional connections, pinned projects, Beta labels, and per-project access presets">
+<img src="docs/images/project-overview.png" width="720" alt="MCP Router showing live activity, fictional connections, pinned projects, Beta labels, and per-project access presets">
 
 *Manage connections and project access in one place. All project and connection
 names in these screenshots are fictional demo data.*

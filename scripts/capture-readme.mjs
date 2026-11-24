@@ -12,11 +12,12 @@ import { promisify } from 'node:util';
 import { GROUPS } from '../src/permissions.js';
 import { presetGrants } from '../ui/permission-presets.js';
 import menuBar from '../src/menu-bar.cjs';
-import { createDemoState } from './demo-state.mjs';
+import { createDemoState, createDemoActivity } from './demo-state.mjs';
 import nativeMenusApi from '../src/native-menu.cjs';
 
 async function main() {
 const recording = process.argv.includes('--record');
+const verifyActivity = process.argv.includes('--verify-activity');
 const verifyDirect = process.argv.includes('--verify-direct');
 const verifyAttention = process.argv.includes('--verify-attention');
 const attentionPreview = process.argv.includes('--attention') || verifyAttention || verifyDirect;
@@ -51,6 +52,8 @@ const data = {
   })),
 };
 const demo = createDemoState(data);
+const {activity, tick} = createDemoActivity(demo.state, recording);
+const activityTimer = recording ? setInterval(tick, 4000) : null;
 let server;
 let window;
 let tray;
@@ -82,10 +85,17 @@ try {
           const origin = `http://127.0.0.1:${server.httpServer.address().port}`;
           if (request.headers.host !== new URL(origin).host || (request.headers.origin && request.headers.origin !== origin) || request.headers['sec-fetch-site'] === 'cross-site') throw new Error('Request denied');
           if (request.method === 'GET' && request.url === '/state') { response.end(JSON.stringify({...demo.state, accessStatus: menuBar.menuBarStatus(demo.state)})); return; }
+          const url = new URL(request.url, origin);
+          if (request.method === 'GET' && url.pathname === '/activity') {
+            response.end(JSON.stringify(activity.snapshot(url.searchParams.get('view') || 'pulse')));
+            return;
+          }
           if ((!recording && !attentionPreview) || request.method !== 'POST' || request.headers.origin !== origin || request.headers['x-router-csrf'] !== data.csrf || !request.headers['content-type']?.startsWith('application/json')) throw new Error('Request denied');
           let text = '';
           for await (const chunk of request) { text += chunk; if (text.length > 1048576) throw new Error('Request too large'); }
           const result = demo.mutate(request.url, JSON.parse(text || '{}'));
+          const removed = request.url.match(/^\/connections\/([a-z0-9-]+)\/delete$/);
+          if (removed) activity.forgetConnection(removed[1]);
           if (tray) menuBar.createTrayTextUpdater()(tray, 'projects', menuBar.menuBarStatus(demo.state));
           response.end(JSON.stringify(result));
         } catch (error) { response.statusCode = 400; response.end(JSON.stringify({ error: error.message })); }
@@ -162,7 +172,7 @@ try {
   }
   const click = selector => evaluate(`document.querySelector(${JSON.stringify(selector)}).click()`);
   async function capture(name) {
-    if (verifyAttention || verifyDirect && !name.startsWith('/')) return;
+    if (verifyAttention || (verifyActivity || verifyDirect) && !name.startsWith('/')) return;
     await evaluate('document.fonts.ready');
     app.focus({ steal: true });
     window.focus();
@@ -224,7 +234,54 @@ try {
     window = undefined;
     return;
   }
+  await waitFor('[aria-label="Router activity: 12 calls/min"]');
   await capture('project-overview.png');
+  if (verifyActivity) {
+    const verify = async (expression, message) => {
+      if (!await evaluate(expression)) throw new Error('Activity UI: ' + message);
+    };
+    const saveView = async name => {
+      await new Promise(resolve => setTimeout(resolve, 300));
+      await writeFile(join(tmpdir(), 'mcp-router-activity-' + name + '.png'), (await window.webContents.capturePage()).toPNG());
+    };
+    await click('.activity-pulse');
+    await waitFor('.activity-popover');
+    await verify("document.querySelector('.activity-popover').textContent.includes('Juniper & Kite8')", 'popover source counts');
+    await saveView('pulse');
+    await click('.activity-open');
+    await waitFor('.minute-columns button');
+    await click('.minute-columns button:nth-child(8)');
+    await verify("document.querySelector('.activity-card-head').textContent.includes('24 calls') && document.querySelector('.activity-page').textContent.includes('Juniper & Kite16')", 'selected minute and project breakdown');
+    await saveView('minutes');
+    await click('.minute-columns button:last-child');
+    activity.begin('studio', 'demo-project-0')(true);
+    await new Promise(resolve => setTimeout(resolve, 2200));
+    await verify("document.querySelector('.activity-card-head').textContent.includes('12 calls')", 'selection must freeze incoming data');
+    await click('.activity-heading button');
+    await waitFor('.minute-columns button:last-child[aria-label*="13 calls"]');
+    await click('.activity-page nav button:last-child');
+    await waitFor('.rhythm-grid');
+    await verify("document.querySelectorAll('.rhythm-grid tbody tr').length === 4 && document.querySelector('.activity-subtitle').textContent.includes('4 weeks')", 'weekly calendar and streak');
+    await click('.rhythm-grid tbody tr:first-child td button');
+    await verify("document.querySelector('.activity-card-head').textContent.includes('3 calls')", 'selecting a day');
+    await saveView('weeks');
+    nativeTheme.themeSource = 'dark';
+    window.setContentSize(400,560);
+    await waitFor('html.dark');
+    await verify("document.querySelector('.rhythm-grid').getBoundingClientRect().right <= innerWidth", 'compact calendar fits');
+    await saveView('weeks-compact-dark');
+    await click('.activity-page nav button:first-child');
+    await waitFor('.minute-columns');
+    await saveView('minutes-compact-dark');
+    await click('.activity-page nav button:first-child');
+    await waitFor('main:not([hidden]) .activity-pulse');
+    await verify("document.querySelector('[aria-label=\"Collapse Example Studio\"]') !== null", 'expanded projects survive navigation');
+    nativeTheme.themeSource = 'light';
+    window.setContentSize(860,640);
+    await waitFor('html:not(.dark)');
+    await evaluate('document.activeElement.blur()');
+    console.log('Verified activity popover, minute selection, pause and resume, weekly history, dark compact layout, and return to projects.');
+  }
   await click('[aria-label="Settings for Juniper & Kite"]');
   await waitFor('[role="dialog"]');
   await capture('project-permissions.png');
@@ -398,6 +455,7 @@ try {
 } finally {
   ipcMain.removeHandler('demo-native-menu');
   ipcMain.removeHandler('demo-open-main-window');
+  clearInterval(activityTimer);
   tray?.destroy();
   await server?.close();
   // Normal captures follow Electron's graceful window/application lifecycle.

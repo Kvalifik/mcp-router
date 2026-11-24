@@ -1,6 +1,6 @@
 # Privacy notice
 
-Last updated: 16 September 2026
+Last updated: 24 November 2026
 
 ## Publisher and contact
 
@@ -50,6 +50,14 @@ timestamps, identifiers, and operation/status information. It is not intended
 to retain full tool responses. Operational error messages and browser session
 state may also exist locally. Local files persist until deleted; OS backups
 may retain older copies according to your backup settings.
+
+Activity graphs use short-lived counts grouped by router connection and project IDs
+in memory. The encrypted vault stores the tracking start date, daily call totals by
+connection for the current week and the preceding three weeks, and a router-wide
+weekly streak (length and last active week). Older daily entries are cleared on
+startup or subsequent activity. Activity counters contain no call arguments, tool
+responses, or credentials. Deleting a connection folds its past totals into
+“Removed connections” and removes its ID from the activity history.
 
 Deleting a connection removes its current local credentials and project
 settings. It does not delete Webflow projects or guarantee server-side token

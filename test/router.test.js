@@ -225,6 +225,12 @@ test('dashboard enforces host, origin and CSRF while allowing same-origin manage
     http.get(`${root}/api/state`, { headers: { Host: 'evil.example' } }, res => { res.resume(); resolve(res.statusCode); }).on('error', reject);
   });
   assert.equal(wrongHostStatus, 403);
+  assert.equal((await fetch(root + '/api/activity?view=weeks')).status, 403);
+  const owner = {headers:{Cookie:'router_session=test-owner'}};
+  assert.equal((await fetch(root + '/api/activity?view=unknown', owner)).status, 400);
+  const pulse = await (await fetch(root + '/api/activity?view=pulse', owner)).json();
+  assert.deepEqual(pulse.bins, Array(12).fill(0));
+  assert.deepEqual(pulse.sources, []);
   const { csrf } = await (await fetch(`${root}/api/state`, {headers:{Cookie:'router_session=test-owner'}})).json();
   assert.equal((await fetch(`${root}/api/connections`, { method: 'POST', headers: { Cookie:'router_session=test-owner', Origin: root, 'Content-Type': 'application/json' }, body: '{"name":"C"}' })).status, 403);
   assert.equal((await fetch(`${root}/api/connections`, { method: 'POST', headers: { Cookie:'router_session=test-owner', Origin: root, 'Content-Type': 'application/json', 'X-Router-CSRF': csrf }, body: '{"name":"C"}' })).status, 200);

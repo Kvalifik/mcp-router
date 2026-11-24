@@ -1,3 +1,4 @@
+import { ActivityPage, ActivityPulse } from './activity.jsx';
 import { SettingsMenu, ActionMenu } from './settings-menu.jsx';
 import React, { useEffect, useState, useRef } from 'react';
 import { AnimatePresence, motion, useIsPresent, useReducedMotion } from 'motion/react';
@@ -421,6 +422,12 @@ function App() {
   useEffect(()=>{const refresh=()=>window.routerDesktop?.startupSettings?.().then(setStartup).catch(()=>setStartup(null));refresh();window.addEventListener('focus',refresh);return()=>window.removeEventListener('focus',refresh);},[]);
   const [menuBar,setMenuBar]=useState('projects');
   useEffect(()=>{const refresh=()=>window.routerDesktop?.menuBarMode?.().then(setMenuBar).catch(()=>{});refresh();window.addEventListener('focus',refresh);return()=>window.removeEventListener('focus',refresh);},[]);
+  const [activityOpen, setActivityOpen] = useState(false);
+  const activityTrigger = useRef(null);
+  function returnToProjects() {
+    setActivityOpen(false);
+    requestAnimationFrame(() => activityTrigger.current?.focus({ preventScroll: true }));
+  }
   const [pinnedOnly,setPinnedOnly]=useState(false);
   const [modal,setModal] = useState(null), [query,setQuery] = useState(''), [expanded,setExpanded] = useState({});
   // Keep the last model while Radix plays the dialog's exit animation.
@@ -435,7 +442,7 @@ function App() {
   }
   const [focusPopover,setFocusPopover] = useState(false);
   useEffect(()=>window.routerDesktop?.onPopoverOpen?.(()=>setFocusPopover(true)),[]);
-  useEffect(()=>{if(!focusPopover||!data)return;const frame=requestAnimationFrame(()=>{if(!modal)mainRef.current?.focus({preventScroll:true});setFocusPopover(false);});return()=>cancelAnimationFrame(frame);},[focusPopover,data,modal]);
+  useEffect(()=>{if(!focusPopover||!data)return;const frame=requestAnimationFrame(()=>{if(!modal)document.querySelector('.router-main:not([hidden])')?.focus({preventScroll:true});setFocusPopover(false);});return()=>cancelAnimationFrame(frame);},[focusPopover,data,modal]);
   const csrf = useRef(''); const modalRef = useRef(null); modalRef.current = modal;
   async function load() { const response=await fetch('/api/state'); if(!response.ok)throw new Error('Router unavailable');const result=await response.json();csrf.current=result.csrf;setData(result); }
   useEffect(()=>{
@@ -511,8 +518,11 @@ function App() {
     <header data-dragging={toolbarDragging} onPointerDown={beginToolbarDrag} onPointerMove={()=>{if(toolbarPointer.current!==null)window.routerDesktop.toolbarDrag('move');}} onPointerUp={endToolbarDrag} onPointerCancel={endToolbarDrag} onLostPointerCapture={endToolbarDrag} className={`app-header ${window.routerDesktop?.integratedTitleBar ? `app-header-integrated ${window.routerDesktop.titleBarPlatform === 'win32' ? 'app-header-windows' : 'app-header-mac'}` : ''}`}><div className="min-w-0"><div className="flex flex-wrap items-baseline gap-x-2"><h1 className="text-base font-semibold">MCP Router</h1><span className="app-publisher inline-flex items-baseline gap-1 text-sm"><span className="text-muted-foreground">by</span><PublisherLink className="font-semibold" /></span></div><p className="text-xs text-muted-foreground"><AnimatedText>{`${data.connections.length} ${data.connections.length===1?'connection':'connections'} · ${data.projects.length} ${data.projects.length===1?'project':'projects'}`}</AnimatedText></p></div><div className="app-header-actions"><ClientConnections /><SettingsMenu disabled={busy} items={settingsItems} />{window.routerDesktop?.openMainWindow&&<Button className="compact-window-only" variant="outline" size="icon" aria-label="Open main window" title="Open main window" onClick={()=>window.routerDesktop.openMainWindow()}><Maximize2 className="size-4" /></Button>}</div></header>
     <UpdateBanner notice={updateNotice} report={report} />
     {!modal && <NotificationStrip />}
-    <main ref={mainRef} tabIndex={-1} className="router-main">
-    <div className="router-toolbar flex flex-wrap items-center justify-between gap-2 py-4"><div className="flex min-w-0 flex-1 items-center gap-2"><div className="min-w-40 flex-1 max-w-xs"><Input search placeholder="Search projects…" aria-label="Search projects" value={query} onClear={()=>setQuery('')} onChange={e=>setQuery(e.target.value)} /></div><Button size="icon" aria-label="Show pinned projects" title="Show pinned projects" variant={pinnedOnly?'secondary':'outline'} aria-pressed={pinnedOnly} onClick={()=>setPinnedOnly(value=>!value)}><AnimatedSwap icon value={pinnedOnly} className="size-4"><Pin className={`size-4 ${pinnedOnly?'fill-current':''}`} /></AnimatedSwap></Button></div><Button variant="outline" size="icon" disabled={busy} aria-label="Add connection" title="Add connection" onClick={()=>setModal({type:'connect'})}><Plus className="size-4" /></Button></div>
+    {activityOpen && <ActivityPage inventory={data} onBack={returnToProjects} />}
+    <main hidden={activityOpen} ref={mainRef} tabIndex={-1} className="router-main">
+    <div className="router-toolbar flex flex-wrap items-center justify-between gap-2 py-4"><div className="flex min-w-0 flex-1 items-center gap-2"><div className="min-w-40 flex-1 max-w-xs"><Input search placeholder="Search projects…" aria-label="Search projects" value={query} onClear={()=>setQuery('')} onChange={e=>setQuery(e.target.value)} /></div><Button size="icon" aria-label="Show pinned projects" title="Show pinned projects" variant={pinnedOnly?'secondary':'outline'} aria-pressed={pinnedOnly} onClick={()=>setPinnedOnly(value=>!value)}><AnimatedSwap icon value={pinnedOnly} className="size-4"><Pin className={`size-4 ${pinnedOnly?'fill-current':''}`} /></AnimatedSwap></Button></div>
+      <ActivityPulse inventory={data} enabled={!activityOpen && !modal} triggerRef={activityTrigger} onInspect={() => setActivityOpen(true)} />
+      <Button variant="outline" size="icon" disabled={busy} aria-label="Add connection" title="Add connection" onClick={()=>setModal({type:'connect'})}><Plus className="size-4" /></Button></div>
     <Accordion type="multiple" className="space-y-3" aria-label="Connections and projects" value={grouped.filter(c=>expanded[`${filterActive ? `filter:${search}:${pinnedOnly}:` : ''}${c.id}`]??filterActive).map(c=>c.id)} onValueChange={ids=>setExpanded(prev=>({...prev,...Object.fromEntries(grouped.map(c=>[`${filterActive ? `filter:${search}:${pinnedOnly}:` : ''}${c.id}`,ids.includes(c.id)]))}))}>
       {!grouped.length && <p className="rounded-lg border bg-background p-5 text-sm text-muted-foreground"><AnimatedText>{pinnedOnly?'No pinned projects match. Pin a project to add it here.':search?'No matching projects or connections.':'Add a connection to discover its projects.'}</AnimatedText></p>}
       <AnimatePresence initial={false}>{grouped.map(c=>{const expandKey=`${filterActive ? `filter:${search}:${pinnedOnly}:` : ''}${c.id}`;const open=expanded[expandKey]??filterActive;return <AnimatedConnection key={c.id} value={c.id} className="overflow-hidden rounded-lg border bg-background last:border-b">

@@ -32,8 +32,14 @@ The capture retries fully transparent window images up to three times and fails
 if macOS still returns a blank capture. Review both PNGs after regenerating them, especially when layout or permission
 groups change. Demo names and presets live in `scripts/capture-readme.mjs`.
 
+The toolbar graph uses fictional routed calls. For activity interaction checks, run
+`npx electron scripts/capture-readme.mjs --verify-activity`. This checks the
+project breakdown, frozen and live minute selection, day selection, and the
+compact dark layout. It writes review captures under the system temporary
+directory and preserves both README screenshots.
+
 For a screen recording, run `npm run demo`. This opens the same isolated,
-fictional demo with both connections expanded and keeps it open until you close
+fictional demo with both connections expanded and simulated traffic flowing, and keeps it open until you close
 the window. Changes to toggles, names, pinning, permissions, defaults, ordering,
 and connection deletion are saved in memory for that run. Adding or reconnecting
 a connection simulates authorization and supplies fictional projects; sync and

@@ -98,6 +98,8 @@
 !/src/permissions.js
 !/src/preload.cjs
 !/src/project-links.cjs
+!/src/activity.js
+!/src/activity-calendar.js
 !/src/router.js
 !/src/server.js
 !/src/stdio.js
@@ -116,6 +118,7 @@
 !/test/platform.test.js
 !/test/permission-presets.test.js
 !/test/project-links.test.js
+!/test/activity.test.js
 !/test/router.test.js
 !/test/updates.test.js
 !/ui/channel-access.js
@@ -135,6 +138,8 @@
 !/ui/components/ui/tooltip.jsx
 !/ui/index.html
 !/ui/lib/utils.js
+!/ui/activity.jsx
+!/ui/activity.css
 !/ui/main.jsx
 !/ui/notifications.jsx
 !/ui/update-banner.jsx

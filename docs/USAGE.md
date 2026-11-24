@@ -16,6 +16,32 @@ Router and opens the repository’s GitHub Issues page.
 
 Save confirmations and other app messages appear beneath the header. While a dialog is open, its messages appear inside it.
 
+## Router activity
+
+The lavender graph beside project search shows calls finished in the last 60 seconds.
+Open it to see the connections and projects behind the graph and any calls still in
+progress. Direct calls are attributed to their connection. Managed calls are grouped
+under the project used to route them.
+
+Choose **Open activity** to inspect the last 15 minutes of this router session.
+Select a bar to hold the chart and its breakdown still, or use the arrow keys on
+the selected minute. **Resume live** follows the current minute. **Projects** returns
+to the list with your search, expanded connections, and scroll position preserved.
+
+**Weekly rhythm** shows daily totals for the current calendar week and the previous
+three, using the router computer’s local dates and Monday as the start of the week.
+Select a day for its connection totals. One successful routed call makes a week
+active. A streak carries into the following week, giving you until Sunday to
+extend it. A dash marks a date before tracking began. History starts when you
+first run a version with activity tracking.
+
+A call counts once when a routed request finishes, including failures after
+dispatch. Project preparation, live guidance and Direct tool discovery each count
+as one request, regardless of how many upstream steps they take. Code mode counts
+each routed read. Local catalog lookups, automatic inventory syncs, and dashboard
+actions are excluded. The short-term graphs reset when the router restarts.
+Daily totals and the weekly streak are stored locally in the encrypted vault.
+
 ## Authorizing a connection
 
 After a new connection successfully discovers its projects, MCP Router asks for a
