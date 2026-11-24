@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.11.3-rc.3 — Icon spacing in AI tools
+
+### What’s new
+
+- The router icon has a transparent margin so its corners stay visible in rounded activity rows.
+
 ## 0.11.3-rc.2 — Bolder router icon
 
 ### What’s new
