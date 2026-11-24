@@ -16,7 +16,7 @@ const version=JSON.parse(fs.readFileSync('package.json')).version;
 // The digest pins them; any upstream change requires a new decision.
 function pilotDeferrals(channel, tools, catalog, comparison) {
  const result = {missing:[], outdated:[], deferred:[]};
- const faviconPilot = ['0.11.3-rc.1', '0.11.3-rc.2', '0.11.3-rc.3'].includes(version);
+ const faviconPilot = ['0.11.3', '0.11.3-rc.1', '0.11.3-rc.2', '0.11.3-rc.3'].includes(version);
  if (channel !== 'beta' || (!faviconPilot && !/^0\.11\.[12](-rc\.\d+)?$/.test(version))) return result;
  const definitions = ['data_libraries_tool','data_component_tool'].map(name => tools.find(tool => tool.name === name));
  const expectedDigest = faviconPilot ? '4581531bf56fbc76f7c7d993c2ffcbffd141d92b417fdbe1ea0715e1e86bd566' : '84860394ee762d9aa91ae0c9f3ac1bb3192ad255cfc872dfda88d5c0185dbd99';

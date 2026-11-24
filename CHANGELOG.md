@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.11.3 — Recognize MCP Router in your AI tools
+
+MCP Router is easier to spot in AI activity, adds one-click Antigravity setup, and supports more Webflow actions.
+
+### What’s new
+
+- **Recognize router calls.** Codex, T3 Code and compatible clients can show the router’s menu-bar icon on light or dark backgrounds, with room for rounded corners.
+- **Connect Antigravity with one click.** Choose **Apps → Antigravity**, then refresh the MCP server list in Antigravity. Setup also works when an app has created an empty settings file.
+- **Messages stay in view.** Save confirmations and other messages now appear beneath the header, or inside the open dialog, instead of floating over your work.
+- **Publish campaigns when you allow it.** A new **Campaigns → Publish** permission lets agents publish or unpublish campaign landing pages and page variations. It starts off for your existing projects and saved defaults, and it also needs Pages Publish and Custom code Write.
+- **robots.txt and redirect edits work again.** Agents use Webflow's updated robots.txt rules and can change one side of a 301 redirect at a time.
+- **Beta Forms, AEO and Recommendations work again.** Webflow split these tools on Beta. Your existing permissions keep working without changes.
+- **More on Beta.** Agents can import an image from a public URL into the asset library and delete a page from an open Release, each under your existing Assets and Pages permissions.
+- **Reliability updates.** The app's build tools and configuration library are up to date.
+
 ## 0.11.3-rc.3 — Icon spacing in AI tools
 
 ### What’s new
