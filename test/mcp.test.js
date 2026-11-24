@@ -46,6 +46,12 @@ test('real MCP stdio client enforces live policy through the daemon', async t =>
   const client = new Client({ name: 'test-codex', version: '1.0.0' });
   t.after(async () => { await client.close(); await new Promise(resolve => ipc.close(resolve)); fs.rmSync(dir, { recursive: true, force: true }); });
   await client.connect(new StdioClientTransport({ command: process.execPath, args: [fileURLToPath(new URL('../src/stdio.js', import.meta.url))], env: { ...process.env, ROUTER_SOCKET: socket } }));
+  const { title, icons } = client.getServerVersion();
+  assert.equal(title, 'MCP Router');
+  assert.deepEqual(icons.map(({ theme }) => theme), ['light', 'dark']);
+  assert.match(icons[0].src, /^https:\/\/.+\/mark-black\.png$/);
+  assert.match(icons[1].src, /^https:\/\/.+\/mark-white\.png$/);
+  const source = { name: title, logoUrl: icons[0].src, logoUrlDark: icons[1].src };
   const instructions = client.getInstructions();
   assert.match(instructions, /Webflow websites and projects/);
   assert.match(instructions, /list_projects.*prepare_project.*get_project_operations/s);
@@ -78,6 +84,7 @@ test('real MCP stdio client enforces live policy through the daemon', async t =>
   assert.ok(guidance.preparationId);
   assert.equal((await client.listResourceTemplates()).resourceTemplates.length,1);
   const projects = await client.callTool({ name: 'list_projects', arguments: {} });
+  assert.deepEqual(projects._meta.source, source);
   assert.equal(JSON.parse(projects.content[0].text)[0].id, 'a');
   router.saveProject({id:'draft', name:'Example draft', connectionId:id, siteId:id});
   const search = async () => JSON.parse((await client.callTool({name:'list_projects', arguments:{query:'example'}})).content[0].text);
@@ -90,6 +97,7 @@ test('real MCP stdio client enforces live policy through the daemon', async t =>
   assert.equal(JSON.parse(read.content[0].text).id, id);
   const denied = await client.callTool({name:'read_webflow',arguments:{projectId:'a',operationId:'data_cms_tool.get_collection_list',params:{}}});
   assert.equal(JSON.parse(denied.content[0].text).code,'router_permission_denied');
+  assert.deepEqual(denied._meta.source, source);
   delete store.connection(id).tokens;
   const expired = await client.callTool({name:'prepare_project',arguments:{projectId:'a'}});
   assert.equal(JSON.parse(expired.content[0].text).code,'reauthorization_required');
@@ -115,9 +123,10 @@ test('real MCP stdio client enforces live policy through the daemon', async t =>
   assert.ok(directTools.tools.some(tool=>tool.name==='new_unreviewed_tool'));
   const payload={nested:{values:[1,false,null,'synthetic']}};
   const directResponse={content:[{type:'text',text:'Synthetic response'},{type:'image',data:'c3ludGhldGlj',mimeType:'image/png'}],structuredContent:{ok:true}};
+  directResponse._meta = { example: 'upstream', source: { detail: 'synthetic' } };
   router.open=async()=>({listTools:async()=>[{name:'new_unreviewed_tool',inputSchema:{type:'object'}}],call:async(name,args)=>{assert.equal(name,'new_unreviewed_tool');assert.deepEqual(args,payload);return directResponse;},close:async()=>{}});
   const forwarded=await client.callTool({name:'call_direct_tool',arguments:{...directArgs,toolName:'new_unreviewed_tool',arguments:payload}});
-  assert.deepEqual(forwarded,directResponse);
+  assert.deepEqual(forwarded, { ...directResponse, _meta: { example: 'upstream', source: { detail: 'synthetic', ...source } } });
   const directTool=tools.find(tool=>tool.name==='call_direct_tool');
   assert.equal(directTool.annotations.readOnlyHint,false);
   assert.equal(directTool.annotations.destructiveHint,true);

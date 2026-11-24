@@ -12,13 +12,15 @@ execFileSync('git',['diff','--exit-code','--quiet','--','.',':!'+reportPath]);
 const entries=execFileSync('git',['ls-files','--stage','-z'],{encoding:'utf8'}).split('\0').filter(line=>line&&!line.endsWith('\t'+reportPath)).sort();
 const sourceDigest=digest(entries.join('\0'));
 const version=JSON.parse(fs.readFileSync('package.json')).version;
-// 0.11.1 and 0.11.2 defer the same reviewed Beta Libraries and Component definitions.
+// These pilots defer the same reviewed Beta Libraries and Component definitions.
 // The digest pins them; any upstream change requires a new decision.
 function pilotDeferrals(channel, tools, catalog, comparison) {
  const result = {missing:[], outdated:[], deferred:[]};
- if (!/^0\.11\.[12](-rc\.\d+)?$/.test(version) || channel !== 'beta') return result;
+ const faviconPilot = version === '0.11.3-rc.1';
+ if (channel !== 'beta' || (!faviconPilot && !/^0\.11\.[12](-rc\.\d+)?$/.test(version))) return result;
  const definitions = ['data_libraries_tool','data_component_tool'].map(name => tools.find(tool => tool.name === name));
- if (digest(JSON.stringify(definitions)) !== '84860394ee762d9aa91ae0c9f3ac1bb3192ad255cfc872dfda88d5c0185dbd99') throw Error('Review the changed Beta Libraries and Components definitions');
+ const expectedDigest = faviconPilot ? '4581531bf56fbc76f7c7d993c2ffcbffd141d92b417fdbe1ea0715e1e86bd566' : '84860394ee762d9aa91ae0c9f3ac1bb3192ad255cfc872dfda88d5c0185dbd99';
+ if (digest(JSON.stringify(definitions)) !== expectedDigest) throw Error('Review the changed Beta Libraries and Components definitions');
  if (!isDeepStrictEqual(comparison.unclassifiedTools,['data_libraries_tool'])) throw Error('Review Beta tool classification');
  result.missing.push('data_libraries_tool');
  result.deferred.push({tool:'data_libraries_tool', reason:'All 14 actions await a workspace visibility, multi-site write and ownership review.'});

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.11.3-rc.1 — Router icons in AI tools
+
+### What’s new
+
+- T3 Code and compatible MCP clients can show the MCP Router mark in light and dark themes.
+
 ## 0.11.2 — Connect Antigravity and publish campaigns
 
 MCP Router now connects to Antigravity and keeps up with Webflow's latest MCP changes.
