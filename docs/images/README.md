@@ -41,6 +41,13 @@ configuration error, dismissing the prompt, and finding restart instructions
 after reopening the window. This mode uses fictional app installations and
 leaves the README screenshots in place.
 
+For a hands-on walkthrough, run `npm run demo -- --app-setup`. In **Example
+Studio**, enable **Juniper & Kite**, choose **Choose an AI app**, and select
+one of the seven fictional installations. Open **Apps** and select that app to
+see its saved setup status and next step. Close the window and run the command
+again to reset. To demonstrate the single-app button, use
+`npm run demo -- --app-setup=cursor`.
+
 For a screen recording, run `npm run demo`. This opens the same isolated,
 fictional demo with both connections expanded and keeps it open until you close
 the window. Changes to toggles, names, pinning, permissions, defaults, ordering,

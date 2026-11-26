@@ -18,7 +18,8 @@ import nativeMenusApi from '../src/native-menu.cjs';
 import integrations from '../src/integrations.cjs';
 
 async function main() {
-const recording = process.argv.includes('--record');
+const setupDemo = process.argv.find(arg => arg === '--app-setup' || arg.startsWith('--app-setup='));
+const recording = Boolean(setupDemo) || process.argv.includes('--record');
 const verifyDirect = process.argv.includes('--verify-direct');
 const verifyAppSetup = process.argv.includes('--verify-app-setup');
 const verifyAttention = process.argv.includes('--verify-attention');
@@ -54,13 +55,24 @@ const data = {
   })),
 };
 const demo = createDemoState(data);
-if (verifyAppSetup) for (const project of demo.state.projects) project.enabled = false;
+if (verifyAppSetup || setupDemo) for (const project of demo.state.projects) project.enabled = false;
 const applications = join(temporary, 'Applications');
 const appData = join(temporary, 'app-data');
+const demoBin = join(temporary, 'bin');
+let codexConfigured = false;
 const clients = integrations.createIntegrations({
-  home:temporary, appData, platform:'darwin', applicationsDirs:[applications], binaryDirs:[],
+  home:temporary, appData, platform:'darwin', applicationsDirs:[applications], binaryDirs:[demoBin],
   codexHome:join(temporary, 'codex'), executable:join(temporary, 'demo-router'),
   script:join(temporary, 'stdio.js'), socket:join(temporary, 'router.sock'),
+  // The Codex integration invokes its CLI. Simulate that CLI inside the demo.
+  run:async (command, args) => {
+    assert.equal(command, join(demoBin, 'codex'));
+    if (args[1] === 'add') { codexConfigured = true; return {stdout:''}; }
+    assert.equal(args[1], 'get');
+    if (!codexConfigured) throw Object.assign(new Error('Demo server missing'), {stderr:'not found'});
+    const transport = JSON.parse(clients.configuration()).mcpServers[integrations.NAME];
+    return {stdout:JSON.stringify({enabled:true, transport})};
+  },
 });
 let server;
 let window;
@@ -68,7 +80,19 @@ let tray;
 let popover;
 try {
   await app.whenReady();
-  if (!verifyAppSetup) {
+  if (setupDemo) {
+    const only = setupDemo.split('=')[1];
+    const desktopApps = {'claude-desktop':'Claude', cursor:'Cursor', vscode:'Visual Studio Code', antigravity:'Antigravity'};
+    const cliApps = {codex:'codex', 'claude-code':'claude', gemini:'gemini'};
+    if (only !== undefined && !Object.hasOwn(desktopApps, only) && !Object.hasOwn(cliApps, only)) throw new Error('Unknown demo app. Choose one of: ' + Object.keys({...desktopApps, ...cliApps}).join(', '));
+    await mkdir(demoBin);
+    for (const [id, name] of Object.entries(desktopApps)) {
+      if (!only || id === only) await mkdir(join(applications, name + '.app'), {recursive:true});
+    }
+    for (const [id, name] of Object.entries(cliApps)) {
+      if (!only || id === only) await writeFile(join(demoBin, name), '');
+    }
+  } else if (!verifyAppSetup) {
     await mkdir(join(applications, 'Claude.app'), {recursive:true});
     assert.ok((await clients.connect('claude-desktop')).ok);
   }
