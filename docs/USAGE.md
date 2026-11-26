@@ -317,7 +317,8 @@ next to search. Reorder connections from Settings using drag handles or arrows.
 
 ### Set up your AI app
 
-The header counts Webflow connections and projects. Once you enable a project,
+The header counts Webflow connections and projects. **Apps (1/3)** means one
+of the three supported apps detected on this computer is set up. Once you enable a project,
 the desktop window offers to set up your AI app if none is configured. Choose
 **Set up Claude Desktop** if it’s the only detected app, or **Choose an AI app**
 to pick from several. Setup changes the configuration of the app you select.
@@ -435,8 +436,7 @@ spinner badge with details available in the same way.
 Click the item to open the same interface in a compact, responsive window,
 including while another app is fullscreen. Search,
 pinning, access switches, and settings use the same controls as the main window.
-Settings, Add connection, Apps, and Open main window appear as equally sized
-icons in the compact header. The expand icon opens the full window.
+The compact header also shows the Apps count. The expand icon opens the full window.
 Desktop dropdowns use native menus with icons throughout the app: Settings,
 Apps, connection actions, project MCP version, and permission presets. Submenus
 can extend outside the window. Browser dashboards use the same options in web

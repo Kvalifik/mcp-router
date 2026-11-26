@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ChevronDown, Copy, Plus, RefreshCw, Sparkles, X } from 'lucide-react';
 import { Button } from './components/ui/button.jsx';
+import { AnimatedReveal, AnimatedText, AnimatedWords } from './components/ui/animated-content.jsx';
 import { ActionMenu } from './settings-menu.jsx';
 import { notice } from './notifications.jsx';
 
@@ -83,12 +84,16 @@ export function useClientConnections() {
     }
   }
 
-  return {clients, installed:clients?.filter(client => client.installed) ?? [], pending, connect, menuButton};
+  const installed = clients?.filter(client => client.installed) ?? [];
+  const configuredCount = installed.filter(client => client.state === 'configured').length;
+  return {clients, installed, configuredCount, pending, connect, menuButton};
 }
 
 export function AppsMenu({apps}) {
   if (!window.routerDesktop) return null;
-  const {clients, installed, pending, connect, menuButton} = apps;
+  const {clients, installed, configuredCount, pending, connect, menuButton} = apps;
+  const label = clients ? `Apps (${configuredCount}/${installed.length})` : 'Apps';
+  const description = clients ? `${configuredCount} of ${installed.length} detected apps set up` : 'App connections';
   const items = installed.map(client => {
     const configured = client.state === 'configured';
     const needsAttention = ['error', 'needs-reconnect'].includes(client.state);
@@ -124,19 +129,19 @@ export function AppsMenu({apps}) {
     })),
   });
   return <ActionMenu items={items} trigger={
-    <Button ref={menuButton} className="app-client-menu" variant="outline" size="sm" aria-label="App connections" title="Apps" disabled={!!pending}>
-      <Sparkles /><span className="full-window-only">Apps</span><ChevronDown className="size-3" aria-hidden="true" />
+    <Button ref={menuButton} className="app-client-menu" variant="outline" size="sm" aria-label={label} title={description} disabled={!!pending}>
+      <Sparkles /><AnimatedText className="tabular-nums">{label}</AnimatedText><ChevronDown className="size-3" aria-hidden="true" />
     </Button>
   } />;
 }
 
-export function AppSetupPrompt({apps}) {
+export function AppSetupPrompt({apps, hasEnabledProject}) {
   const [dismissed, setDismissed] = useState(() => {
     try { return localStorage.getItem(dismissKey) === 'true'; }
     catch { return false; }
   });
-  const {clients, installed, pending, connect, menuButton} = apps;
-  if (dismissed || !clients?.length || installed.some(client => client.state === 'configured')) return null;
+  const {clients, installed, configuredCount, pending, connect, menuButton} = apps;
+  const show = hasEnabledProject && !dismissed && !!clients?.length && configuredCount === 0;
 
   let action;
   let message = 'Set up an AI app to use your Webflow projects.';
@@ -165,9 +170,9 @@ export function AppSetupPrompt({apps}) {
     try { localStorage.setItem(dismissKey, 'true'); } catch { /* Keep this session dismissed. */ }
     menuButton.current?.focus();
   }
-  return <section aria-label="AI app setup" className="full-window-only mt-4 flex items-center gap-3 rounded-lg border bg-background p-3">
-    <p className="min-w-0 flex-1 text-sm">{message}</p>
+  return <AnimatedReveal show={show} className="app-setup-reveal full-window-only">{show && <section aria-label="AI app setup" className="mt-4 flex items-center gap-3 rounded-lg border bg-background p-3">
+    <p className="min-w-0 flex-1 text-sm"><AnimatedWords>{message}</AnimatedWords></p>
     {action}
     <Button size="icon-xs" variant="ghost" aria-label="Dismiss AI app setup" onClick={dismiss}><X /></Button>
-  </section>;
+  </section>}</AnimatedReveal>;
 }

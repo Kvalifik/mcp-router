@@ -43,7 +43,8 @@ leaves the README screenshots in place.
 
 For a hands-on walkthrough, run `npm run demo -- --app-setup`. In **Example
 Studio**, enable **Juniper & Kite**, choose **Choose an AI app**, and select
-one of the seven fictional installations. Open **Apps** and select that app to
+one of the seven fictional installations. The prompt collapses and **Apps (0/7)**
+changes to **Apps (1/7)**. Open **Apps (1/7)** and select that app to
 see its saved setup status and next step. Close the window and run the command
 again to reset. To demonstrate the single-app button, use
 `npm run demo -- --app-setup=cursor`.

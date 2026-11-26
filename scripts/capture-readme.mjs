@@ -241,10 +241,11 @@ try {
   await click('[aria-label="Expand Personal Projects"]');
   await evaluate('document.activeElement.blur()');
   if (verifyAppSetup) {
-    const prompt = '[aria-label="AI app setup"]';
+    const prompt = '.app-setup-reveal[data-open="true"] [aria-label="AI app setup"]';
     const primary = prompt + ' button:first-of-type';
     const setupComplete = `body:not(:has(${prompt})) [role="status"]`;
-    const apps = '[aria-label="App connections"]';
+    const apps = 'button.app-client-menu';
+    const waitForCount = count => waitFor(`${apps}[aria-label="Apps (${count})"]`);
     const claudeSettings = join(appData, 'Claude', 'claude_desktop_config.json');
     const reload = async () => { await window.loadURL(origin); await waitFor(apps); };
     const buttonText = () => evaluate(`document.querySelector('${primary}').textContent`);
@@ -259,14 +260,31 @@ try {
     }
 
     assert.equal(await hasPrompt(), false);
+    await waitForCount('0/0');
+    await evaluate(`window.setupTransitions = [];
+      document.addEventListener('transitionend', event => {
+        if (event.target.matches('.app-setup-reveal') && event.propertyName === 'grid-template-rows') window.setupTransitions.push(event.target.dataset.open);
+      });`);
     await click('[aria-label="Enable Juniper & Kite"]');
     await waitFor(prompt);
     assert.equal(await buttonText(), 'Copy setup instructions');
     await click(primary); await waitFor('[role="status"]');
     assert.equal(copiedConfig, clients.configuration('agent'));
     assert.ok(await hasPrompt());
+    const reduced = await evaluate("matchMedia('(prefers-reduced-motion: reduce)').matches");
+    const finishReveal = () => evaluate(`new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))).then(() =>
+      Promise.all(document.querySelector('.app-setup-reveal').getAnimations().map(animation => animation.finished)))
+      .then(() => new Promise(resolve => requestAnimationFrame(() => resolve(true))))`);
+    await finishReveal();
+    await click('[aria-label="Enable Juniper & Kite"]');
+    await waitFor('.app-setup-reveal[data-open="false"][inert]');
+    await finishReveal();
+    assert.deepEqual(await evaluate('window.setupTransitions'), reduced ? [] : ['true', 'false']);
+    await click('[aria-label="Enable Juniper & Kite"]');
+    await waitFor(prompt);
     await mkdir(join(applications, 'Claude.app'), {recursive:true});
     await reload(); await waitFor(prompt);
+    await waitForCount('0/1');
     assert.equal(await buttonText(), 'Set up Claude Desktop');
 
     // Break the fixture after discovery to exercise a real failed registration and retry.
@@ -277,6 +295,7 @@ try {
     assert.ok(await hasPrompt());
     await writeFile(claudeSettings, '{}');
     await click(primary); await waitFor(setupComplete);
+    await waitForCount('1/1');
     assert.equal(await hasPrompt(), false);
     assert.match(await evaluate("document.querySelector('[role=status]').textContent"), /Claude Desktop is set up\. Quit and reopen Claude Desktop/);
     await reload();
@@ -287,11 +306,22 @@ try {
     await writeFile(claudeSettings, '{}');
     await mkdir(join(applications, 'Cursor.app'));
     await reload(); await waitFor(prompt);
+    await waitForCount('0/2');
     assert.equal(await buttonText(), 'Choose an AI app');
     const choices = await inspectMenu(primary);
     assert.deepEqual(choices.map(item => item.label), ['Set up Claude Desktop', 'Set up Cursor']);
     assert.ok(!(await clients.status()).some(client => client.state === 'configured'));
     await inspectMenu(primary, 'connect-cursor'); await waitFor(setupComplete);
+    await waitForCount('1/2');
+    window.setSize(400, 560);
+    await waitForCount('1/2');
+    assert.ok(await evaluate(`(() => {
+      const button = document.querySelector('.app-client-menu'), label = button.querySelector('.tabular-nums');
+      const bounds = label.getBoundingClientRect(), header = document.querySelector('.app-header');
+      return innerWidth === 400 && bounds.width > 0 && bounds.left >= button.getBoundingClientRect().left &&
+        bounds.right <= button.getBoundingClientRect().right && header.scrollWidth <= innerWidth;
+    })()`), 'compact header must fit the visible Apps count');
+    window.setSize(860, 640);
     assert.deepEqual((await clients.status()).filter(client => client.state === 'configured').map(client => client.id), ['cursor']);
     assert.equal(await hasPrompt(), false);
 
