@@ -14,8 +14,9 @@ read-only demo API data, and captures the overview and project permissions dialo
 in Electron. It uses an isolated temporary profile and blocks external requests.
 The demo desktop bridge supports native dropdown menus and opening the main
 window from the menu bar panel. The GitHub repository and feedback links open
-their fixed public destinations in the default browser; external account and integration actions remain simulated; no OAuth grants or client configurations are read
-or changed. The script briefly shows an 860 × 640 demo window and uses macOS
+their fixed public destinations in the default browser. External account and
+integration actions use fixtures isolated from real grants and client settings.
+The script briefly shows an 860 × 640 demo window and uses macOS
 `screencapture` to include native window controls and the window shadow. Screen
 Recording permission may be required. Two demo projects use authorized Beta
 access. The README displays both Retina captures at a maximum width of 720 pixels.
@@ -31,6 +32,22 @@ capture process or remove its profile while Chromium is still using it.
 The capture retries fully transparent window images up to three times and fails
 if macOS still returns a blank capture. Review both PNGs after regenerating them, especially when layout or permission
 groups change. Demo names and presets live in `scripts/capture-readme.mjs`.
+The overview represents a user who has already set up Claude Desktop. Its
+registration lives in the temporary demo profile.
+
+Run `npx electron scripts/capture-readme.mjs --verify-app-setup` to exercise
+first-project setup, choosing a single app or one of several, retrying after a
+configuration error, dismissing the prompt, and finding restart instructions
+after reopening the window. This mode uses fictional app installations and
+leaves the README screenshots in place.
+
+For a hands-on walkthrough, run `npm run demo -- --app-setup`. In **Example
+Studio**, enable **Juniper & Kite**, choose **Choose an AI app**, and select
+one of the seven fictional installations. The prompt collapses and **Apps (0/7)**
+changes to **Apps (1/7)**. Open **Apps (1/7)** and select that app to
+see its saved setup status and next step. Close the window and run the command
+again to reset. To demonstrate the single-app button, use
+`npm run demo -- --app-setup=cursor`.
 
 For a screen recording, run `npm run demo`. This opens the same isolated,
 fictional demo with both connections expanded and keeps it open until you close

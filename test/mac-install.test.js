@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-const { offerApplicationMove } = createRequire(import.meta.url)('../src/mac-install.cjs');
+const { offerApplicationMove, explainBlockedApplicationMove } = createRequire(import.meta.url)('../src/mac-install.cjs');
 
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'router-install-test-'));
 after(() => fs.rmSync(temp, { recursive: true, force: true }));
@@ -81,6 +81,37 @@ function install(f, version = '0.9.0') {
   fs.mkdirSync(folder, { recursive: true });
   fs.writeFileSync(path.join(folder, 'package.json'), JSON.stringify({ name: 'mcp-router', version }));
 }
+
+test('a downloaded copy that lost the lock explains how to replace a recognized installation', () => {
+  const f = fixture();
+  install(f);
+  explainBlockedApplicationMove(f.options);
+  assert.equal(f.errors.length, 1);
+  assert.match(f.errors[0][0], /already running/);
+  assert.match(f.errors[0][1], /Applications.*MCP Router → Quit.*reopen.*Replace and Relaunch/);
+  assert.equal(f.messages.length, 0);
+  assert.equal(f.moves, 0);
+});
+
+test('ordinary second launches and suppressed prompts yield quietly to the first instance', async () => {
+  for (const options of [{ installed: true }, { platform: 'win32' }, { packaged: false }]) {
+    const f = fixture(options);
+    install(f);
+    explainBlockedApplicationMove(f.options);
+    assert.deepEqual(f.errors, []);
+  }
+  const missing = fixture();
+  explainBlockedApplicationMove(missing.options);
+  install(missing, 'unrecognized');
+  explainBlockedApplicationMove(missing.options);
+  assert.deepEqual(missing.errors, []);
+
+  const declined = fixture({ response: 1, checkboxChecked: true });
+  await offerApplicationMove(declined.options);
+  install(declined);
+  explainBlockedApplicationMove(declined.options);
+  assert.deepEqual(declined.errors, []);
+});
 
 test('replacement shows both versions and explicitly authorizes native replacement', async () => {
   for (const version of ['0.9.0', '0.9.1', '0.10.0']) {

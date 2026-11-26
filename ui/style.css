@@ -80,9 +80,9 @@ button:disabled { cursor:not-allowed; }
 
 /* One title bar; reserve space for native controls on each desktop platform. */
 .router-shell { display:flex; flex-direction:column; height:100dvh; }
-.update-banner-reveal { --reveal-gap:0px; }
+.update-banner-reveal, .app-setup-reveal { --reveal-gap:0px; }
 @starting-style {
-  .update-banner-reveal[data-open="true"] { grid-template-rows:0fr; opacity:0; }
+  .update-banner-reveal[data-open="true"], .app-setup-reveal[data-open="true"] { grid-template-rows:0fr; opacity:0; }
 }
 .update-banner { display:flex; flex-wrap:wrap; align-items:center; gap:8px; flex:none; min-height:36px; padding:5px 12px; border-bottom:1px solid var(--border); background:var(--muted); }
 .router-main { flex:1; min-height:0; overflow-x:hidden; overflow-y:scroll; padding:0 16px 20px; overscroll-behavior:contain; }
@@ -119,7 +119,7 @@ body:has([data-slot="dropdown-menu-content"]) .app-header-integrated, .app-heade
   .full-window-only { display:none; }
   .compact-window-only { display:inline-flex; }
   .app-header-actions > .compact-window-only { width:32px; height:32px; padding:0; }
-  .app-client-menu, .app-settings-menu { width:48px; height:32px; padding:0 8px; gap:4px; }
+  .app-settings-menu { width:48px; height:32px; padding:0 8px; gap:4px; }
   .app-header { padding:0 12px; gap:8px; -webkit-app-region:no-drag; }
   .router-main { padding:0 10px 12px; }
   .router-toolbar { gap:8px; padding:12px 0; }

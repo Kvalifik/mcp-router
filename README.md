@@ -35,6 +35,8 @@ Choose **mac-arm64** for Apple Silicon (M1 or later), or **mac-x64** for Intel M
    when prompted; the app moves and restarts before setup. You can also drag it
    into **Applications** yourself. **Not Now** continues from its current location
    and asks again on the next launch, unless you check **Don’t ask again**.
+   If MCP Router is already running, choose **MCP Router → Quit** in that copy,
+   reopen the download, then choose **Replace and Relaunch**. This keeps your connections and settings.
 3. Open MCP Router. Check the release notes for signing status. Developer ID releases are signed and notarized.
    For older or ad-hoc builds, if macOS blocks it, first attempt to open it, then go to
    **System Settings → Privacy & Security → Open Anyway** and confirm opening
@@ -43,7 +45,9 @@ Choose **mac-arm64** for Apple Silicon (M1 or later), or **mac-x64** for Intel M
    download a fresh copy and report the release version if it persists.
 4. Choose **Add connection**, authorize Webflow, then enable the projects and
    permissions you want to use. New projects start disabled.
-5. Open **Apps**, connect your AI app, and follow its restart/reload instructions.
+5. Use the setup prompt to choose the AI app that will use your projects.
+   For Claude Desktop, choose **Set up Claude Desktop**, then quit and reopen Claude.
+   You can find setup and restart instructions again under **Apps**.
 
 Signed Mac builds with updater support download new signed releases in the background.
 In the header banner, choose **Update** to restart and install, or **Skip Version** to wait. Older versions need one
@@ -121,12 +125,11 @@ Treat that file as private. Direct unauthenticated dashboard requests are denied
    Review how authorization and router permissions work, then choose **Continue to Webflow**.
 2. Authorize the intended sites/workspaces with your own Webflow account.
 3. Review permissions and enable the projects you want your AI client to access.
-4. Choose your client in **Apps**, then restart or reload it as instructed.
+4. Use the setup prompt or choose your client under **Apps**, then follow that app’s instructions.
 
-A configured checkmark means configuration was saved, not that a running AI
-session has loaded it. After connecting, the checkmark stays visible until the
-next hover or keyboard focus. Hover or focus the configured app again to show
-its reconnect icon. The **ChatGPT/Codex** entry configures a detected local
+A checkmark in **Apps** means the router verified the app’s saved configuration.
+Open its submenu to see its restart, reload, or trust instructions and the
+**Reconnect** action. The **ChatGPT/Codex** entry configures a detected local
 Codex MCP client; it does not add a connector to the ChatGPT website.
 
 You can authorize fewer projects or permissions. Router permissions only limit
