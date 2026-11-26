@@ -8,7 +8,8 @@ import { notice } from './notifications.jsx';
 const icons={SunMoon,PanelTop,Monitor,Server,ArrowDownUp,ShieldCheck,Activity,RefreshCw,Info,Pencil,Trash2,MessageSquare,Code2,Terminal,Plus,Copy,Check,TriangleAlert,CloudOff,Eye,Ban,CheckCheck,Unplug,Split,Power};
 function ItemIcon({name}){const Icon=icons[name];return Icon?<Icon className="size-4" />:null;}
 
-export function ActionMenu({items, trigger}) {
+export function ActionMenu({items, trigger, inHeader = false}) {
+  const dialogAtOpen = React.useRef(null);
   const native = window.routerDesktop?.showNativeMenu;
   const open = async event=>{
     if(trigger.props.disabled)return;
@@ -26,9 +27,20 @@ export function ActionMenu({items, trigger}) {
   const button = native ? React.cloneElement(trigger, {onClick:open,onKeyDown:event=>{if(event.key==='ArrowDown'){event.preventDefault();open(event);}},'aria-haspopup':'menu'}) : trigger;
   if(native)return button;
   const render=entries=>entries.map((item,index)=>item.separator?<DropdownMenuSeparator key={`separator-${index}`} />:item.children?<DropdownMenuSub key={item.label}><DropdownMenuSubTrigger><ItemIcon name={item.icon} /><AnimatedText>{item.label}</AnimatedText></DropdownMenuSubTrigger><DropdownMenuSubContent>{render(item.children)}</DropdownMenuSubContent></DropdownMenuSub>:item.checked!==undefined?<DropdownMenuCheckboxItem key={item.id} disabled={item.disabled} checked={item.checked} onSelect={item.onSelect}><ItemIcon name={item.icon} /><AnimatedText>{item.label}</AnimatedText></DropdownMenuCheckboxItem>:<DropdownMenuItem key={item.id} disabled={item.disabled} variant={item.variant} onSelect={item.onSelect}><ItemIcon name={item.icon} /><AnimatedText>{item.label}</AnimatedText></DropdownMenuItem>);
-  return <DropdownMenu><DropdownMenuTrigger asChild>{button}</DropdownMenuTrigger><DropdownMenuContent align="end" sideOffset={20}>{render(items)}</DropdownMenuContent></DropdownMenu>;
+  const placement = inHeader ? {collisionPadding:8} : {sideOffset:20};
+  const visibleDialog = () => [...document.querySelectorAll('[data-slot="dialog-workarea"][data-state="open"]')].find(panel => panel.getClientRects().length);
+  return <DropdownMenu onOpenChange={open => { if (open) dialogAtOpen.current = visibleDialog(); }}>
+    <DropdownMenuTrigger asChild disabled={trigger.props.disabled}>{button}</DropdownMenuTrigger>
+    <DropdownMenuContent align="end" {...placement} onCloseAutoFocus={event => {
+      const panel = visibleDialog();
+      if (panel && panel !== dialogAtOpen.current) {
+        event.preventDefault();
+        if (!panel.contains(document.activeElement)) panel.focus({preventScroll:true});
+      }
+    }}>{render(items)}</DropdownMenuContent>
+  </DropdownMenu>;
 }
 
 export function SettingsMenu({items,disabled}) {
-  return <ActionMenu items={items} trigger={<Button className="app-settings-menu" variant="outline" size="sm" disabled={disabled} aria-label="Settings" title="Settings"><Settings2 className="size-4" /><ChevronDown className="size-3" aria-hidden="true" /></Button>} />;
+  return <ActionMenu inHeader items={items} trigger={<Button className="app-settings-menu" variant="outline" size="sm" disabled={disabled} aria-label="Settings" title="Settings"><Settings2 className="size-4" /><ChevronDown className="size-3" aria-hidden="true" /></Button>} />;
 }

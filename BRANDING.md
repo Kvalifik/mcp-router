@@ -11,6 +11,15 @@ sponsored by, or approved by Webflow or the AI services it connects to.
 Product names identify compatible services; they remain the property of their
 respective owners.
 
+## Typography
+
+Interface text uses the bundled Manrope variable font. Its weights, letter
+spacing and line heights follow Kvalifik’s regular, small and tiny text styles
+in light and dark themes. Window and section titles use Denton Thin. Larger
+desktop headings use Denton Condensed Thin. Both heading styles use 60% of
+Kvalifik’s responsive font sizes. These two faces load from the
+user’s installed fonts, with Georgia or the platform serif as a fallback.
+
 ## Logos and icons
 
 The app uses its own router icon and [Kvalifik](https://kvalifik.dk) wordmark. Integration choices use

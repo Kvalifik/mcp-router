@@ -152,20 +152,20 @@ management UI. An enabled context project and connection, matching inventory
 workspace, live workspace verification, and the selected channel's OAuth grant are
 required. Member/invite IDs and explicitly named invite sites are checked against
 that workspace. Workspace-grant or mapping changes invalidate preparation proofs
-and prevent dispatch/release of in-flight data. These controls preserve project
+and prevent dispatch/release of in-flight data. A parent workspace ID identifies a target. Webflow still checks the authorization for that action, including for connections authorized for individual sites. These controls preserve project
 isolation for all operations without explicit workspace scope.
 
 
 Beta supports the reviewed GSAP, Cloud Apps, Campaigns, Members and Optimize
 operations and Modal schemas. AEO recommendation settings have a separate project
-write grant. Under Workspace permissions, two default-off **account-wide** connection
-grants allow listing all accessible workspaces and creating standalone Cloud apps.
-Standalone creation can create a site, deploy code and set its folder/access mode in
-the workspace chosen by Webflow; it requires Custom code write and Cloud Apps publish
-on the context project as well as preparation. It does not enable the new project
+write grant. Under **Connection permissions → Discovery and app creation**, two
+default-off connection grants allow listing all accessible workspaces and creating standalone Cloud apps.
+Standalone creation can deploy code to a new site and set its folder and access mode.
+The request has no workspace selector. It requires Custom code write and Cloud Apps
+publish on the context project as well as preparation. It does not enable the new project
 in the router. Use `data_apps_tool.create_standalone_app` for this path; regular
 `create_app` always attaches to the approved project. Existing saved project or
-workspace-member permissions never grant these account-wide capabilities.
+workspace-member permissions never grant these connection-wide capabilities.
 
 ### Optional Direct Webflow connections
 

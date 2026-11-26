@@ -67,9 +67,9 @@ export async function checkProjectResources(client, op, value, siteId, owns, res
   if(op.tool==='data_apps_tool') {
     if(op.area==='standalone_apps') {
       if(value.site_id!==undefined)denied();
-      return; // Explicit account-wide grant; Webflow resolves workspace/folder access.
+      return; // Webflow resolves the workspace and folder for this explicit connection grant.
     }
-    if(op.action==='create_app' && (value.folder_id!==undefined||value.site_specific_access!==undefined))throw new Error('Use create_standalone_app with account-wide permission for standalone controls');
+    if(op.action==='create_app' && (value.folder_id!==undefined||value.site_specific_access!==undefined))throw new Error('Use create_standalone_app with the standalone app grant in Connection permissions');
     if(value.app_id) {
       const apps=await cursorRows(op.tool,'list_apps',{site_id:siteId,limit:100},'apps');
       const app=apps.find(a=>a.id===value.app_id);

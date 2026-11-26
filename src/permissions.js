@@ -45,6 +45,28 @@ export function validateWorkspacePermissions(value, sites) {
   }
   return structuredClone(value);
 }
+// A connection may expose a different set of sites after its next inventory refresh.
+// Apply only the switches the owner edited, validating their targets against the current inventory.
+export function connectionPermissionEdits(connection, edits) {
+  if (!edits || typeof edits !== 'object' || Array.isArray(edits) || Object.keys(edits).some(key => !['connection', 'workspaces'].includes(key))) {
+    throw new Error('Invalid permission edits');
+  }
+  const changes = {};
+  if (Object.hasOwn(edits, 'connection')) {
+    const grants = validateConnectionPermissions(edits.connection);
+    if (Object.keys(grants).length) changes.connectionPermissions = {...connection.connectionPermissions, ...grants};
+  }
+  if (Object.hasOwn(edits, 'workspaces')) {
+    const workspaces = validateWorkspacePermissions(edits.workspaces, connection.sites || []);
+    if (Object.keys(workspaces).length) {
+      changes.workspacePermissions = {...connection.workspacePermissions};
+      for (const [id, grants] of Object.entries(workspaces)) {
+        changes.workspacePermissions[id] = {...changes.workspacePermissions[id], ...grants};
+      }
+    }
+  }
+  return changes;
+}
 export function requirePermissions(p, keys) {
   const grants=permissions(p);
   const missing=[...new Set(keys)].filter(key=>grants[key]!==true);
@@ -58,7 +80,7 @@ export function requirePermissions(p, keys) {
 export function prepareArguments(op, params, siteId, pageId) {
   if (!params || typeof params!=='object' || Array.isArray(params)) throw new Error('Invalid operation parameters');
   const value=structuredClone(params);
-  if(op.tool==='data_apps_tool'&&op.action==='create_app'&&op.scope!=='connection'&&(value.folder_id!==undefined||value.site_specific_access!==undefined))throw new Error('Use create_standalone_app with account-wide permission for standalone controls');
+  if(op.tool==='data_apps_tool'&&op.action==='create_app'&&op.scope!=='connection'&&(value.folder_id!==undefined||value.site_specific_access!==undefined))throw new Error('Use create_standalone_app with the standalone app grant in Connection permissions');
   function inject(schema) {
     if(schema.properties) for(const key of ['site_id','siteId']) if(key in schema.properties) {
       if(value[key]!==undefined && value[key]!==siteId)throw new Error('Cross-project site denied');value[key]=siteId;

@@ -11,6 +11,7 @@ same time through one MCP connection, with access controls for each project.
 - **Connect multiple workspaces at once.** Use projects across your Webflow workspaces through one MCP connection.
 - **Set permissions per project.** Give projects different access levels, even within the same workspace.
 - **Change permissions in seconds.** Adjust access without reauthorizing, within your existing Webflow grant.
+- **See what the router is doing.** Click the header graph in either window to open Activity. See totals by connection and project over the last 1, 5, or 15 minutes, select a bar to inspect a burst, or scroll down for your weekly rhythm.
 - **Open the site or Designer directly.** Jump from a project in the app to its website or Webflow Designer.
 - **Switch between Stable and Beta quickly.** Choose which MCP version a project uses once you’ve authorized both.
 - **Connect your AI apps with one click.** Set up the connection for Codex, Claude Desktop, Claude Code, Cursor, VS Code, Gemini CLI, or Antigravity, then follow the app’s restart or reload instructions.
@@ -20,7 +21,7 @@ MCP Router is independent software. It is not affiliated with, endorsed by,
 sponsored by, or approved by Webflow, OpenAI, Anthropic, or the other services
 it connects to. Product names identify compatible services only.
 
-<img src="docs/images/project-overview.png" width="720" alt="MCP Router showing fictional connections, pinned projects, Beta labels, and per-project access presets">
+<img src="docs/images/project-overview.png" width="720" alt="MCP Router showing live activity, fictional connections, pinned projects, Beta labels, and per-project access presets">
 
 *Manage connections and project access in one place. All project and connection
 names in these screenshots are fictional demo data.*
@@ -165,7 +166,7 @@ publish call. A sent write cannot be rolled back by disabling the project.
 For an optional compatibility fallback, choose a connection’s **More options →
 Access mode → Direct Webflow**. Direct uses live upstream tools and Webflow’s
 authorization scope; **project permissions and switches do not apply**, and neither
-do router workspace or account permission settings. It may reach other projects
+do the settings under **Connection permissions**. It may reach other projects
 or workspaces. Saved settings return when switching back to Managed. Turning off
 the connection blocks access. See [connection access modes](docs/USAGE.md#connection-access-modes).
 

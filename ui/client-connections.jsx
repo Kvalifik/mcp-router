@@ -89,7 +89,7 @@ export function useClientConnections() {
   return {clients, installed, configuredCount, pending, connect, menuButton};
 }
 
-export function AppsMenu({apps}) {
+export function AppsMenu({apps, disabled}) {
   if (!window.routerDesktop) return null;
   const {clients, installed, configuredCount, pending, connect, menuButton} = apps;
   const label = clients ? `Apps (${configuredCount}/${installed.length})` : 'Apps';
@@ -114,6 +114,7 @@ export function AppsMenu({apps}) {
     items.push({id:'no-installed-apps', label, icon:'Info', disabled:true});
   }
   const missing = clients?.filter(client => !client.installed) ?? [];
+  items.push({separator:true});
   if (missing.length) {
     items.push({label:'Not installed', icon:'Plus', children:missing.map(client => ({
       id:`download-${client.id}`, label:client.name, icon:appIcon(client.id),
@@ -123,14 +124,14 @@ export function AppsMenu({apps}) {
       },
     }))});
   }
-  items.push({separator:true}, {label:'Copy configuration', icon:'Copy', children:
+  items.push({label:'Copy configuration', icon:'Copy', children:
     [['standard','Standard MCP'], ['vscode','VS Code'], ['agent','Agent setup snippet']].map(([format, label]) => ({
       id:`copy-${format}`, label, icon:'Copy', onSelect:() => copyConfiguration(format, label),
     })),
   });
   return <ActionMenu items={items} trigger={
-    <Button ref={menuButton} className="app-client-menu" variant="outline" size="sm" aria-label={label} title={description} disabled={!!pending}>
-      <Sparkles /><AnimatedText className="tabular-nums">{label}</AnimatedText><ChevronDown className="size-3" aria-hidden="true" />
+    <Button ref={menuButton} className="app-client-menu" variant="outline" size="sm" aria-label={label} title={description} disabled={disabled || !!pending}>
+      <Sparkles /><AnimatedText className="full-window-only tabular-nums">{label}</AnimatedText><span className="compact-window-only tabular-nums">{clients ? `${configuredCount}/${installed.length}` : null}</span><ChevronDown className="size-3" aria-hidden="true" />
     </Button>
   } />;
 }

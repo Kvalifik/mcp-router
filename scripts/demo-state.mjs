@@ -1,5 +1,7 @@
 // In-memory behavior for the fictional demo only. No router, OAuth, disk, or network access.
-import { validatePermissions, validateWorkspacePermissions, validateConnectionPermissions } from '../src/permissions.js';
+import { RouterActivity } from '../src/activity.js';
+import { localDay, mondayOf, offsetDay } from '../src/activity-calendar.js';
+import { validatePermissions, validateWorkspacePermissions, validateConnectionPermissions, connectionPermissionEdits } from '../src/permissions.js';
 import { connectionTestUnavailable } from '../ui/permission-availability.js';
 
 export function createDemoState(seed) {
@@ -67,6 +69,10 @@ export function createDemoState(seed) {
           if(kind!=='connections')throw new Error('Workspace permissions belong to a connection');
           update.workspacePermissions=validateWorkspacePermissions(body.workspacePermissions,item.sites||[]);
         }
+        if (body.permissionEdits !== undefined) {
+          if (kind !== 'connections' || 'connectionPermissions' in body || 'workspacePermissions' in body) throw new Error('Invalid permission edits');
+          Object.assign(update, connectionPermissionEdits(item, body.permissionEdits));
+        }
         if (body.channel !== undefined) update.channel = body.channel === 'inherit' ? 'inherit' : channel(body.channel);
         Object.assign(item, update);
       } else if (kind !== 'connections') throw new Error('Unsupported demo action');
@@ -92,4 +98,46 @@ export function createDemoState(seed) {
     return { ok: true };
   }
   return { state, mutate };
+}
+
+// The README and interactive demo use the production aggregator with fictional
+// calls. Freeze screenshot time so a slow capture cannot age out its sample.
+export function createDemoActivity(state, live) {
+  const wallStart = Date.now();
+  const anchor = new Date(wallStart).setHours(14, 14, 59, 0);
+  const today = localDay(anchor);
+  const first = offsetDay(mondayOf(today), -21);
+  let sampleTime = new Date(first + 'T12:00:00').getTime();
+  const clock = () => sampleTime ?? (live ? anchor + Date.now() - wallStart : anchor);
+  const activity = new RouterActivity({data:{},save() {}}, clock);
+  function add(index) {
+    const project = state.projects[index];
+    const connection = state.connections.find(c => c.id === project?.connectionId);
+    if (connection?.enabled && (project.enabled || connection.accessMode === 'direct')) {
+      activity.begin(connection.id, connection.accessMode === 'direct' ? null : project.id)(true);
+    }
+  }
+  for (let i = 0; offsetDay(first, i) < today; i++) {
+    const weekday = i % 7;
+    if (weekday > 4 || (weekday === 3 && i % 2 === 1)) continue;
+    sampleTime = new Date(offsetDay(first, i) + 'T12:00:00').getTime();
+    for (let call = 0; call < (i * 17) % 91 + 3; call++) add(call % 5 === 0 ? 4 : 0);
+  }
+  const volumes = [6,8,10,12,8,15,20,24,17,12,10,8,7,10,12];
+  const lastMinuteSeconds = [4,6,8,23,24,25,26,28,31,47,49,52];
+  for (const [minute, total] of volumes.entries()) {
+    for (let call = 0; call < total; call++) {
+      const second = minute === 14 ? lastMinuteSeconds[call] : Math.floor(57 * call / total);
+      sampleTime = anchor - (14 - minute) * 60000 - 59000 + second * 1000;
+      const source = minute === 14 ? (call < 8 ? 0 : 1) : (call % 6 === 5 ? 4 : call % 6 === 4 ? 1 : 0);
+      add(source);
+    }
+  }
+  sampleTime = null;
+  const bursts = [0, 1, 4, 2, 0, 0, 3, 1];
+  let index = 0;
+  return {activity, advanceTime(ms) { sampleTime = clock() + ms; }, tick() {
+    const count = bursts[index++ % bursts.length];
+    for (let i = 0; i < count; i++) add([0, 1, 0, 4][(index + i) % 4]);
+  }};
 }

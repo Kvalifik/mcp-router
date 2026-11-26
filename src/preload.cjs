@@ -1,4 +1,8 @@
 const { contextBridge, ipcRenderer } = require('electron');
+// Menus and dialogs consume Escape before it reaches the window.
+window.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && !event.defaultPrevented) ipcRenderer.send('hide-menu-bar-panel');
+});
 contextBridge.exposeInMainWorld('routerDesktop', {
   showNativeMenu: request => ipcRenderer.invoke('show-native-menu', request),
   startupSettings: () => ipcRenderer.invoke('startup-settings'),

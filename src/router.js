@@ -1,7 +1,8 @@
 import { runReadCode } from './read-code.js';
+import { RouterActivity } from './activity.js';
 import { AgentError, authorizationRequired, upstreamError, checkUpstreamResponse, upstreamDiagnostics, transientUpstreamRead } from './agent-errors.js';
 import { initializeInventory, syncProjects, setDefaults, purgeConnection } from './discovery.js';
-import { CATALOG, permissions, validatePermissions, validateWorkspacePermissions, validateConnectionPermissions, operation, allowed, requirePermissions, prepareArguments, checkOwnership, resultOf, channelClient } from './permissions.js';
+import { CATALOG, permissions, validatePermissions, validateWorkspacePermissions, validateConnectionPermissions, connectionPermissionEdits, operation, allowed, requirePermissions, prepareArguments, checkOwnership, resultOf, channelClient } from './permissions.js';
 import { randomUUID } from 'node:crypto';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
@@ -77,6 +78,7 @@ export class Router {
     this.locks = new Map(); this.preparations = new Map();
     this.inventoryRetries = new Map();
     initializeInventory(store);
+    this.activity = new RouterActivity(store);
   }
   async resyncDueProjects(now = Date.now()) {
     // Check eligibility again under the connection lock in sites().
@@ -165,7 +167,7 @@ export class Router {
     if (!['connections', 'projects'].includes(kind) || !Object.hasOwn(this.store.data[kind], id)) throw new Error('Unknown item');
     const item = this.store.data[kind][id];
     if (item.deletedAt) throw new Error('Item is deleted');
-    const allowed = kind === 'projects' ? ['name', 'enabled', 'read', 'permissions', 'useDefaultName', 'favourite', 'channel'] : ['name', 'useDefaultName', 'dismissNaming', 'workspacePermissions', 'connectionPermissions', 'accessMode'];
+    const allowed = kind === 'projects' ? ['name', 'enabled', 'read', 'permissions', 'useDefaultName', 'favourite', 'channel'] : ['name', 'useDefaultName', 'dismissNaming', 'workspacePermissions', 'connectionPermissions', 'permissionEdits', 'accessMode'];
     if (!updates || Object.keys(updates).some(k => !allowed.includes(k))) throw new Error('Unsupported permission or field');
     if ('accessMode' in updates && !['managed', 'direct'].includes(updates.accessMode)) throw new Error('Invalid access mode');
     if ('channel' in updates && !(kind==='projects'?['inherit','stable','beta']:['stable','beta']).includes(updates.channel)) throw new Error('Invalid MCP channel');
@@ -178,6 +180,11 @@ export class Router {
     else if ('read' in updates && item.permissions) updates.permissions = { ...item.permissions, 'site:read': updates.read };
     if ('connectionPermissions' in updates) updates.connectionPermissions=validateConnectionPermissions(updates.connectionPermissions);
     if ('workspacePermissions' in updates) updates.workspacePermissions=validateWorkspacePermissions(updates.workspacePermissions,item.sites||[]);
+    if ('permissionEdits' in updates) {
+      if ('workspacePermissions' in updates || 'connectionPermissions' in updates) throw new Error('Choose one permission update format');
+      Object.assign(updates, connectionPermissionEdits(item, updates.permissionEdits));
+      delete updates.permissionEdits;
+    }
     if (kind === 'projects' && ('permissions' in updates || 'read' in updates || updates.enabled === true)) item.usesDefaultPermissions = false;
     if ('name' in updates) { item.nameOverride = updates.name.trim(); if (kind === 'projects') item.sourceName ||= item.name; }
     if (updates.useDefaultName && kind === 'connections' && !item.sourceName) throw new Error('Webflow has not provided a workspace name');
@@ -196,10 +203,11 @@ export class Router {
     if (kind === 'projects') throw new Error('Projects are managed by connection discovery and cannot be deleted');
     if (!['connections', 'projects'].includes(kind) || !Object.hasOwn(this.store.data[kind], id)) throw new Error('Unknown item');
     purgeConnection(this.store,id);
+    this.activity.forgetConnection(id);
     this.store.audit('connection_deleted_permanently', {id});
   }
   restore() { throw new Error('Deleted connections cannot be restored'); }
-  async sites(id, { refresh = false, channel = this.store.data.settings.defaultChannel || 'stable', automatic = false, afterAuthorization = false, ownerInitiated = false, now = Date.now() } = {}) {
+  async sites(id, { refresh = false, channel = this.store.data.settings.defaultChannel || 'stable', automatic = false, afterAuthorization = false, ownerInitiated = false, now = Date.now(), onDispatch } = {}) {
     return this.serial(id, async () => {
       const key = `${id}:${channel}`;
       let inventoryFresh = false;
@@ -227,6 +235,7 @@ export class Router {
           this.inventoryRetries.delete(key);
           return;
         }
+        onDispatch?.();
         client = await this.open(this.oauth.provider(id,false,channel));
         const sites = await client.listSites();
         if ((!c.enabled && !afterAuthorization && !ownerInitiated) || c.deletedAt) throw new Error('Connection was disabled during the request');
@@ -328,16 +337,18 @@ export class Router {
     const selectedOperation=id=>{const op=operation(id,this.channel(p));if(!available(op))throw new Error('Operation unavailable on the selected MCP channel');return op;};
     const requireOperation=op=>{
       if(op.scope==='connection') {
-        if(workspacePolicy().connectionPermissions[op.permission]!==true)throw new AgentError('router_permission_denied','Enable the required account-wide connection permission in Workspace permissions. Project grants do not authorize this action.');
+        if(workspacePolicy().connectionPermissions[op.permission]!==true)throw new AgentError('router_permission_denied','Open Connection permissions and enable the required action under Discovery and app creation.');
         requirePermissions(p,op.extraPermissions);
       }else if(op.scope==='workspace') {
-        if(workspacePolicy().permissions[op.permission]!==true)throw new AgentError('router_permission_denied',`Enable the required ${op.title} permission in the connection’s Workspace permissions settings. Project permissions do not grant workspace access.`);
+        const policy = workspacePolicy();
+        if (!policy.workspaceId) throw new AgentError('router_permission_denied', 'Webflow has not identified a workspace for this project on the selected channel. Use site operations for this project.');
+        if(policy.permissions[op.permission]!==true)throw new AgentError('router_permission_denied',`Open Connection permissions and enable the required ${op.title} permission under Workspace actions for this workspace.`);
         requirePermissions(p,op.extraPermissions);
       }else requirePermissions(p,[op.permission,...op.extraPermissions]);
     };
     if(name==='get_project_operations') {
       const operations=CATALOG.filter(op=>available(op)&&allowed(p,op,workspacePolicy().permissions,workspacePolicy().connectionPermissions));
-      if(args.operationId){const op=selectedOperation(args.operationId);requireOperation(op);return {...op,notes:'Site IDs are selected by the router. Supply pageId separately for page tools. Workspace operations require separately saved workspace permissions and can affect all sites in that workspace. Connection operations require account-wide grants; standalone app creation does not inject a site ID and Webflow chooses the workspace. Read project instructions with prepare_project before writes.'};}
+      if(args.operationId){const op=selectedOperation(args.operationId);requireOperation(op);return {...op,notes:'Site IDs are selected by the router. Supply pageId separately for page tools. Workspace operations can affect every site in the workspace and require an explicit grant for that workspace in Connection permissions. Discovery and standalone app creation require separate grants for this connection. Standalone creation can deploy to a new site and has no workspace selector. Read project instructions with prepare_project before writes.'};}
       return operations.map(({id,title,mode,permission,extraPermissions,page,scope})=>({id,area:title,mode,permission,extraPermissions,requiresPageId:page,...(scope?{scope,...(scope==='workspace'?{workspaceId:workspacePolicy().workspaceId}:{})}:{})}));
     }
     if(['prepare_project','get_project_guidance'].includes(name))requirePermissions(p,['agent_instructions:read']);
@@ -349,7 +360,7 @@ export class Router {
     const prepared=op?prepareArguments(op,args.params||{},p.siteId,args.pageId):null;
     if(op?.scope==='workspace'&&prepared.value.workspace_id!==workspacePolicy().workspaceId)throw new Error('Resource does not belong to this project');
     return this.serial(p.connectionId,async()=>{
-      recheck();let client, stage='upstream_connect';
+      recheck();let client, finishActivity, stage='upstream_connect';
       // Only preparation/guidance reads are retried, never project operations.
       const read = async (nextStage, fn) => {
         stage=nextStage;
@@ -364,6 +375,7 @@ export class Router {
       try {
         const channel=this.channel(p);
         if(!session(this.store,p.connectionId,channel).tokens)throw authorizationRequired();
+        finishActivity = this.activity.begin(p.connectionId, p.id);
         client=channelClient(await read('upstream_connect',()=>this.open(this.oauth.provider(p.connectionId,false,channel))),channel);
         stage='project_authorization';
         if(channel==='beta' && !(await client.listSites()).some(s=>s.id===p.siteId))throw authorizationRequired('Project is not authorized on Beta. Reconnect and include this project.');
@@ -374,7 +386,11 @@ export class Router {
             .map(({name,title,description})=>({name,title,description,operationIds:permitted.filter(candidate=>(candidate.channelTools?.[channel]||candidate.tool)===name).map(candidate=>candidate.id)}));
           recheck();
           guidance={projectId:p.id,channel,instructions:client.instructions || '',tools};
-          if(name==='get_project_guidance') return {...guidance,guide:client.guide};
+          if(name==='get_project_guidance') {
+            finishActivity(true);
+            this.store.save();
+            return {...guidance,guide:client.guide};
+          }
         }
         if(name==='prepare_project') {
           const instructions=[],skills=[];let offset=0;
@@ -403,6 +419,8 @@ export class Router {
           recheck();const preparationId=randomUUID();
           for(const [id,v] of this.preparations)if(v.expires<Date.now())this.preparations.delete(id);
           this.preparations.set(preparationId,{projectId:p.id,policy:initial,expires:Date.now()+600000});
+          finishActivity(true);
+          this.store.save();
           return {preparationId,expiresInSeconds:600,upstream:guidance,guide:client.guide,instructions,skills,notice:'Read and follow all returned rules. Skills are an index, not loaded bodies. Before acting, select relevant skills (including references required by the rules), discover the data_agent_instructions_tool.read_instruction schema with get_project_operations, then fetch each selected path with read_webflow. Preparation does not verify that skills have been read. Webflow tool names and descriptions are upstream guidance; execute only permitted operation IDs through read_webflow/write_webflow using the router schema. This preparation is bound to the current project policy.'};
         }
         if(op.mode!=='read') {
@@ -418,10 +436,12 @@ export class Router {
         recheck();
         checkUpstreamResponse(response);
         const scopedResponse=filterResponse?filterResponse(response):response;
+        finishActivity(true);
         this.store.audit('operation_completed',{projectId:p.id,operationId:op.id,mode:op.mode});
         return scopedResponse;
       } catch(error) {
         const safe=upstreamError(error);
+        finishActivity?.(false);
         this.store.audit('operation_failed',{projectId:p.id,operationId:op?.id||name,stage,errorCode:safe.feedback.code,...upstreamDiagnostics(safe)});
         // Do not log or expose provider error payloads; they can include request content.
         if(['Operation permission denied','Resource does not belong to this project','Project policy changed during request','Run prepare_project and read its instructions before writing'].includes(error.message))throw error;
@@ -451,6 +471,7 @@ export class Router {
     };
     const revision = check();
     const recheck = () => { if (check() !== revision) throw new AgentError('connection_policy_changed','Connection access changed during the request. Discover tools again before continuing.'); };
+    const finishActivity = this.activity.begin(args.connectionId);
     let client;
     try {
       client = await this.open(this.oauth.provider(args.connectionId, false, args.channel));
@@ -458,10 +479,15 @@ export class Router {
       const tools = await client.listTools();
       recheck();
       if (args.toolName && !tools.some(tool=>tool.name === args.toolName)) throw new AgentError('invalid_operation','This tool is not in the current Webflow tool list. Call get_direct_tools again.');
-      if (name === 'get_direct_tools') return {connectionId:args.connectionId, channel:args.channel, accessMode:'direct',
+      if (name === 'get_direct_tools') {
+        const result = {connectionId:args.connectionId, channel:args.channel, accessMode:'direct',
         ...(args.toolName ? {tool:tools.find(tool=>tool.name===args.toolName)} : {tools:tools.map(({name,title,description})=>({name,...(title?{title}:{}),...(description?{description}:{})}))}),
         instructions:client.instructions, guide:client.guide,
         notice:'Pass toolName to get_direct_tools to retrieve its full live input schema, then use call_direct_tool. The router supplies agent_id, session_id and context. Read Webflow guidance and use the instruction tools to load enabled project rules and relevant skills before work. No router project, workspace or account permission settings or ownership checks apply. Webflow authorization is the boundary. Never switch channels to bypass a failure; never automatically retry an ambiguous write.'};
+        finishActivity(true);
+        this.store.save();
+        return result;
+      }
       // Forward current upstream arguments without the managed catalog or project injection.
       // Webflow validates its live schema; identity fields remain controlled by openUpstream.
       recheck();
@@ -469,10 +495,12 @@ export class Router {
       const response = await client.call(args.toolName, args.arguments);
       recheck();
       checkUpstreamResponse(response);
+      finishActivity(true);
       this.store.audit('direct_operation_completed',{connectionId:args.connectionId,channel:args.channel});
       return response;
     } catch (error) {
       const safe = upstreamError(error);
+      finishActivity(false);
       this.store.audit('direct_operation_failed',{connectionId:args.connectionId,channel:args.channel,errorCode:safe.feedback.code});
       if (safe.feedback.code === 'reauthorization_required') throw new AgentError(safe.feedback.code,safe.feedback.message,{nextStep:'Open this connection’s Reconnect Webflow menu in MCP Router and authorize the selected channel. Do not switch grants or automatically replay a write.'});
       if (safe.feedback.code === 'upstream_failure') throw new AgentError('upstream_failure','Direct Webflow request failed.',{...upstreamDiagnostics(safe),nextStep:'Refresh the live schema with get_direct_tools and check the selected connection in MCP Router. Inspect whether a write completed before retrying; do not automatically replay it.'});
@@ -517,12 +545,22 @@ export class Router {
     }
     const p = { ...this.project(args.projectId) };
     const channel=this.channel(p);
-    const sites = await this.sites(p.connectionId,{channel});
-    const current = this.project(p.id);
-    if (this.channel(current)!==channel || current.connectionId !== p.connectionId || current.siteId !== p.siteId) throw new Error('Project mapping changed during request');
-    const site = sites.find(s => s.id === p.siteId);
-    if (!site) throw authorizationRequired('Project site is no longer authorized. Reconnect and include this project.');
-    this.store.audit('project_site_read', { projectId: p.id, connectionId: p.connectionId });
-    return site;
+    let finishActivity;
+    try {
+      const sites = await this.sites(p.connectionId, { channel, onDispatch: () => { finishActivity = this.activity.begin(p.connectionId, p.id); } });
+      const current = this.project(p.id);
+      if (this.channel(current)!==channel || current.connectionId !== p.connectionId || current.siteId !== p.siteId) throw new Error('Project mapping changed during request');
+      const site = sites.find(s => s.id === p.siteId);
+      if (!site) throw authorizationRequired('Project site is no longer authorized. Reconnect and include this project.');
+      finishActivity(true);
+      this.store.audit('project_site_read', { projectId: p.id, connectionId: p.connectionId });
+      return site;
+    } catch (error) {
+      if (finishActivity) {
+        finishActivity(false);
+        this.store.save();
+      }
+      throw error;
+    }
   }
 }
