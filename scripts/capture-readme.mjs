@@ -15,11 +15,14 @@ import { presetGrants } from '../ui/permission-presets.js';
 import menuBar from '../src/menu-bar.cjs';
 import { createDemoState, createDemoActivity } from './demo-state.mjs';
 import nativeMenusApi from '../src/native-menu.cjs';
+import integrations from '../src/integrations.cjs';
 
 async function main() {
-const recording = process.argv.includes('--record');
+const setupDemo = process.argv.find(arg => arg === '--app-setup' || arg.startsWith('--app-setup='));
+const recording = Boolean(setupDemo) || process.argv.includes('--record');
 const verifyActivity = process.argv.includes('--verify-activity');
 const verifyDirect = process.argv.includes('--verify-direct');
+const verifyAppSetup = process.argv.includes('--verify-app-setup');
 const verifyAttention = process.argv.includes('--verify-attention');
 const attentionPreview = process.argv.includes('--attention') || verifyAttention || verifyDirect;
 const root = fileURLToPath(new URL('../', import.meta.url));
@@ -59,6 +62,25 @@ if (verifyDirect) {
   delete sites[3].workspaceName;
 }
 const demo = createDemoState(data);
+if (verifyAppSetup || setupDemo) for (const project of demo.state.projects) project.enabled = false;
+const applications = join(temporary, 'Applications');
+const appData = join(temporary, 'app-data');
+const demoBin = join(temporary, 'bin');
+let codexConfigured = false;
+const clients = integrations.createIntegrations({
+  home:temporary, appData, platform:'darwin', applicationsDirs:[applications], binaryDirs:[demoBin],
+  codexHome:join(temporary, 'codex'), executable:join(temporary, 'demo-router'),
+  script:join(temporary, 'stdio.js'), socket:join(temporary, 'router.sock'),
+  // The Codex integration invokes its CLI. Simulate that CLI inside the demo.
+  run:async (command, args) => {
+    assert.equal(command, join(demoBin, 'codex'));
+    if (args[1] === 'add') { codexConfigured = true; return {stdout:''}; }
+    assert.equal(args[1], 'get');
+    if (!codexConfigured) throw Object.assign(new Error('Demo server missing'), {stderr:'not found'});
+    const transport = JSON.parse(clients.configuration()).mcpServers[integrations.NAME];
+    return {stdout:JSON.stringify({enabled:true, transport})};
+  },
+});
 const {activity, tick, advanceTime} = createDemoActivity(demo.state, recording);
 const activityTimer = recording ? setInterval(tick, 4000) : null;
 let heldPeriodResponse;
@@ -68,10 +90,26 @@ let tray;
 let popover;
 try {
   await app.whenReady();
+  if (setupDemo) {
+    const only = setupDemo.split('=')[1];
+    const desktopApps = {'claude-desktop':'Claude', cursor:'Cursor', vscode:'Visual Studio Code', antigravity:'Antigravity'};
+    const cliApps = {codex:'codex', 'claude-code':'claude', gemini:'gemini'};
+    if (only !== undefined && !Object.hasOwn(desktopApps, only) && !Object.hasOwn(cliApps, only)) throw new Error('Unknown demo app. Choose one of: ' + Object.keys({...desktopApps, ...cliApps}).join(', '));
+    await mkdir(demoBin);
+    for (const [id, name] of Object.entries(desktopApps)) {
+      if (!only || id === only) await mkdir(join(applications, name + '.app'), {recursive:true});
+    }
+    for (const [id, name] of Object.entries(cliApps)) {
+      if (!only || id === only) await writeFile(join(demoBin, name), '');
+    }
+  } else if (!verifyAppSetup) {
+    await mkdir(join(applications, 'Claude.app'), {recursive:true});
+    assert.ok((await clients.connect('claude-desktop')).ok);
+  }
   app.on('window-all-closed',()=>{});
   const preload = join(temporary, 'preload.cjs');
   const demoClients = verifyDirect ? [
-    {id:'codex',name:'Codex',installed:true,state:'configured'},
+    {id:'codex',name:'Codex',installed:true,state:'configured',hint:'Restart Codex.'},
     {id:'vscode',name:'VS Code',installed:true,state:'error'},
     {id:'cursor',name:'Cursor',installed:false,state:'not-connected'},
   ] : [];
@@ -87,8 +125,9 @@ try {
     openRepository: () => ipcRenderer.invoke('demo-open-repository'),
     openIssues: () => ipcRenderer.invoke('demo-open-issues'),
     openOAuth: async url => { if (url !== "demo:authorized") throw new Error("Only simulated demo authorization is available."); },
-    clientStatus: async () => ${JSON.stringify(demoClients)},
-    copyClientConfig: async () => {},
+    clientStatus: () => ipcRenderer.invoke('demo-client-status'),
+    connectClient: id => ipcRenderer.invoke('demo-connect-client', id),
+    ${verifyAppSetup ? "copyClientConfig: format => ipcRenderer.invoke('verify-copy-config', format)," : 'copyClientConfig: async () => {},'}
     checkUpdates: manual => ipcRenderer.invoke('demo-check-updates', manual),
     openUpdateNotes: version => ipcRenderer.invoke('demo-update-notes', version),
     setTheme: async () => {},
@@ -113,7 +152,7 @@ try {
             response.end(JSON.stringify(activity.snapshot(view, period)));
             return;
           }
-          if ((!recording && !attentionPreview) || request.method !== 'POST' || request.headers.origin !== origin || request.headers['x-router-csrf'] !== data.csrf || !request.headers['content-type']?.startsWith('application/json')) throw new Error('Request denied');
+          if ((!recording && !attentionPreview && !verifyAppSetup) || request.method !== 'POST' || request.headers.origin !== origin || request.headers['x-router-csrf'] !== data.csrf || !request.headers['content-type']?.startsWith('application/json')) throw new Error('Request denied');
           let text = '';
           for await (const chunk of request) { text += chunk; if (text.length > 1048576) throw new Error('Request too large'); }
           const result = demo.mutate(request.url, JSON.parse(text || '{}'));
@@ -131,6 +170,13 @@ try {
     event.sender === owner.webContents && event.senderFrame === owner.webContents.mainFrame) &&
     event.senderFrame?.url === `${origin}/`;
   const showMain = () => { popover?.hide(); if (window.isMinimized()) window.restore(); window.show(); window.focus(); };
+  ipcMain.handle('demo-client-status', event => { if (!allowed(event)) throw new Error('Denied'); return verifyDirect ? demoClients : clients.status(); });
+  ipcMain.handle('demo-connect-client', (event, id) => { if (!allowed(event)) throw new Error('Denied'); return clients.connect(id); });
+  let copiedConfig;
+  if (verifyAppSetup) ipcMain.handle('verify-copy-config', (event, format) => {
+    if (!allowed(event)) throw new Error('Denied');
+    copiedConfig = clients.configuration(format);
+  });
   let publisherVisits = 0, mainWindowVisits = 0;
   ipcMain.handle('demo-open-main-window', event => { if (!allowed(event)) throw new Error('Denied'); mainWindowVisits++; showMain(); });
   ipcMain.handle('demo-open-publisher', async event => {
@@ -167,12 +213,14 @@ try {
     if (!allowed(event) || version !== demoUpdate.version) throw new Error('Denied');
     openedNotes = version;
   });
+  let inspectedMenu;
   ipcMain.handle('demo-native-menu', (event, request) => {
     if (!allowed(event) || !request || !Number.isFinite(request.x) || !Number.isFinite(request.y)) throw new Error('Denied');
     const owner = BrowserWindow.fromWebContents(event.sender);
     if (nativeMenus.has(owner)) throw new Error('Menu already open');
     let selection = null;
     const menu = Menu.buildFromTemplate(nativeMenusApi.menuTemplate(request.items, id => { selection = id; }, icons));
+    if (verifyAppSetup) inspectedMenu = request.items;
     if(verificationMenuSelection) {
       const id=verificationMenuSelection;verificationMenuSelection=null;
       lastMenuItems = request.items;
@@ -180,6 +228,7 @@ try {
       if(!contains(request.items))throw new Error('Verification menu item missing');
       return id;
     }
+    if (verifyAppSetup) return null;
     const [width, height] = owner.getContentSize();
     nativeMenus.add(owner);
     return new Promise((resolve, reject) => {
@@ -245,6 +294,100 @@ try {
   await click('[aria-label="Expand Example Studio"]');
   await click('[aria-label="Expand Personal Projects"]');
   await evaluate('document.activeElement.blur()');
+  if (verifyAppSetup) {
+    const prompt = '.app-setup-reveal[data-open="true"] [aria-label="AI app setup"]';
+    const primary = prompt + ' button:first-of-type';
+    const setupComplete = `body:not(:has(${prompt})) [role="status"]`;
+    const apps = 'button.app-client-menu';
+    const waitForCount = count => waitFor(`${apps}[aria-label="Apps (${count})"]`);
+    const claudeSettings = join(appData, 'Claude', 'claude_desktop_config.json');
+    const reload = async () => { await window.loadURL(origin); await waitFor(apps); };
+    const buttonText = () => evaluate(`document.querySelector('${primary}').textContent`);
+    const hasPrompt = () => evaluate(`!!document.querySelector('${prompt}')`);
+    async function inspectMenu(selector, selection = null) {
+      inspectedMenu = null;
+      verificationMenuSelection = selection;
+      await click(selector);
+      for (let i = 0; !inspectedMenu && i < 100; i++) await new Promise(resolve => setTimeout(resolve, 20));
+      assert.ok(inspectedMenu, 'expected a validated native menu');
+      return inspectedMenu;
+    }
+
+    assert.equal(await hasPrompt(), false);
+    await waitForCount('0/0');
+    await evaluate(`window.setupTransitions = [];
+      document.addEventListener('transitionend', event => {
+        if (event.target.matches('.app-setup-reveal') && event.propertyName === 'grid-template-rows') window.setupTransitions.push(event.target.dataset.open);
+      });`);
+    await click('[aria-label="Enable Juniper & Kite"]');
+    await waitFor(prompt);
+    assert.equal(await buttonText(), 'Copy setup instructions');
+    await click(primary); await waitFor('[role="status"]');
+    assert.equal(copiedConfig, clients.configuration('agent'));
+    assert.ok(await hasPrompt());
+    const reduced = await evaluate("matchMedia('(prefers-reduced-motion: reduce)').matches");
+    const finishReveal = () => evaluate(`new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))).then(() =>
+      Promise.all(document.querySelector('.app-setup-reveal').getAnimations().map(animation => animation.finished)))
+      .then(() => new Promise(resolve => requestAnimationFrame(() => resolve(true))))`);
+    await finishReveal();
+    await click('[aria-label="Enable Juniper & Kite"]');
+    await waitFor('.app-setup-reveal[data-open="false"][inert]');
+    await finishReveal();
+    assert.deepEqual(await evaluate('window.setupTransitions'), reduced ? [] : ['true', 'false']);
+    await click('[aria-label="Enable Juniper & Kite"]');
+    await waitFor(prompt);
+    await mkdir(join(applications, 'Claude.app'), {recursive:true});
+    await reload(); await waitFor(prompt);
+    await waitForCount('0/1');
+    assert.equal(await buttonText(), 'Set up Claude Desktop');
+
+    // Break the fixture after discovery to exercise a real failed registration and retry.
+    await mkdir(dirname(claudeSettings), {recursive:true});
+    await writeFile(claudeSettings, '{');
+    await click(primary); await waitFor('[role="alert"]');
+    assert.equal(await readFile(claudeSettings, 'utf8'), '{');
+    assert.ok(await hasPrompt());
+    await writeFile(claudeSettings, '{}');
+    await click(primary); await waitFor(setupComplete);
+    await waitForCount('1/1');
+    assert.equal(await hasPrompt(), false);
+    assert.match(await evaluate("document.querySelector('[role=status]').textContent"), /Claude Desktop is set up\. Quit and reopen Claude Desktop/);
+    await reload();
+    const claude = (await inspectMenu(apps)).find(item => item.label === 'Claude Desktop');
+    assert.ok(claude.children.some(item => item.disabled && item.label === 'Set up'));
+    assert.ok(claude.children.some(item => item.disabled && item.label.includes('Quit and reopen Claude Desktop')));
+
+    await writeFile(claudeSettings, '{}');
+    await mkdir(join(applications, 'Cursor.app'));
+    await reload(); await waitFor(prompt);
+    await waitForCount('0/2');
+    assert.equal(await buttonText(), 'Choose an AI app');
+    const choices = await inspectMenu(primary);
+    assert.deepEqual(choices.map(item => item.label), ['Set up Claude Desktop', 'Set up Cursor']);
+    assert.ok(!(await clients.status()).some(client => client.state === 'configured'));
+    await inspectMenu(primary, 'connect-cursor'); await waitFor(setupComplete);
+    await waitForCount('1/2');
+    window.setSize(400, 560);
+    await waitForCount('1/2');
+    assert.ok(await evaluate(`(() => {
+      const button = document.querySelector('.app-client-menu'), label = button.querySelector('.tabular-nums');
+      const bounds = label.getBoundingClientRect(), header = document.querySelector('.app-header');
+      return innerWidth === 400 && bounds.width > 0 && bounds.left >= button.getBoundingClientRect().left &&
+        bounds.right <= button.getBoundingClientRect().right && header.scrollWidth <= innerWidth;
+    })()`), 'compact header must fit the visible Apps count');
+    window.setSize(860, 640);
+    assert.deepEqual((await clients.status()).filter(client => client.state === 'configured').map(client => client.id), ['cursor']);
+    assert.equal(await hasPrompt(), false);
+
+    await writeFile(join(temporary, '.cursor', 'mcp.json'), '{}');
+    await reload(); await waitFor(prompt);
+    await click('[aria-label="Dismiss AI app setup"]');
+    await reload();
+    assert.ok((await inspectMenu(apps)).find(item => item.label === 'Claude Desktop').children.some(item => item.label === 'Set up' && !item.disabled));
+    assert.equal(await hasPrompt(), false);
+    console.log('Verified first-project setup, manual fallback, app selection, retry, persistent instructions and dismissal using temporary client configurations.');
+    return;
+  }
   if (recording) {
     if (process.platform === 'darwin') {
       const icon = nativeImage.createFromPath(join(root, 'assets/icons/menubar/MCPRouterTemplate.png'));

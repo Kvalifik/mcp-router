@@ -144,6 +144,7 @@
 !/ui/typography.css
 !/ui/fonts/manrope-variable.woff2
 !/ui/main.jsx
+!/ui/client-connections.jsx
 !/ui/notifications.jsx
 !/ui/update-banner.jsx
 !/ui/permission-presets.js

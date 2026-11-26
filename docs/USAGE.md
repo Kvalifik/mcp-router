@@ -368,6 +368,19 @@ terms.
 Pins mark frequently used projects without enabling them. Use the Pinned filter
 next to search. Reorder connections from Settings using drag handles or arrows.
 
+### Set up your AI app
+
+The header counts Webflow connections and projects. **Apps (1/3)** means one
+of the three supported apps detected on this computer is set up. Once you enable a project,
+the desktop window offers to set up your AI app if none is configured. Choose
+**Set up Claude Desktop** if it’s the only detected app, or **Choose an AI app**
+to pick from several. Setup changes the configuration of the app you select.
+If no supported app is detected, **Copy setup instructions** gives you a snippet
+for another MCP client. You can dismiss the prompt and use **Apps** later.
+
+After setup, follow the instruction for that app. For Claude Desktop, quit and
+reopen Claude. The same instruction stays in **Apps → Claude Desktop**.
+
 ### Set up another AI app with an agent
 
 Choose **Apps → Copy configuration → Agent setup snippet** and paste it into
@@ -393,7 +406,9 @@ already in Applications do not prompt. If another copy is installed, the prompt 
 versions and offers **Replace and Relaunch**. Replacement requires explicit
 confirmation, including when reinstalling the same version or an older one;
 connections and settings are retained. Quit a running installed copy first using
-**MCP Router → Quit**. Closing its window does not quit the app.
+**MCP Router → Quit**. Closing its window keeps the router running. If you open
+the download while the installed copy is running, the download explains how to
+quit and reopen it to reach **Replace and Relaunch**.
 If moving fails or authorization is cancelled, you can continue using the current copy.
 
 Use **Settings → Check for updates** to check the latest public GitHub release.
@@ -475,8 +490,7 @@ spinner badge with details available in the same way.
 Click the item to open the same interface in a compact, responsive window,
 including while another app is fullscreen. Search,
 pinning, access switches, and settings use the same controls as the main window.
-Settings, Add connection, Apps, and Open main window appear as equally sized
-icons in the compact header. The expand icon opens the full window.
+The compact header also shows the Apps count. The expand icon opens the full window.
 Desktop dropdowns use native menus with icons throughout the app: Settings,
 Apps, connection actions, project MCP version, and permission presets. Submenus
 can extend outside the window. Browser dashboards use the same options in web
@@ -488,11 +502,13 @@ main window keeps the router running; quitting stops it.
 Settings groups default AI access first, app preferences and connection ordering next, and diagnostics, updates and help last.
 
 In the Apps menu, a checkmark identifies an app that is already set up. Each
-installed app opens a submenu with a non-clickable setup status and a separate
-Set up or Reconnect action. An exclamation mark indicates a configuration that
-needs reconnecting or that MCP Router cannot read; unconfigured apps have no status icon. The Not installed
-submenu, grouped with Copy configuration below the app list, lists supported apps absent from this computer. Setup status describes the saved configuration,
-not whether the app is running.
+installed app opens a submenu with a setup status and a separate **Set up** or
+**Reconnect** action. Configured apps also show their restart, reload, or trust
+instructions there. A warning icon indicates a configuration that needs
+reconnecting or could not be read. Other detected apps show a chat, editor, or
+terminal icon. The **Not installed** submenu lists supported apps absent from
+this computer. The router verifies the saved configuration. The AI app may
+still need a restart to load it.
 
 Reviewed Beta-only operations are hidden and rejected on Stable projects. On both
 Stable and Beta, the five additional Analyze reports (goals, goal performance, scroll depth, browser window

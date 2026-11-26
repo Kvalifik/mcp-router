@@ -5242,7 +5242,7 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-## framer-motion 13.5.0
+## framer-motion 14.14.0
 
 License: MIT. Runtime dependency.
 
@@ -7283,7 +7283,7 @@ will be liable to anyone for any damages related to this
 software or this license, under any kind of legal claim.***
 ```
 
-## motion 13.5.0
+## motion 14.14.0
 
 License: MIT. Runtime dependency.
 
@@ -7313,7 +7313,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## motion-dom 13.5.0
+## motion-dom 14.14.0
 
 License: MIT. Runtime dependency.
 
@@ -7343,7 +7343,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## motion-utils 13.5.0
+## motion-utils 14.7.0
 
 License: MIT. Runtime dependency.
 
