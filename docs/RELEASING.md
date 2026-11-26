@@ -21,11 +21,11 @@ Do not silently defer candidates or use a clean action diff as proof of full cov
 2. Merge the version and application changes into main after checks pass.
 3. Open Actions → Release → Run workflow, select main, confirm **Stable/Beta MCP changes reviewed** for the selected commit, and leave **Create a draft release** off for a build-only validation, or enable it to prepare a release. Enable **Sign and notarize Mac apps** for Developer ID releases after configuring the signing environment below.
 4. The workflow tests and builds on Apple Silicon, Intel Mac, and Windows x64, starts each packaged runtime to test IPC, verifies bundle contents and versions, checks Mac signatures before and after ZIP extraction, and prepares three ZIPs, combined SHA-256 checksums, and changelog-based notes. Build artifacts expire after one day.
-5. Download each app and check installation, startup, OAuth, and AI client registration on its target OS. For a draft release, review its notes and assets, then publish it from Releases. Publication makes the version eligible for the app's update checker.
+5. Review the draft’s user-facing notes, verify its archives against the checksums, and check that each Mac updater feed points to the matching archive. Publish the verified draft from Releases. Publication makes the version eligible for the app's update checker.
 
 The workflow never overwrites an existing release. Choose a new version for subsequent releases. A failed build-only run creates no release or tag. Draft publication uses a separate job with write access; build jobs have read-only repository access. Only explicitly selected signed Mac builds receive signing credentials from the `mac-signing` environment.
 
-Standard GitHub-hosted runners are used throughout. Release publication runs only when this workflow is manually started; there are no scheduled builds. Dependency, build, and workflow PRs also run credential-free packaging checks. Windows builds remain unsigned. The release workflow defaults to Developer ID signing. Local builds without signing settings, or workflow runs with signing disabled, use ad-hoc signing for credential-free validation. Developer ID mode signs with hardened runtime after all bundle resources are written, notarizes with Apple, and staples the ticket. Missing credentials or failed notarization stop that build; it never falls back to ad-hoc signing. Signing and strict recursive verification failures stop the build; release packaging also verifies the extracted ZIP. Ad-hoc verification checks bundle integrity, not Gatekeeper approval. Developer ID mode additionally verifies the expected signing identity, stapled ticket, and Gatekeeper acceptance after ZIP extraction. Test a browser-downloaded ZIP on a separate Mac before publication, including the Privacy & Security approval flow. Windows distributes a portable app folder rather than an installer.
+Standard GitHub-hosted runners are used throughout. Release publication runs only when this workflow is manually started; there are no scheduled builds. Dependency, build, and workflow PRs also run credential-free packaging checks. Windows builds remain unsigned. The release workflow defaults to Developer ID signing. Local builds without signing settings, or workflow runs with signing disabled, use ad-hoc signing for credential-free validation. Developer ID mode signs with hardened runtime after all bundle resources are written, notarizes with Apple, and staples the ticket. Missing credentials or failed notarization stop that build; it never falls back to ad-hoc signing. Signing and strict recursive verification failures stop the build; release packaging also verifies the extracted ZIP. Ad-hoc verification checks bundle integrity, not Gatekeeper approval. Developer ID mode additionally verifies the expected signing identity, stapled ticket, and Gatekeeper acceptance after ZIP extraction. Windows distributes a portable app folder rather than an installer.
 
 ## Public release notes
 
@@ -173,8 +173,7 @@ Use GitHub's secret entry UI or secure stdin; never commit the P12, passwords, o
 encoded certificate. The signed workflow imports into a temporary keychain,
 stores the notarization profile there, and deletes it and the P12 even after a
 failed build. The credential-free `build` environment needs no secrets. Both Mac
-architectures must pass before a draft can be created. Do a build-only signed run
-first, then test the browser-downloaded archives on a separate Mac before publishing.
+architectures must pass before a draft can be created. Use a build-only signed run to validate changes to signing or packaging.
 
 ## Mac automatic updates
 
@@ -216,8 +215,7 @@ MAC_SIGNING_IDENTITY='Developer ID Application: Example Developer (A1B2C3D4E5)' 
 It creates two fixture apps with a separate bundle ID and temporary data, rejects
 a tampered update, confirms ordinary quit preserves the prerelease, and installs
 the cached stable version after approval.
-It never starts or replaces an installed router. Also test the
-real browser-downloaded app from Applications. Older app versions need a manual
+It never starts or replaces an installed router. A browser download can help reproduce an installation or update issue reported by a user. Older app versions need a manual
 install of the first signed build containing updater support. Switching to a
 different signing team requires migration testing and may require manual install.
 
