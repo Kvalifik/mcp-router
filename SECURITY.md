@@ -255,3 +255,5 @@ operation IDs, grants and ownership checks are unchanged.
 Merging a Release additionally requires default-off `release_merge:publish` plus
 Pages Publish because it promotes all resource types into main. Performance
 diagnostics require Custom code Read as well as Analytics Read for source details.
+
+Shared Libraries use two explicit Managed project grants. Read includes the workspace’s available library catalog and installation metadata. Management includes publication, removal and workspace auto-install on future sites. Multi-site pushes require named destination projects with management granted on the same connection and channel in the live source workspace. Webflow enforces its OAuth scopes, roles and plan restrictions independently.

@@ -657,3 +657,9 @@ Release items. Merged history is readable but never authorizes working mutations
 Beta performance diagnostics use Analytics Read and Custom code Read. They report saved script risks,
 not measured load times, Lighthouse scores or Core Web Vitals. The optional page
 filter is checked against the selected project.
+
+## Shared Libraries
+
+In project settings, search for **Libraries** to see Webflow’s two permission labels. **Read Library data** allows workspace catalog, installation and job-status reads. **Share, install and manage Libraries** enables changelog jobs, installation, import, updates, removal, sharing, multi-site pushes and automatic installation on future workspace sites. The selected Webflow authorization, role and plan must also allow the operation.
+
+Both controls start off for existing projects and saved defaults. Only the All permissions preset selects library management. For a push, review the installation list and name each destination explicitly. Each destination must be enabled on the same connection, workspace and channel with library management granted. Follow the live Libraries guide to preview changes, confirm with the user, then poll the matching status operation.

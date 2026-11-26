@@ -39,9 +39,20 @@ export async function openUpstream(provider) {
     const session = JSON.stringify(guide).match(/ses_[A-Za-z0-9]+/);
     if (!session) throw new Error('Webflow did not issue a session');
     identity.session_id = session[0];
+    const guideText = guide.content.filter(block => block.type === 'text').map(block => block.text).join('\n');
+    const categories = new Set(Array.from(guideText.matchAll(/^---- ([a-z_]+):/gm), match => match[1]));
+    const categoryGuides = new Map();
+    async function categoryGuide(category) {
+      if (!categories.has(category)) throw new Error('Guide category unavailable on this channel');
+      if (!categoryGuides.has(category)) {
+        const result = checkUpstreamResponse(await client.callTool({name:'webflow_guide_tool', arguments:{...identity,categories:[category]}}));
+        categoryGuides.set(category,result);
+      }
+      return categoryGuides.get(category);
+    }
     return {
       call: async (name, args) => checkUpstreamResponse(await client.callTool({ name, arguments: { ...args, ...identity } })),
-      guide,
+      guide, categoryGuide,
       instructions: client.getInstructions(),
       async listTools() {
         const tools = [], cursors = new Set(); let cursor;
@@ -321,8 +332,9 @@ export class Router {
   }
 
   async extendedCall(name,args) {
-    const fields={get_project_guidance:['projectId'],get_project_operations:['projectId','operationId'],prepare_project:['projectId'],read_webflow:['projectId','operationId','params','pageId'],write_webflow:['projectId','operationId','params','pageId','preparationId']}[name];
+    const fields={get_project_guidance:['projectId','categories'],get_project_operations:['projectId','operationId'],prepare_project:['projectId','categories'],read_webflow:['projectId','operationId','params','pageId'],write_webflow:['projectId','operationId','params','pageId','preparationId']}[name];
     if(Object.keys(args).some(k=>!fields.includes(k)) || typeof args.projectId!=='string')throw new Error('Invalid arguments');
+    if (args.categories !== undefined && (!Array.isArray(args.categories) || args.categories.length > 20 || args.categories.some(category => typeof category !== 'string' || !/^[a-z_]{1,32}$/.test(category)))) throw new Error('Invalid guide categories');
     const p=structuredClone(this.project(args.projectId,null));
     const workspacePolicy=()=>{
       const c=this.store.connection(p.connectionId),channel=this.channel(p);
@@ -385,7 +397,12 @@ export class Router {
           const tools = (await read('tool_discovery',()=>client.listTools?.()) || []).filter(tool=>permitted.some(candidate=>(candidate.channelTools?.[channel]||candidate.tool)===tool.name))
             .map(({name,title,description})=>({name,title,description,operationIds:permitted.filter(candidate=>(candidate.channelTools?.[channel]||candidate.tool)===name).map(candidate=>candidate.id)}));
           recheck();
-          guidance={projectId:p.id,channel,instructions:client.instructions || '',tools};
+          const categories = new Set(args.categories || []);
+          if (client.categoryGuide && permitted.some(candidate => candidate.area === 'libraries')) categories.add('libraries');
+          const categoryGuides = {};
+          for (const category of categories) categoryGuides[category] = await read('category_guide',()=>client.categoryGuide(category));
+          recheck();
+          guidance={projectId:p.id,channel,instructions:client.instructions || '',tools,categoryGuides};
           if(name==='get_project_guidance') {
             finishActivity(true);
             this.store.save();
@@ -429,11 +446,27 @@ export class Router {
         }
         stage='resource_ownership';
         const filterResponse=await checkOwnership(client,op,prepared.value,p.siteId,args.pageId);
+        let verifyRecipients;
+        if (op.id === 'data_libraries_tool.push_library_updates') {
+          const recipients = prepared.value.site_ids;
+          if (!recipients?.length || new Set(recipients).size !== recipients.length) throw new AgentError('invalid_arguments','Name each library push destination explicitly in site_ids.');
+          const liveSites = await client.listSites();
+          const workspace = liveSites.find(site => site.id === p.siteId)?.workspaceId;
+          verifyRecipients = () => {
+            for (const siteId of recipients) {
+              const target = Object.values(this.store.data.projects).find(candidate => !candidate.deletedAt && candidate.connectionId === p.connectionId && candidate.siteId === siteId);
+              if (!workspace || siteId === p.siteId || !target || !liveSites.some(site => site.id === siteId && site.workspaceId === workspace) || this.channel(target) !== channel) throw new Error('Resource does not belong to this project');
+              this.project(target.id,'libraries:write');
+            }
+          };
+          verifyRecipients();
+        }
         recheck();
         this.store.audit('operation_started',{projectId:p.id,operationId:op.id,mode:op.mode});
         stage='operation_call';
         const response=await client.call(op.tool,prepared.args);
         recheck();
+        verifyRecipients?.();
         checkUpstreamResponse(response);
         const scopedResponse=filterResponse?filterResponse(response):response;
         finishActivity(true);

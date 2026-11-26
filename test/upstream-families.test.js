@@ -375,3 +375,57 @@ test('Beta Release page deletion accepts only working pages from this site’s o
  f.router.edit('projects','project',{channel:'stable'});
  await assert.rejects(f.write('data_releases_write_tool.delete_site_branch_page',{page_id:'release-page'}));
 });
+
+for (const channel of ['stable','beta']) test('Shared Libraries on '+channel+' keep read, management and destination grants separate',async t=>{
+ const f=fixture(t);
+ f.router.setDefaultChannel(channel);
+ if(channel==='beta') f.c.beta={tokens:{access_token:'synthetic'},sites:f.c.sites};
+ const library=action=>'data_libraries_tool.'+action;
+ const ops=CATALOG.filter(op=>op.area==='libraries');
+ assert.equal(ops.length,18);
+ assert(ops.every(op=>op.channels.includes(channel)));
+ await assert.rejects(f.read(library('list_libraries')));
+ f.grant(['libraries:read']);
+ f.setIntercept((tool,action)=>{
+   if(action==='list_installed_libraries'||action==='list_libraries') return envelope(action,{libraries:[{id:'lib'}]});
+ });
+ await f.read(library('list_installed_libraries'));
+ await assert.rejects(f.write(library('share_library')));
+ await assert.rejects(f.read(library('get_site_library'),{site_id:'foreign'}));
+ f.grant(['libraries:write']);
+ await assert.rejects(f.read(library('list_libraries')));
+ await f.write(library('install_library'),{library_id:'lib'});
+ await assert.rejects(f.write(library('install_library'),{library_id:'foreign'}));
+ await f.write(library('import_library_resources'),{asset_ids:['library:lib:asset']});
+ await assert.rejects(f.write(library('import_library_resources'),{component_ids:['library:foreign:x']}));
+ await assert.rejects(f.write(library('import_library_resources'),{}));
+ await assert.rejects(f.read(library('uninstall_library'),{library_id:'lib'}));
+ await assert.rejects(f.write(library('push_library_updates'),{}));
+ f.c.sites.push({id:'second',name:'Second',workspaceId:'workspace'});
+ f.router.saveProject({id:'target',name:'Second',connectionId:f.c.id,siteId:'second',enabled:true});
+ const open=f.router.open;
+ f.router.open=async provider=>({...await open(provider),listSites:async()=>f.c.sites});
+ const push=()=>f.write(library('push_library_updates'),{site_ids:['second']});
+ await assert.rejects(push());
+ f.router.edit('projects','target',{permissions:{'libraries:write':true}});
+ await push();
+ f.router.edit('projects','target',{channel:channel==='stable'?'beta':'stable'});
+ await assert.rejects(push());
+ assert.equal(f.calls.filter(call=>call.action==='push_library_updates').length,1);
+});
+
+test('project preparation returns the selected channel’s library guide and requested categories', async t => {
+ const f=fixture(t), fetched=[];
+ const open=f.router.open;
+ f.router.open=async provider=>({...await open(provider),categoryGuide:async category=>{
+   fetched.push([provider.channel,category]);return envelope('guide',{category});
+ }});
+ f.grant(['libraries:read']);
+ const prepared=await f.router.call('prepare_project',{projectId:'project',categories:['components','libraries']});
+ assert.deepEqual(fetched,[['stable','components'],['stable','libraries']]);
+ assert.deepEqual(Object.keys(prepared.upstream.categoryGuides),['components','libraries']);
+ f.grant([]);
+ fetched.length=0;
+ await f.router.call('get_project_guidance',{projectId:'project'});
+ assert.deepEqual(fetched,[]);
+});

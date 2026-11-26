@@ -247,7 +247,8 @@ function PermissionForm({ model, data, busy, perform, close, connect, refresh })
   const [grants, setGrants] = useState(defaults ? data.settings.defaultPermissions : item.permissions || {});
   const [query, setQuery] = useState('');
   const keys = data.permissionGroups.flatMap(g => g.modes.map(m => `${g.area}:${m}`));
-  const groups = data.permissionGroups.filter(g => g.title.toLowerCase().includes(query.toLowerCase()));
+  const libraryLabels = {read:'Read Library data', write:'Share, install and manage Libraries'};
+  const groups = data.permissionGroups.filter(g => [g.title, ...(g.area === 'libraries' ? Object.values(libraryLabels) : [])].join(' ').toLowerCase().includes(query.toLowerCase()));
   const preset = type => setGrants(presetGrants(keys, type));
   async function submit(e) {
     e.preventDefault();
@@ -272,7 +273,11 @@ function PermissionForm({ model, data, busy, perform, close, connect, refresh })
     <div className="flex min-h-0 flex-col gap-3">
         <div className="flex shrink-0 items-center gap-2"><Input search className="min-w-0 flex-1" aria-label="Search permissions" placeholder="Search permissions…" value={query} onClear={()=>setQuery('')} onChange={e=>setQuery(e.target.value)} /><ActionMenu trigger={<Button type="button" variant="outline" disabled={busy}>Presets<ChevronDown className="size-4" /></Button>} items={[['all','All permissions','CheckCheck'],['no-publishing','No publishing','CloudOff'],['read-write','Read & write','Pencil'],['read','Read only','Eye'],['none','No permissions','Ban']].map(([key,label,icon])=>({id:key,label,icon,onSelect:()=>preset(key)}))} /></div>
         <div className="permission-frame"><Table containerClassName="permission-container" className="permission-table text-xs" aria-label="Permission areas"><TableHeader><TableRow><TableHead className="p-3 text-left">Area</TableHead>{MODES.map(m=><TableHead key={m} className="p-2 text-center capitalize">{m}</TableHead>)}</TableRow></TableHeader><TableBody className="permission-scroll">
-          {groups.map(g=><TableRow key={g.area}><TableHead className="p-3 text-left font-medium">{g.title}</TableHead>{MODES.map(m=><TableCell key={m} className="p-2 text-center">{g.modes.includes(m)?<Switch aria-label={`${g.title}: ${m}`} checked={!!grants[`${g.area}:${m}`]} disabled={busy} onCheckedChange={value=>setGrants({...grants,[`${g.area}:${m}`]:value})} />:<span className="text-muted-foreground">—</span>}</TableCell>)}</TableRow>)}
+          {groups.map(g=>g.area==='libraries' ? <TableRow key={g.area}><TableCell colSpan={5} className="p-3 whitespace-normal">
+            <fieldset className="w-full min-w-0 space-y-2"><legend className="font-medium">{g.title}</legend>
+              {Object.entries(libraryLabels).map(([mode,label])=><label key={mode} className="flex items-center justify-between gap-3">{label}<Switch aria-label={label} checked={!!grants['libraries:'+mode]} disabled={busy} onCheckedChange={value=>setGrants({...grants,['libraries:'+mode]:value})} /></label>)}
+              <p className="text-muted-foreground">Read includes the workspace library catalog. Manage includes sharing, removing libraries, pushing updates to enabled sites, and auto-install on future workspace sites.</p>
+            </fieldset></TableCell></TableRow> : <TableRow key={g.area}><TableHead className="p-3 text-left font-medium">{g.title}</TableHead>{MODES.map(m=><TableCell key={m} className="p-2 text-center">{g.modes.includes(m)?<Switch aria-label={`${g.title}: ${m}`} checked={!!grants[`${g.area}:${m}`]} disabled={busy} onCheckedChange={value=>setGrants({...grants,[`${g.area}:${m}`]:value})} />:<span className="text-muted-foreground">—</span>}</TableCell>)}</TableRow>)}
           {!groups.length&&<TableRow><TableCell colSpan={5} className="p-5 text-center text-muted-foreground">No matching permission areas.</TableCell></TableRow>}
         </TableBody></Table></div>
         {defaults&&<p className="shrink-0 text-xs text-muted-foreground">Applies to new projects and disabled projects still using defaults. New projects always start disabled.</p>}

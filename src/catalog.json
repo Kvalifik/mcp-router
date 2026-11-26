@@ -8866,7 +8866,7 @@
         }
       },
       "additionalProperties": false,
-      "description": "Get the site's components. Library components may be absent until an instance is placed on a page; MCP cannot check library install state, so an empty or partial list is not evidence a library is uninstalled."
+      "description": "Get the site's components. The list also includes the components of installed libraries. They are read-only: their id is library:<libraryId>:<componentId>, readOnly is true, and library is {id, name}. Site copies of library components also have readOnly: true and library {id, name}."
     }
   },
   {
@@ -8980,7 +8980,7 @@
         }
       },
       "additionalProperties": false,
-      "description": "Get a component by component_id, or by name (optionally narrowed by group)."
+      "description": "Get a component by component_id, or by name (optionally narrowed by group). It also finds the components of installed libraries, by their library:<libraryId>:<componentId> id or by name."
     }
   },
   {
@@ -9188,7 +9188,7 @@
         "queries"
       ],
       "additionalProperties": false,
-      "description": "Query components by keywords, prop characteristics, and more. Library components may be absent until an instance is placed on a page; MCP cannot check library install state, so zero matches is not evidence a library is uninstalled."
+      "description": "Query components by keywords, prop characteristics, and more. Results include the components of installed libraries."
     }
   },
   {
@@ -9501,7 +9501,7 @@
         "creation_position"
       ],
       "additionalProperties": false,
-      "description": "Insert a component instance on the active page, including under parents nested inside component definitions."
+      "description": "Insert a component instance on the active page, including under parents nested inside component definitions. component_id must be a site component. To place a library component (id library:<libraryId>:<componentId>), first import it with data_libraries_tool > import_library_resources, poll get_library_import_status until finished, then pass its localComponentId as component_id."
     }
   },
   {
@@ -20827,7 +20827,7 @@
         "campaign_description"
       ],
       "additionalProperties": false,
-      "description": "Create a campaign & landing page from a user-confirmed markdown_brief (see webflow_guide_tool Campaigns > markdown_brief). Returns { taskId, statusUrl }; poll get_campaign_task_status with site_id, taskId, and type=create_campaign. Campaign/page appear in get/list immediately but that does not mean page content was generated. On failure, ask before retrying."
+      "description": "Create a campaign & landing page from a user-confirmed markdown_brief (see webflow_guide_tool category campaigns > markdown_brief). Returns { taskId, statusUrl }; poll get_campaign_task_status with site_id, taskId, and type=create_campaign. Campaign/page appear in get/list immediately but that does not mean page content was generated. On failure, ask before retrying."
     }
   },
   {
@@ -23893,7 +23893,7 @@
         "site_id"
       ],
       "additionalProperties": false,
-      "description": "Find script performance risks in saved site and publishable-page data. Reports render-blocking external scripts without async, defer, or type=module, Google Tag Manager containers from Custom Code or Google tag IDs, and recognized duplicate libraries including Webflow's jQuery and GSAP. Returns summary (totalProblems, countsByType), problems (criticality, message, remediation and source details), and scope. GTM findings group placements by container with transfer/uncompressed bytes and potential script/trigger counts. Duplicate findings identify site or page scope and each load's source, URL, and version. Filters apply after the full-site audit. Empty findings do not prove a fast site. Assets, fonts, and published-page behavior need companion inspection, described in webflow_guide_tool. No load-time, Core Web Vitals, or Lighthouse measurement."
+      "description": "Find script performance risks in saved site and publishable-page data. Reports render-blocking external scripts without async, defer, or type=module, Google Tag Manager containers from Custom Code or Google tag IDs, and recognized duplicate libraries including Webflow's jQuery and GSAP. Returns summary (totalProblems, countsByType), problems (criticality, message, remediation and source details), and scope. GTM findings group placements by container with transfer/uncompressed bytes and potential script/trigger counts. Duplicate findings identify site or page scope and each load's source, URL, and version. Filters apply after the full-site audit. Empty findings do not prove a fast site. Assets, fonts, and published-page behavior need companion inspection, described in webflow_guide_tool category performance_audits. No load-time, Core Web Vitals, or Lighthouse measurement."
     }
   },
   {
@@ -24849,6 +24849,689 @@
       ],
       "additionalProperties": false,
       "description": "Delete a page in a Release (site branch). page_id is the Release's working page id from list_pages with site_branch_id; a main-site page id returns 400. The main-site page is not changed until the Release merges. Sync; empty body on success. 409: a folder, the home page, or a merged Release. 409 branch_merge_in_progress: a merge is running; the message says when to retry."
+    }
+  },
+  {
+    "id": "data_libraries_tool.get_library_import_status",
+    "tool": "data_libraries_tool",
+    "action": "get_library_import_status",
+    "area": "libraries",
+    "title": "Shared Libraries",
+    "mode": "read",
+    "permission": "libraries:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "The site ID."
+        }
+      },
+      "required": [
+        "site_id"
+      ],
+      "additionalProperties": false,
+      "description": "Get the status of the site's latest import_library_resources, from the route its 202 Location header points to: pending, finished or failed (with error.message); a finished import lists result.components: [{id, localComponentId}] and result.assets: [{id, localAssetId}] in request order. A 404 means there is nothing to report."
+    }
+  },
+  {
+    "id": "data_libraries_tool.get_library_install_changelog_status",
+    "tool": "data_libraries_tool",
+    "action": "get_library_install_changelog_status",
+    "area": "libraries",
+    "title": "Shared Libraries",
+    "mode": "read",
+    "permission": "libraries:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "The site ID."
+        },
+        "library_id": {
+          "type": "string",
+          "description": "The library version id: the id from list_libraries (install) or list_installed_libraries (uninstall)."
+        }
+      },
+      "required": [
+        "site_id",
+        "library_id"
+      ],
+      "additionalProperties": false,
+      "description": "Get the latest changelog from start_library_install_changelog for the library on the site: pending, failed (with error.message), or finished with the changelog. mode: install (first install) or update. latestVersion: {id, version, releaseNotes, datePublished}; on update, installedVersion has the same fields for the site's version. changes lists each item {type, subtype?, id, displayName, state} with state added, changed, removed or conflict; on install every item is added. conflict marks a component that lost a prop, which can break its instances on the site; its id goes in install_library's components_to_detach to keep a local copy. A renamed item also has updatedDisplayName. acknowledgeNotCloneableRequired: the first install disables cloning. shouldActivateTagStylesDefault: whether install applies the library's tag styles by default. A 404 means there is nothing to report; run start_library_install_changelog again."
+    }
+  },
+  {
+    "id": "data_libraries_tool.get_library_install_status",
+    "tool": "data_libraries_tool",
+    "action": "get_library_install_status",
+    "area": "libraries",
+    "title": "Shared Libraries",
+    "mode": "read",
+    "permission": "libraries:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "The site ID."
+        },
+        "library_id": {
+          "type": "string",
+          "description": "The library version id: the id from list_libraries (install) or list_installed_libraries (uninstall)."
+        }
+      },
+      "required": [
+        "site_id",
+        "library_id"
+      ],
+      "additionalProperties": false,
+      "description": "Get the status of the latest install_library of the library on the site, from the route its 202 Location header points to: pending, finished or failed (with error.message). A 404 means there is nothing to report."
+    }
+  },
+  {
+    "id": "data_libraries_tool.get_library_push_status",
+    "tool": "data_libraries_tool",
+    "action": "get_library_push_status",
+    "area": "libraries",
+    "title": "Shared Libraries",
+    "mode": "read",
+    "permission": "libraries:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "The site ID."
+        }
+      },
+      "required": [
+        "site_id"
+      ],
+      "additionalProperties": false,
+      "description": "Get the status of push_library_updates from this site, from the route its 202 Location header points to: pending or finished, with pendingSiteIds listing the target sites still updating. A 404 means the site shares no library, so there is nothing to report."
+    }
+  },
+  {
+    "id": "data_libraries_tool.get_library_share_changelog_status",
+    "tool": "data_libraries_tool",
+    "action": "get_library_share_changelog_status",
+    "area": "libraries",
+    "title": "Shared Libraries",
+    "mode": "read",
+    "permission": "libraries:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "The site ID."
+        }
+      },
+      "required": [
+        "site_id"
+      ],
+      "additionalProperties": false,
+      "description": "Get the site's latest changelog from start_library_share_changelog: pending, failed (with error.message), or finished with the changelog. firstShare: true when the library was never shared, and then every change is added. changes lists each item {type, subtype?, id, displayName, state} with state added, changed, removed or conflict; conflict marks a component that lost a prop, which can break its instances on sites that installed the library. A renamed item also has updatedDisplayName. invalid: items a share leaves out, with their errors. A 404 means no changelog was started, or a newer version was shared since; run start_library_share_changelog again."
+    }
+  },
+  {
+    "id": "data_libraries_tool.get_library_share_status",
+    "tool": "data_libraries_tool",
+    "action": "get_library_share_status",
+    "area": "libraries",
+    "title": "Shared Libraries",
+    "mode": "read",
+    "permission": "libraries:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "The site ID."
+        }
+      },
+      "required": [
+        "site_id"
+      ],
+      "additionalProperties": false,
+      "description": "Get the status of the site's latest share_library, from the route its 202 Location header points to: pending, finished or failed (with error.message). A 404 means there is nothing to report."
+    }
+  },
+  {
+    "id": "data_libraries_tool.get_library_uninstall_status",
+    "tool": "data_libraries_tool",
+    "action": "get_library_uninstall_status",
+    "area": "libraries",
+    "title": "Shared Libraries",
+    "mode": "read",
+    "permission": "libraries:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "The site ID."
+        },
+        "library_id": {
+          "type": "string",
+          "description": "The library version id: the id from list_libraries (install) or list_installed_libraries (uninstall)."
+        }
+      },
+      "required": [
+        "site_id",
+        "library_id"
+      ],
+      "additionalProperties": false,
+      "description": "Get the status of the latest uninstall_library of the library from the site, from the route its 202 Location header points to: pending, finished or failed (with error.message). A 404 means there is nothing to report."
+    }
+  },
+  {
+    "id": "data_libraries_tool.get_site_library",
+    "tool": "data_libraries_tool",
+    "action": "get_site_library",
+    "area": "libraries",
+    "title": "Shared Libraries",
+    "mode": "read",
+    "permission": "libraries:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "The site ID."
+        },
+        "include_installations": {
+          "description": "If true, also list the sites that installed this library and whether each is outdated.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "site_id"
+      ],
+      "additionalProperties": false,
+      "description": "Get the library this site shares, at its latest version, in the list_libraries shape (status ARCHIVED: it was unshared). 404 'This site does not share a library': it was never shared. Requires library manage rights on the site."
+    }
+  },
+  {
+    "id": "data_libraries_tool.import_library_resources",
+    "tool": "data_libraries_tool",
+    "action": "import_library_resources",
+    "area": "libraries",
+    "title": "Shared Libraries",
+    "mode": "write",
+    "permission": "libraries:write",
+    "extraPermissions": [
+      "agent_instructions:read"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "The site ID."
+        },
+        "component_ids": {
+          "description": "Library component ids: the library:<libraryId>:<componentId> entries from data_component_tool > get_all_components, query_components or get_component.",
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "asset_ids": {
+          "description": "Library asset ids: library:<libraryId>:<assetId>.",
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "site_id"
+      ],
+      "additionalProperties": false,
+      "description": "Copy library components (with their classes and assets) and library assets into the site. Pass component_ids, asset_ids, or both: at least one is required. Asynchronous: returns {status: 'pending'}; poll get_library_import_status (same site_id) until finished, which lists result.components: [{id, localComponentId}] and result.assets: [{id, localAssetId}] in request order, then pass each localComponentId to data_component_tool > insert_component_instance and each localAssetId as image_asset_id to data_element_tool > set_image_asset. A resource the site already has a copy of returns that copy. All-or-nothing: a 400 or a failed status names the bad id, and nothing is imported. 409 library_task_in_progress: the site is busy. Needs permission to add library components; assets alone also work with permission to manage libraries."
+    }
+  },
+  {
+    "id": "data_libraries_tool.install_library",
+    "tool": "data_libraries_tool",
+    "action": "install_library",
+    "area": "libraries",
+    "title": "Shared Libraries",
+    "mode": "write",
+    "permission": "libraries:write",
+    "extraPermissions": [
+      "agent_instructions:read"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "The site ID."
+        },
+        "library_id": {
+          "type": "string",
+          "description": "The library version id: the id from list_libraries (install) or list_installed_libraries (uninstall)."
+        },
+        "acknowledge_not_cloneable": {
+          "description": "Set only after a 400 names acknowledgeNotCloneable: the site is cloneable and installing disables cloning. Ask the user to confirm that cloning will be disabled, then retry with true. Never set it ahead of time.",
+          "type": "boolean"
+        },
+        "should_activate_tag_styles": {
+          "description": "If true, apply the library's tag (HTML element) styles to this site.",
+          "type": "boolean"
+        },
+        "components_to_detach": {
+          "description": "On an update, ids of library components to detach (keep as local copies) instead of updating: the componentId from each component's origin [libraryId, componentId].",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "site_id",
+        "library_id"
+      ],
+      "additionalProperties": false,
+      "description": "Install a Shared Library on this site, always at its latest version. library_id is the id from list_libraries (the latest version). On a library the site already installed, this updates it: first tell the user the site's library components will be replaced with the new version (unless listed in components_to_detach, which keeps local copies) and confirm. Call it without acknowledge_not_cloneable first. Asynchronous: returns {status: 'pending'}; poll get_library_install_status (same site_id and library_id). 409 library_task_in_progress: the site is busy."
+    }
+  },
+  {
+    "id": "data_libraries_tool.list_installed_libraries",
+    "tool": "data_libraries_tool",
+    "action": "list_installed_libraries",
+    "area": "libraries",
+    "title": "Shared Libraries",
+    "mode": "read",
+    "permission": "libraries:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "The site ID."
+        }
+      },
+      "required": [
+        "site_id"
+      ],
+      "additionalProperties": false,
+      "description": "List the Shared Libraries installed on this site, in the list_libraries shape for the installed version: id is the installed version id (the library.id carried by components, variables, assets and fonts that come from it). Pass id as library_id to uninstall_library; install_library takes the latest id from list_libraries (an older id gets 409). To find updates, compare with list_libraries by profileId: a different id means an update is available (install_library again updates it); status ARCHIVED means its source site unshared it."
+    }
+  },
+  {
+    "id": "data_libraries_tool.list_libraries",
+    "tool": "data_libraries_tool",
+    "action": "list_libraries",
+    "area": "libraries",
+    "title": "Shared Libraries",
+    "mode": "read",
+    "permission": "libraries:read",
+    "extraPermissions": [],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "The site ID."
+        }
+      },
+      "required": [
+        "site_id"
+      ],
+      "additionalProperties": false,
+      "description": "List the workspace's Shared Libraries this site can install, without install state (see list_installed_libraries). id is the latest version id, the library_id install_library takes; profileId matches the same library across lists."
+    }
+  },
+  {
+    "id": "data_libraries_tool.push_library_updates",
+    "tool": "data_libraries_tool",
+    "action": "push_library_updates",
+    "area": "libraries",
+    "title": "Shared Libraries",
+    "mode": "write",
+    "permission": "libraries:write",
+    "extraPermissions": [
+      "agent_instructions:read"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "The site ID."
+        },
+        "site_ids": {
+          "description": "Target sites, each of which must have the library installed. Omit to push to every outdated installation.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "site_id"
+      ],
+      "additionalProperties": false,
+      "description": "Push the latest version of the library this site shares to sites that installed it. Destructive: replaces the library's components on every target site. First name the target sites to the user (get_site_library with include_installations; by default the outdated ones) and confirm. 400 'No sites to update': nothing to push. 404 'This site does not share a library': there is no library version to push. 403 library_forbidden if the workspace plan doesn't include push. 409 library_task_in_progress if this site or any target site is busy. Asynchronous: returns {status: 'pending', siteIds}. siteIds is the real target list: report it to the user, and use it if it differs from the sites you named. Poll get_library_push_status (same site_id) until finished; pendingSiteIds lists the sites still updating."
+    }
+  },
+  {
+    "id": "data_libraries_tool.share_library",
+    "tool": "data_libraries_tool",
+    "action": "share_library",
+    "area": "libraries",
+    "title": "Shared Libraries",
+    "mode": "write",
+    "permission": "libraries:write",
+    "extraPermissions": [
+      "agent_instructions:read"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "The site ID."
+        },
+        "description": {
+          "description": "A note for this version. Omit for none.",
+          "type": "string"
+        },
+        "excluded_asset_folder_ids": {
+          "description": "Asset folder ids (from data_assets_tool > list_asset_folders) to leave out of the library; 'NO_FOLDER' excludes unorganized assets. Replaces the stored list.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "site_id"
+      ],
+      "additionalProperties": false,
+      "description": "Share this site's library and publish a new version with its current components, variables and assets. Use it for the first share and a new version; to re-share an unshared library with no new version, use update_library_settings (shared: true). Code libraries (type CODE_LIBRARY) are shared from the Webflow CLI instead. 402 library_limit_reached: the plan's library limit was reached. 409 library_task_in_progress: the site is busy. Asynchronous: returns {status: 'pending'}; poll get_library_share_status (same site_id)."
+    }
+  },
+  {
+    "id": "data_libraries_tool.start_library_install_changelog",
+    "tool": "data_libraries_tool",
+    "action": "start_library_install_changelog",
+    "area": "libraries",
+    "title": "Shared Libraries",
+    "mode": "write",
+    "permission": "libraries:write",
+    "extraPermissions": [
+      "agent_instructions:read"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "The site ID."
+        },
+        "library_id": {
+          "type": "string",
+          "description": "The library version id: the id from list_libraries (install) or list_installed_libraries (uninstall)."
+        }
+      },
+      "required": [
+        "site_id",
+        "library_id"
+      ],
+      "additionalProperties": false,
+      "description": "Start building the changelog of what install_library would bring to this site: everything the library brings for a first install, or what changed since the installed version for an update, with the release notes and the install defaults. The same review the Designer shows before an install or update. library_id is the id from list_libraries (the latest version; an older id gets 409, an installed one 400). A call while one is still running reuses it. Asynchronous: returns {status: 'pending'}; poll get_library_install_changelog_status (same site_id and library_id)."
+    }
+  },
+  {
+    "id": "data_libraries_tool.start_library_share_changelog",
+    "tool": "data_libraries_tool",
+    "action": "start_library_share_changelog",
+    "area": "libraries",
+    "title": "Shared Libraries",
+    "mode": "write",
+    "permission": "libraries:write",
+    "extraPermissions": [
+      "agent_instructions:read"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "The site ID."
+        }
+      },
+      "required": [
+        "site_id"
+      ],
+      "additionalProperties": false,
+      "description": "Start building the changelog of what share_library would publish for this site's library: the same list the Designer shows before a share. A call while one is still running reuses it. Asynchronous: returns {status: 'pending'}; poll get_library_share_changelog_status (same site_id)."
+    }
+  },
+  {
+    "id": "data_libraries_tool.uninstall_library",
+    "tool": "data_libraries_tool",
+    "action": "uninstall_library",
+    "area": "libraries",
+    "title": "Shared Libraries",
+    "mode": "write",
+    "permission": "libraries:write",
+    "extraPermissions": [
+      "agent_instructions:read"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "The site ID."
+        },
+        "library_id": {
+          "type": "string",
+          "description": "The library version id: the id from list_libraries (install) or list_installed_libraries (uninstall)."
+        }
+      },
+      "required": [
+        "site_id",
+        "library_id"
+      ],
+      "additionalProperties": false,
+      "description": "Uninstall a Shared Library from this site. library_id is the id from list_installed_libraries (the installed version). Destructive: confirm with the user first. Asynchronous: returns {status: 'pending'}; poll get_library_uninstall_status (same site_id and library_id). 409 library_task_in_progress: the site is busy."
+    }
+  },
+  {
+    "id": "data_libraries_tool.update_library_settings",
+    "tool": "data_libraries_tool",
+    "action": "update_library_settings",
+    "area": "libraries",
+    "title": "Shared Libraries",
+    "mode": "write",
+    "permission": "libraries:write",
+    "extraPermissions": [
+      "agent_instructions:read"
+    ],
+    "topSite": null,
+    "page": false,
+    "builder": false,
+    "direct": false,
+    "channels": [
+      "stable",
+      "beta"
+    ],
+    "schema": {
+      "type": "object",
+      "properties": {
+        "site_id": {
+          "type": "string",
+          "description": "The site ID."
+        },
+        "shared": {
+          "description": "false unshares the library: existing installs keep working, their sites are notified and auto_install is kept. true re-shares an unshared library with no new version: 400 'Library is already shared' if it is shared, 402 library_limit_reached if the plan allows no shared libraries.",
+          "type": "boolean"
+        },
+        "auto_install": {
+          "description": "If true, install the library on sites created later in the workspace. 400 'Library is not shared' if the library stays unshared; pass shared: true with it to re-share. 403 library_forbidden if the workspace plan doesn't include auto-install.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "site_id"
+      ],
+      "additionalProperties": false,
+      "description": "Unshare this site's library (confirm with the user first), re-share an unshared one with no new version, or toggle auto-install. Synchronous: returns the updated library, as get_site_library does."
     }
   }
 ]

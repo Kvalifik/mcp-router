@@ -58,6 +58,8 @@ published binaries, checksums or feeds as part of an editorial cleanup.
 
 ## Webflow MCP compatibility review before each release
 
+Include compatible upstream changes in each release. When a new grant or materially wider effect needs a decision, propose its concrete implementation for sign-off.
+
 Aim for parity with upstream Webflow workflows while preserving router permissions
 and project isolation. Perform this review on the final release commit, separately
 for Stable and Beta. This is required for local releases too; ordinary local
@@ -697,3 +699,9 @@ Notices now include supplemental MIT texts for the bundled Tailwind WebAssembly
 fallback. Close #55 once #70 merges, since its remaining TOML update is included.
 Motion 14 (#68, #35) and setup-node 7 (#32) stay deferred for their own UI and CI
 migration checks.
+
+### 0.12.0 compatibility review
+
+Both live channel inventories were captured on November 26 (39 Stable tools and 47 Beta). Both expose the same 18 Shared Libraries actions. The Managed controls mirror Webflow’s library read and write consent scopes. The read grant includes workspace library discovery and installation metadata. The management grant includes auto-install on future workspace sites. Explicitly targeted pushes require authorized destination projects. Existing projects and saved defaults acquire neither grant on upgrade.
+
+Campaign, component and Beta performance-audit descriptions now match upstream. Managed guidance accepts categories after the initial general guide and supplies library guidance with preparation when permitted. Webflow Home’s link wording changed; owner inventory and guidance utility exclusions still apply. Both catalogs retain the reviewed narrow CMS fieldData correction. There are no outstanding Dependabot PRs. Motion 14 and setup-node 7 were merged and exercised before this release. Library writes were tested with synthetic sites; live customer data was not mutated.
