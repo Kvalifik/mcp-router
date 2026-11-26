@@ -307,7 +307,7 @@ export async function checkOwnership(client, op, value, siteId, pageId) {
       if(['page_id','pageId','duplicateOf','origin_page_id','link_to_page_id'].includes(key)&&v)await owns('page',v);
       if(['collection_id','collectionId','binding_collection_id'].includes(key)&&v && !['variable'].includes(op.area))await owns('collection',v);
       if(['asset_id','image_asset_id','link_to_asset_id'].includes(key)&&v)await owns('asset',v);
-      if(key==='asset_ids'&&Array.isArray(v))for(const id of v)await owns('asset',id);
+      if(key==='asset_ids'&&op.area!=='libraries'&&Array.isArray(v))for(const id of v)await owns('asset',id);
       if(['folder_id','parent_folder'].includes(key)&&v && !(op.scope==='connection'&&op.area==='standalone_apps'))await owns('folder',v);
       if(key==='form_id'&&v)await owns('form',v);
       if(key==='webhook_id'&&v)await owns('webhook',v);

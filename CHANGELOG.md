@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.12.0 — Router Activity and Shared Libraries
+
+See how your AI tools use Webflow and choose which projects can manage shared libraries.
+
+### What’s new
+
+- **Router Activity.** Open the activity graph in the toolbar to see recent calls, explore project traffic, and review weekly usage.
+- **Shared Libraries.** Choose **Read Library data** or **Share, install and manage Libraries** per project. Management can remove or publish a library, push updates to other enabled sites with management access, and configure installation on future workspace sites. Existing projects and saved defaults start with both permissions off.
+- **First-app setup.** When you enable your first project, choose an installed AI app or copy its setup instructions. The Apps menu shows how many detected apps are configured and how to finish setup.
+
 ## 0.11.3 — Recognize MCP Router in your AI tools
 
 MCP Router is easier to spot in AI activity, adds one-click Antigravity setup, and supports more Webflow actions.

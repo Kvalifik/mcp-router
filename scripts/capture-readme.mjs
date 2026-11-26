@@ -908,6 +908,14 @@ try {
   await waitFor('.permission-dialog [data-slot="dialog-footer"] button:last-child');
   await verifyDialogAlignment();
   await capture('project-permissions.png');
+  if (verifyDirect) {
+    const read = '[aria-label="Read Library data"]', manage = '[aria-label="Share, install and manage Libraries"]';
+    const before = await evaluate(`[document.querySelector('${read}').ariaChecked,document.querySelector('${manage}').ariaChecked]`);
+    await click(manage);
+    assert.ok(await evaluate("document.querySelector('.permission-scroll').scrollWidth <= document.querySelector('.permission-scroll').clientWidth + 1"), 'Library explanations fit the permissions list');
+    assert.deepEqual(await evaluate(`[document.querySelector('${read}').ariaChecked,document.querySelector('${manage}').ariaChecked]`),[before[0],String(before[1] !== 'true')]);
+    await click(manage);
+  }
   if (verifyActivity) {
     await verifyModalControls();
     async function verifyDialogActions() {

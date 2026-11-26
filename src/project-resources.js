@@ -7,6 +7,32 @@ const id = value => typeof value === 'string' && value.length > 0;
 const envelope = (action, result) => ({content:[{type:'text',text:JSON.stringify({action,result})}]});
 
 export async function checkProjectResources(client, op, value, siteId, owns, resultOf) {
+  if (op.area === 'libraries') {
+    const list = async action => {
+      const result = resultOf(await client.call(op.tool,{actions:[{label:'Verify library membership',[action]:{site_id:siteId}}]}),action);
+      const rows = Array.isArray(result) ? result : result?.libraries;
+      if (!Array.isArray(rows) || rows.some(row => !id(row?.id))) invalid();
+      return rows;
+    };
+    if (['install_library','start_library_install_changelog','uninstall_library'].includes(op.action)) {
+      const installed = op.action === 'uninstall_library';
+      const rows = await list(installed ? 'list_installed_libraries' : 'list_libraries');
+      if (!rows.some(row => row.id === value.library_id)) denied();
+    }
+    if (op.action === 'share_library') {
+      for (const folder of value.excluded_asset_folder_ids || []) if (folder !== 'NO_FOLDER') await owns('folder',folder);
+    }
+    if (op.action === 'import_library_resources') {
+      const resources = [...(value.component_ids || []), ...(value.asset_ids || [])];
+      if (!resources.length) invalid();
+      const installed = new Set((await list('list_installed_libraries')).map(row => row.id));
+      for (const resource of resources) {
+        const match = /^library:([^:]+):([^:]+)$/.exec(resource);
+        if (!match || !installed.has(match[1])) denied();
+      }
+    }
+    return;
+  }
   if(!['data_apps_tool','data_campaigns_tool','data_members_tool','data_optimize_tool','data_aeo_brand_presences_tool'].includes(op.tool))return;
   const read = async (tool,action,params) => resultOf(await client.call(tool,{actions:[{label:'Verify project resource ownership',[action]:params}]}),action);
   const cache=new Map();

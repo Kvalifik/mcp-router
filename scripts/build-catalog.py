@@ -1,6 +1,41 @@
 """Build a pinned action catalog from a reviewed Webflow tools/list snapshot."""
 import json,sys,copy
 from pathlib import Path
+if sys.argv[1]=='--refresh-0120':
+ import hashlib
+ if len(sys.argv)!=4:raise ValueError('Supply both Stable and Beta snapshots')
+ catalog=json.loads(Path('src/catalog.json').read_text())
+ reads=set('list_libraries list_installed_libraries get_site_library get_library_share_status get_library_share_changelog_status get_library_install_status get_library_install_changelog_status get_library_uninstall_status get_library_push_status get_library_import_status'.split())
+ writes=set('install_library start_library_install_changelog uninstall_library share_library start_library_share_changelog update_library_settings push_library_updates import_library_resources'.split())
+ descriptions={'data_component_tool':{'get_all_components','get_component','insert_component_instance','query_components'},'data_campaigns_tool':{'create_campaign'},'performance_audits_tool':{'audit_site_performance'}}
+ def shape(value):
+  if isinstance(value,list):return [shape(v) for v in value]
+  if isinstance(value,dict):return {k:shape(v) for k,v in value.items() if k!='description'}
+  return value
+ libraries=None
+ for channel,filename in zip(['stable','beta'],sys.argv[2:4]):
+  tools={t['name']:t for t in json.load(open(filename))}
+  family=tools['data_libraries_tool']
+  if hashlib.sha256(json.dumps(family,sort_keys=True).encode()).hexdigest()!='a884838cf38d06ccab4b72cee012312938fc175eed9c4e8e702f0628c4186828':raise ValueError('Review changed library definition before granting access')
+  if libraries and libraries!=family:raise ValueError('Review channel-specific library schema')
+  libraries=family
+  for op in catalog:
+   if op['action'] not in descriptions.get(op['tool'],set()) or op['tool'] not in tools:continue
+   items=tools[op['tool']]['inputSchema']['properties']['actions']['items']
+   schema=next(v['properties'][op['action']] for v in items.get('anyOf',items.get('oneOf',[items])) if op['action'] in v['properties'])
+   if shape(schema)!=shape(op['schema']):raise ValueError('Review arguments: '+op['id'])
+   if channel=='stable' or op.get('channels')==['beta']:op['schema']=schema
+   elif schema!=op['schema']:op.setdefault('channelSchemas',{})['beta']=schema
+   else:op.pop('channelSchemas',None)
+ entries={k:s for v in libraries['inputSchema']['properties']['actions']['items']['anyOf'] for k,s in v['properties'].items() if k!='label'}
+ if set(entries)!=reads|writes or set(libraries['inputSchema']['properties'])!={'actions','session_id','agent_id','context'}:raise ValueError('Review library actions and envelope')
+ catalog=[o for o in catalog if o['tool']!='data_libraries_tool']
+ for action,schema in entries.items():
+  if 'site_id' not in schema['required']:raise ValueError('Review library targeting')
+  mode='read' if action in reads else 'write'
+  catalog.append(dict(id='data_libraries_tool.'+action,tool='data_libraries_tool',action=action,area='libraries',title='Shared Libraries',mode=mode,permission='libraries:'+mode,extraPermissions=['agent_instructions:read'] if mode=='write' else [],topSite=None,page=False,builder=False,direct=False,channels=['stable','beta'],schema=schema))
+ Path('src/catalog.json').write_text(json.dumps(catalog,indent=2)+'\n')
+ sys.exit(0)
 # November compatibility refresh: explicit reviewed additions and schema IDs.
 # Unknown operations, removals and targeting changes still require a code review.
 if sys.argv[1]=='--refresh-november':

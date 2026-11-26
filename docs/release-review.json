@@ -1,13 +1,13 @@
 {
-  "version": "0.11.3",
-  "reviewedAt": "2026-11-24T12:02:31.946Z",
-  "sourceDigest": "eef4e085f147c914ef866914d712938bd950597cfde2da873f26a5a3d78e1d58",
+  "version": "0.12.0",
+  "reviewedAt": "2026-11-26T12:18:21.925Z",
+  "sourceDigest": "f91780090ec1b3bdc8fbe006c66d83ec6d3a96e5e7bc028d124651c1a7e46563",
   "channels": {
     "stable": {
       "status": "reviewed",
-      "toolCount": 38,
-      "snapshotSha256": "a76116b36aca99149f48f9be64a1a8fb558420b6b3e232163aad42863eda782a",
-      "supportedOperations": 316,
+      "toolCount": 39,
+      "snapshotSha256": "3d468faeb7e5a8790d1e4f78021d1b88be89ddddc57e398aa6e998e94f867d82",
+      "supportedOperations": 334,
       "missing": [],
       "outdated": [],
       "deferred": [],
@@ -25,32 +25,11 @@
     "beta": {
       "status": "reviewed",
       "toolCount": 47,
-      "snapshotSha256": "8f991f80aa161c55af1ac97fadba8d5249ee7d32f13bd895549223035a084298",
-      "supportedOperations": 355,
-      "missing": [
-        "data_libraries_tool"
-      ],
-      "outdated": [
-        "data_component_tool.get_all_components",
-        "data_component_tool.get_component",
-        "data_component_tool.insert_component_instance",
-        "data_component_tool.query_components"
-      ],
-      "deferred": [
-        {
-          "tool": "data_libraries_tool",
-          "reason": "All 14 actions await a workspace visibility, multi-site write and ownership review."
-        },
-        {
-          "operations": [
-            "data_component_tool.get_all_components",
-            "data_component_tool.get_component",
-            "data_component_tool.insert_component_instance",
-            "data_component_tool.query_components"
-          ],
-          "reason": "Only descriptions changed. Review their library guidance with Shared Libraries support."
-        }
-      ],
+      "snapshotSha256": "eeae5cfa9437203cb08be281a3c3a1386d2c69dd7e8e8f56646c792dcd2c63c4",
+      "supportedOperations": 373,
+      "missing": [],
+      "outdated": [],
+      "deferred": [],
       "unverified": [],
       "acceptedDifferences": [
         {
