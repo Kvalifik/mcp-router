@@ -10,11 +10,13 @@ const { migrateUserData } = require('./paths.cjs');
 app.setPath('userData', migrateUserData(app.getPath('appData')));
 process.env.ROUTER_DATA_DIR = path.join(app.getPath('userData'), 'router');
 process.env.ROUTER_PORT = '43127';
-if (!app.requestSingleInstanceLock()) app.quit();
-else {
+const { offerApplicationMove, explainBlockedApplicationMove } = require('./mac-install.cjs');
+if (!app.requestSingleInstanceLock()) {
+  explainBlockedApplicationMove({ app, dialog });
+  app.quit();
+} else {
   app.on('second-instance', () => { win?.show(); win?.focus(); });
   app.whenReady().then(async () => {
-    const { offerApplicationMove } = require('./mac-install.cjs');
     if (await offerApplicationMove({ app, dialog })) return;
     app.setAboutPanelOptions({ applicationName: 'MCP Router', applicationVersion: app.getVersion(), copyright: 'Copyright © 2026 Kvalifik ApS', credits: 'Connect multiple Webflow workspaces to your AI tools through one MCP connection. Independent software; not affiliated with or endorsed by Webflow or connected AI providers. contact@kvalifik.dk' });
     const { main } = await import('./server.js');

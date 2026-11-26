@@ -1,8 +1,9 @@
 import { SettingsMenu, ActionMenu } from './settings-menu.jsx';
+import { AppsMenu, AppSetupPrompt, useClientConnections } from './client-connections.jsx';
 import React, { useEffect, useState, useRef } from 'react';
 import { AnimatePresence, motion, useIsPresent, useReducedMotion } from 'motion/react';
 import { createRoot } from 'react-dom/client';
-import { Unplug, TestTubeDiagonal, Maximize2, Plus, RotateCcw, Ellipsis, Pencil, Trash2, RefreshCw, Check, Monitor, Terminal, ChevronDown, Settings2, Paintbrush, ArrowUpRight, LoaderCircle, Copy, Sparkles, Pin, GripVertical, ArrowUp, ArrowDown, Server, TriangleAlert, ArrowDownUp, ShieldCheck, Activity, AppWindow, MessageSquare, Code2, Info, FileText, CheckCheck, CloudOff, Eye, Ban, ShieldEllipsis } from 'lucide-react';
+import { Unplug, TestTubeDiagonal, Maximize2, Plus, RotateCcw, Ellipsis, Pencil, Trash2, RefreshCw, Check, Monitor, Terminal, ChevronDown, Settings2, Paintbrush, ArrowUpRight, LoaderCircle, Copy, Pin, GripVertical, ArrowUp, ArrowDown, Server, TriangleAlert, ArrowDownUp, ShieldCheck, Activity, AppWindow, MessageSquare, Code2, Info, FileText, CheckCheck, CloudOff, Eye, Ban, ShieldEllipsis } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AnimatedSwap, AnimatedText, AnimatedReveal, AnimatedWords } from '@/components/ui/animated-content';
 import { ClearableInput as Input } from '@/components/ui/clearable-input';
@@ -312,31 +313,6 @@ function AccessModeForm({connection,busy,perform,close}) {
   </form>;
 }
 
-function ClientConnections() {
-  const [clients,setClients] = useState([]), [pending,setPending] = useState(null);
-  useEffect(()=>{if(!window.routerDesktop)return;let alive=true;const refresh=()=>window.routerDesktop.clientStatus().then(result=>{if(alive)setClients(result);}).catch(()=>{});refresh();window.addEventListener('focus',refresh);const timer=setInterval(refresh,30000);return()=>{alive=false;clearInterval(timer);window.removeEventListener('focus',refresh);};},[]);
-  if(!window.routerDesktop)return null;
-  const icon=id=>id==='codex'||id==='claude-desktop'?'MessageSquare':id==='cursor'||id==='vscode'||id==='antigravity'?'Code2':'Terminal';
-  async function connect(client) {
-    if(pending)return;
-    setPending(client.id);const noticeId=notice.loading(`Connecting ${client.name}…`);
-    try {const result=await window.routerDesktop.connectClient(client.id);if(!result.ok)throw new Error(result.error);notice.success(result.message,{id:noticeId,duration:10000});setClients(current=>current.map(c=>c.id===client.id?{...c,state:'configured'}:c));}
-    catch(e){notice.error(e.message,{id:noticeId,duration:10000});}finally{setPending(null);}
-  }
-  const items=[
-    ...clients.filter(c=>c.installed).map(c=>({label:c.name,icon:c.state==='configured'?'Check':c.state==='needs-reconnect'?'TriangleAlert':undefined,children:[
-      {id:`status-${c.id}`,label:c.state==='configured'?'Connected':c.state==='needs-reconnect'?'Needs reconnecting':'Not connected',disabled:true},
-      {separator:true},
-      {id:`connect-${c.id}`,label:c.state==='configured'||c.state==='needs-reconnect'?'Reconnect':'Set up',icon:c.state==='configured'||c.state==='needs-reconnect'?'RefreshCw':'Plus',disabled:!!pending,onSelect:()=>connect(c)},
-    ]})),
-    ...(!clients.some(c=>c.installed)?[{id:'no-installed-apps',label:'No supported apps installed',disabled:true}]:[]),
-    ...(clients.some(c=>!c.installed)?[{label:'Not installed',icon:'Plus',children:clients.filter(c=>!c.installed).map(c=>({id:`download-${c.id}`,label:c.name,icon:icon(c.id),onSelect:async()=>{try{await window.routerDesktop.clientDownload(c.id);}catch{notice.error('Could not open the download page.');}}}))}]:[]),
-    {separator:true},
-    {label:'Copy configuration',icon:'Copy',children:[['standard','Standard MCP'],['vscode','VS Code'],['agent','Agent setup snippet']].map(([format,label])=>({id:`copy-${format}`,label,icon:'Copy',onSelect:async()=>{try{await window.routerDesktop.copyClientConfig(format);notice.success(`${label}${format==='agent'?'':' configuration'} copied to clipboard.`,{duration:6000});}catch{notice.error('Could not copy configuration.',{duration:6000});}}}))},
-  ];
-  return <ActionMenu items={items} trigger={<Button className="app-client-menu" variant="outline" size="sm" aria-label="App connections" title="Apps" disabled={!!pending}><Sparkles className="size-4" /><span className="full-window-only">Apps</span><ChevronDown className="size-3" aria-hidden="true" /></Button>} />;
-}
-
 function ConnectionOrderForm({connections,busy,perform,close}) {
   const [items,setItems]=useState(connections);
   const [dragging,setDragging]=useState(null);
@@ -399,6 +375,7 @@ function NameForm({ model, busy, perform, close }) {
 }
 function App() {
   useAnimatedScrollbars();
+  const apps = useClientConnections();
   const {notice:updateNotice, check:checkForUpdates, report} = useUpdateBanner();
   const {theme,setTheme}=useTheme();
   const [toolbarDragging,setToolbarDragging]=useState(false);
@@ -508,10 +485,11 @@ function App() {
   ];
   const filterActive=!!search||pinnedOnly;
   return <div className="router-shell">
-    <header data-dragging={toolbarDragging} onPointerDown={beginToolbarDrag} onPointerMove={()=>{if(toolbarPointer.current!==null)window.routerDesktop.toolbarDrag('move');}} onPointerUp={endToolbarDrag} onPointerCancel={endToolbarDrag} onLostPointerCapture={endToolbarDrag} className={`app-header ${window.routerDesktop?.integratedTitleBar ? `app-header-integrated ${window.routerDesktop.titleBarPlatform === 'win32' ? 'app-header-windows' : 'app-header-mac'}` : ''}`}><div className="min-w-0"><div className="flex flex-wrap items-baseline gap-x-2"><h1 className="text-base font-semibold">MCP Router</h1><span className="app-publisher inline-flex items-baseline gap-1 text-sm"><span className="text-muted-foreground">by</span><PublisherLink className="font-semibold" /></span></div><p className="text-xs text-muted-foreground"><AnimatedText>{`${data.connections.length} ${data.connections.length===1?'connection':'connections'} · ${data.projects.length} ${data.projects.length===1?'project':'projects'}`}</AnimatedText></p></div><div className="app-header-actions"><ClientConnections /><SettingsMenu disabled={busy} items={settingsItems} />{window.routerDesktop?.openMainWindow&&<Button className="compact-window-only" variant="outline" size="icon" aria-label="Open main window" title="Open main window" onClick={()=>window.routerDesktop.openMainWindow()}><Maximize2 className="size-4" /></Button>}</div></header>
+    <header data-dragging={toolbarDragging} onPointerDown={beginToolbarDrag} onPointerMove={()=>{if(toolbarPointer.current!==null)window.routerDesktop.toolbarDrag('move');}} onPointerUp={endToolbarDrag} onPointerCancel={endToolbarDrag} onLostPointerCapture={endToolbarDrag} className={`app-header ${window.routerDesktop?.integratedTitleBar ? `app-header-integrated ${window.routerDesktop.titleBarPlatform === 'win32' ? 'app-header-windows' : 'app-header-mac'}` : ''}`}><div className="min-w-0"><div className="flex flex-wrap items-baseline gap-x-2"><h1 className="text-base font-semibold">MCP Router</h1><span className="app-publisher inline-flex items-baseline gap-1 text-sm"><span className="text-muted-foreground">by</span><PublisherLink className="font-semibold" /></span></div><p className="text-xs text-muted-foreground"><AnimatedText>{`${data.connections.length} Webflow ${data.connections.length===1?'connection':'connections'} · ${data.projects.length} ${data.projects.length===1?'project':'projects'}`}</AnimatedText></p></div><div className="app-header-actions"><AppsMenu apps={apps} /><SettingsMenu disabled={busy} items={settingsItems} />{window.routerDesktop?.openMainWindow&&<Button className="compact-window-only" variant="outline" size="icon" aria-label="Open main window" title="Open main window" onClick={()=>window.routerDesktop.openMainWindow()}><Maximize2 className="size-4" /></Button>}</div></header>
     <UpdateBanner notice={updateNotice} report={report} />
     {!modal && <NotificationStrip />}
     <main ref={mainRef} tabIndex={-1} className="router-main">
+    {window.routerDesktop && readiness.enabledProjects > 0 && <AppSetupPrompt apps={apps} />}
     <div className="router-toolbar flex flex-wrap items-center justify-between gap-2 py-4"><div className="flex min-w-0 flex-1 items-center gap-2"><div className="min-w-40 flex-1 max-w-xs"><Input search placeholder="Search projects…" aria-label="Search projects" value={query} onClear={()=>setQuery('')} onChange={e=>setQuery(e.target.value)} /></div><Button size="icon" aria-label="Show pinned projects" title="Show pinned projects" variant={pinnedOnly?'secondary':'outline'} aria-pressed={pinnedOnly} onClick={()=>setPinnedOnly(value=>!value)}><AnimatedSwap icon value={pinnedOnly} className="size-4"><Pin className={`size-4 ${pinnedOnly?'fill-current':''}`} /></AnimatedSwap></Button></div><Button variant="outline" size="icon" disabled={busy} aria-label="Add connection" title="Add connection" onClick={()=>setModal({type:'connect'})}><Plus className="size-4" /></Button></div>
     <Accordion type="multiple" className="space-y-3" aria-label="Connections and projects" value={grouped.filter(c=>expanded[`${filterActive ? `filter:${search}:${pinnedOnly}:` : ''}${c.id}`]??filterActive).map(c=>c.id)} onValueChange={ids=>setExpanded(prev=>({...prev,...Object.fromEntries(grouped.map(c=>[`${filterActive ? `filter:${search}:${pinnedOnly}:` : ''}${c.id}`,ids.includes(c.id)]))}))}>
       {!grouped.length && <p className="rounded-lg border bg-background p-5 text-sm text-muted-foreground"><AnimatedText>{pinnedOnly?'No pinned projects match. Pin a project to add it here.':search?'No matching projects or connections.':'Add a connection to discover its projects.'}</AnimatedText></p>}

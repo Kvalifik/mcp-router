@@ -1,26 +1,49 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-// Kept outside the router store because this prompt runs before the server starts.
-// Returns true when Electron has taken over quitting/relaunching the app.
-async function offerApplicationMove({ app, dialog, platform = process.platform, applicationsDirectory = '/Applications' }) {
-  if (platform !== 'darwin' || !app.isPackaged || app.isInApplicationsFolder()) return false;
-  const preferenceFile = path.join(app.getPath('userData'), 'mac-install-prompt.json');
+const quitToReplace = 'To replace the copy in Applications, choose MCP Router → Quit in the running app. Then reopen this download and choose Replace and Relaunch. Your connections and settings will be kept.';
+
+// Installation prompts run before the router store is available.
+function preferenceFile(app) {
+  return path.join(app.getPath('userData'), 'mac-install-prompt.json');
+}
+
+function moveDestination({ app, platform = process.platform, applicationsDirectory = '/Applications' }) {
+  if (platform !== 'darwin' || !app.isPackaged || app.isInApplicationsFolder()) return null;
   try {
-    if (JSON.parse(fs.readFileSync(preferenceFile, 'utf8')).dontAskAgain === true) return false;
+    if (JSON.parse(fs.readFileSync(preferenceFile(app), 'utf8')).dontAskAgain === true) return null;
   } catch { /* Missing or unreadable preferences must not prevent startup. */ }
   // Electron targets the local Applications directory using the current bundle name.
   const bundle = path.dirname(path.dirname(path.dirname(app.getPath('exe'))));
-  const destination = path.join(applicationsDirectory, path.basename(bundle));
-  const installedVersion = () => {
-    if (!fs.existsSync(destination)) return null;
-    const manifest = JSON.parse(fs.readFileSync(path.join(destination, 'Contents/Resources/app/package.json'), 'utf8'));
-    if (manifest.name !== 'mcp-router' || typeof manifest.version !== 'string' ||
-        !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(manifest.version)) throw new Error('Unknown installation');
-    return manifest.version;
-  };
+  return path.join(applicationsDirectory, path.basename(bundle));
+}
+
+function installedVersion(destination) {
+  if (!fs.existsSync(destination)) return null;
+  const manifest = JSON.parse(fs.readFileSync(path.join(destination, 'Contents/Resources/app/package.json'), 'utf8'));
+  if (manifest.name !== 'mcp-router' || typeof manifest.version !== 'string' ||
+      !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(manifest.version)) throw new Error('Unknown installation');
+  return manifest.version;
+}
+
+// The downloaded copy can explain the conflict even if the lock owner runs an older release.
+function explainBlockedApplicationMove(options) {
+  const destination = moveDestination(options);
+  if (!destination) return;
+  try {
+    if (!installedVersion(destination)) return;
+  } catch { return; }
+  // showErrorBox can run synchronously before Electron is ready.
+  options.dialog.showErrorBox('MCP Router is already running', quitToReplace);
+}
+
+// Returns true when Electron has taken over quitting/relaunching the app.
+async function offerApplicationMove(options) {
+  const { app, dialog } = options;
+  const destination = moveDestination(options);
+  if (!destination) return false;
   let existing;
-  try { existing = installedVersion(); } catch {
+  try { existing = installedVersion(destination); } catch {
     dialog.showErrorBox('Could not identify the installed app', 'No apps were replaced. Check the copy in Applications before trying again.');
     return false;
   }
@@ -40,7 +63,7 @@ async function offerApplicationMove({ app, dialog, platform = process.platform, 
   if (!replacing && checkboxChecked) {
     try {
       fs.mkdirSync(app.getPath('userData'), { recursive: true, mode: 0o700 });
-      fs.writeFileSync(preferenceFile, JSON.stringify({ dontAskAgain: true }) + '\n', { mode: 0o600 });
+      fs.writeFileSync(preferenceFile(app), JSON.stringify({ dontAskAgain: true }) + '\n', { mode: 0o600 });
     } catch {
       dialog.showErrorBox('Could not save your preference', 'MCP Router may ask again next time you open it. You can continue using the app.');
     }
@@ -50,7 +73,7 @@ async function offerApplicationMove({ app, dialog, platform = process.platform, 
   // Recheck after the asynchronous prompt, including the authorization-only path
   // in Electron, which does not invoke its conflict handler.
   try {
-    if (installedVersion() !== existing) throw new Error('Installation changed');
+    if (installedVersion(destination) !== existing) throw new Error('Installation changed');
   } catch {
     dialog.showErrorBox('The installed app changed', 'No apps were replaced. Open this copy again to review the current versions.');
     return false;
@@ -61,7 +84,7 @@ async function offerApplicationMove({ app, dialog, platform = process.platform, 
         // Electron's running-copy behavior merely focuses that copy; it does not
         // replace it. Never report that as a successful installation.
         if (type === 'exists' && replacing) {
-          try { if (installedVersion() === existing) return true; } catch {}
+          try { if (installedVersion(destination) === existing) return true; } catch {}
         }
         conflict = type;
         return false;
@@ -76,7 +99,7 @@ async function offerApplicationMove({ app, dialog, platform = process.platform, 
     await dialog.showMessageBox({
       type: 'info',
       message: conflict === 'existsAndRunning' ? 'Quit the installed app to replace it' : 'The installed app changed',
-      detail: conflict === 'existsAndRunning' ? 'No apps were replaced. Quit MCP Router using its Quit command, then open this copy again and choose Replace and Relaunch.' : 'No apps were replaced. Open this copy again to review the current versions.',
+      detail: conflict === 'existsAndRunning' ? quitToReplace : 'No apps were replaced. Open this copy again to review the current versions.',
       buttons: ['Continue'],
       noLink: true,
     });
@@ -85,4 +108,4 @@ async function offerApplicationMove({ app, dialog, platform = process.platform, 
   return false;
 }
 
-module.exports = { offerApplicationMove };
+module.exports = { offerApplicationMove, explainBlockedApplicationMove };

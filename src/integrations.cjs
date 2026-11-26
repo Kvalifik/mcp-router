@@ -109,12 +109,12 @@ function createIntegrations({home,appData,executable,script,socket,run,getWindow
     const commandArgs = windows && codex === executable && codexScript ? [codexScript] : [];
     return [
       {id:'codex',name:'ChatGPT/Codex',command:codex,commandArgs,codexConfig:bundledCodex?path.join(codexHome,'config.toml'):null,installed:!!codex,download:'https://openai.com/codex/',hint:'Reload MCP connections or start a new Codex task.'},
-      {id:'claude-desktop',name:'Claude Desktop',installed:!!appPath('Claude'),file:path.join(appData,'Claude/claude_desktop_config.json'),download:'https://claude.ai/download',hint:'Restart Claude Desktop to load the connection.'},
+      {id:'claude-desktop',name:'Claude Desktop',installed:!!appPath('Claude'),file:path.join(appData,'Claude/claude_desktop_config.json'),download:'https://claude.ai/download',hint:'Quit and reopen Claude Desktop to use MCP Router.'},
       {id:'claude-code',name:'Claude Code',installed:!!binary('claude'),file:path.join(home,'.claude.json'),download:'https://code.claude.com/docs/en/setup',hint:'Start a new Claude Code session. Project-specific overrides still apply.'},
       {id:'cursor',name:'Cursor',installed:!!appPath('Cursor'),file:path.join(home,'.cursor/mcp.json'),comments:true,download:'https://cursor.com/download',hint:'Enable the server in Cursor Settings → Tools & MCP. Project overrides still apply.'},
-      {id:'vscode',name:'VS Code / Copilot',installed:!!appPath('Visual Studio Code'),file:path.join(appData,'Code/User/mcp.json'),key:'servers',comments:true,download:'https://code.visualstudio.com/download',hint:'Added to the default VS Code profile. Use MCP: List Servers to start and trust it. Other profiles need their own configuration.'},
+      {id:'vscode',name:'VS Code / Copilot',installed:!!appPath('Visual Studio Code'),file:path.join(appData,'Code/User/mcp.json'),key:'servers',comments:true,download:'https://code.visualstudio.com/download',hint:'In the default VS Code profile, use MCP: List Servers to start and trust the server.',note:'Other profiles need their own configuration.'},
       {id:'gemini',name:'Gemini CLI',installed:!!binary('gemini'),file:path.join(home,'.gemini/settings.json'),comments:true,download:'https://geminicli.com/docs/get-started/installation/',hint:'Start a new Gemini CLI session in a trusted folder. Existing tool restrictions still apply.'},
-      {id:'antigravity',name:'Antigravity',installed:!!appPath('Antigravity'),file:path.join(home,'.gemini/config/mcp_config.json'),download:'https://antigravity.google/download',hint:'Open MCP Servers → Manage MCP Servers in Antigravity and refresh to load the connection. Workspace overrides still apply.'}
+      {id:'antigravity',name:'Antigravity',installed:!!appPath('Antigravity'),file:path.join(home,'.gemini/config/mcp_config.json'),download:'https://antigravity.google/download',hint:'In Antigravity, open MCP Servers → Manage MCP Servers and refresh.',note:'Workspace overrides still apply.'}
     ];
   }
   async function status(c) {
@@ -143,7 +143,7 @@ function createIntegrations({home,appData,executable,script,socket,run,getWindow
       else writeRegistration(c.file,['claude-code','cursor','vscode'].includes(id)?{type:'stdio',...entry}:entry,c.key,c.comments);
       const result=await status(c);
       if(result.state!=='configured')throw new Error('Registration verification failed');
-      return {ok:true,message:`${c.name} configured. ${c.hint}`};
+      return {ok:true,message:[`${c.name} is set up.`, c.hint, c.note].filter(Boolean).join(' ')};
     } catch {return {ok:false,error:`Could not configure ${c.name}. Check that its configuration is valid and writable, then retry.`};}
   }
   function migrateLegacy() {

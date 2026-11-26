@@ -136,6 +136,7 @@
 !/ui/index.html
 !/ui/lib/utils.js
 !/ui/main.jsx
+!/ui/client-connections.jsx
 !/ui/notifications.jsx
 !/ui/update-banner.jsx
 !/ui/permission-presets.js
