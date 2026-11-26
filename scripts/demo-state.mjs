@@ -1,7 +1,7 @@
 // In-memory behavior for the fictional demo only. No router, OAuth, disk, or network access.
 import { RouterActivity } from '../src/activity.js';
 import { localDay, mondayOf, offsetDay } from '../src/activity-calendar.js';
-import { validatePermissions, validateWorkspacePermissions, validateConnectionPermissions } from '../src/permissions.js';
+import { validatePermissions, validateWorkspacePermissions, validateConnectionPermissions, connectionPermissionEdits } from '../src/permissions.js';
 import { connectionTestUnavailable } from '../ui/permission-availability.js';
 
 export function createDemoState(seed) {
@@ -69,6 +69,10 @@ export function createDemoState(seed) {
           if(kind!=='connections')throw new Error('Workspace permissions belong to a connection');
           update.workspacePermissions=validateWorkspacePermissions(body.workspacePermissions,item.sites||[]);
         }
+        if (body.permissionEdits !== undefined) {
+          if (kind !== 'connections' || 'connectionPermissions' in body || 'workspacePermissions' in body) throw new Error('Invalid permission edits');
+          Object.assign(update, connectionPermissionEdits(item, body.permissionEdits));
+        }
         if (body.channel !== undefined) update.channel = body.channel === 'inherit' ? 'inherit' : channel(body.channel);
         Object.assign(item, update);
       } else if (kind !== 'connections') throw new Error('Unsupported demo action');
@@ -132,7 +136,7 @@ export function createDemoActivity(state, live) {
   sampleTime = null;
   const bursts = [0, 1, 4, 2, 0, 0, 3, 1];
   let index = 0;
-  return {activity, tick() {
+  return {activity, advanceTime(ms) { sampleTime = clock() + ms; }, tick() {
     const count = bursts[index++ % bursts.length];
     for (let i = 0; i < count; i++) add([0, 1, 0, 4][(index + i) % 4]);
   }};

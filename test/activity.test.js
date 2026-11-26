@@ -26,7 +26,7 @@ test('in-flight calls, rolling seconds, and minute buckets count overlapping com
   direct(false);
   const pulse = activity.snapshot('pulse');
   assert.deepEqual(pulse.running, []);
-  assert.deepEqual(pulse.bins, [1,0,0,0,0,0,0,0,0,0,0,1]);
+  assert.deepEqual(pulse.bins, [0,1,0,0,0,0,0,0,0,0,0,0,1]);
   assert.deepEqual(pulse.sources, [
     {connectionId:'studio',projectId:'project',calls:1},
     {connectionId:'personal',projectId:null,calls:1}
@@ -42,6 +42,80 @@ test('in-flight calls, rolling seconds, and minute buckets count overlapping com
   setTime(start + 15 * 60000);
   assert.ok(activity.snapshot('minutes').minutes.every(bucket => !bucket.calls));
   assert.deepEqual(activity.snapshot('weeks').days[localDay(start)],{studio:1,personal:1});
+});
+
+test('rolling activity periods keep exact boundaries and attribution across a minute rollover', () => {
+  const start = new Date(2026, 10, 24, 14, 0).getTime();
+  const {activity, setTime} = tracker(start);
+  for (const second of [0, 1, 600, 601, 840, 841, 900]) {
+    setTime(start + second * 1000);
+    if (second === 600 || second === 601) activity.begin('personal')(true);
+    else activity.begin('studio', 'project')(true);
+  }
+  activity.begin('studio', 'in-progress');
+  const {ranges, ...minute} = activity.snapshot('ranges');
+  assert.deepEqual(minute, activity.snapshot('pulse'));
+  assert.deepEqual(minute.running, [{connectionId:'studio', projectId:'in-progress', calls:1}]);
+  assert.deepEqual(minute.bins, [1,0,0,0,0,0,0,0,0,0,0,0,1]);
+  assert.deepEqual(ranges[300].bins, [1,0,0,0,0,0,0,0,0,2,0,0,1]);
+  assert.deepEqual(ranges[900].bins, [1,0,0,0,0,0,0,0,2,0,0,2,1]);
+  assert.deepEqual(ranges[300].sources, [
+    {connectionId:'personal', projectId:null, calls:1},
+    {connectionId:'studio', projectId:'project', calls:3}
+  ]);
+  assert.deepEqual(ranges[900].sources, [
+    {connectionId:'studio', projectId:'project', calls:4},
+    {connectionId:'personal', projectId:null, calls:2}
+  ]);
+  assert.equal(activity.snapshot('minutes').minutes.reduce((sum, m) => sum + m.calls, 0), 5);
+  for (const [period, width, expected] of [[60, 5, minute], [300, 30, ranges[300]], [900, 60, ranges[900]]]) {
+    const detail = activity.snapshot('period', period);
+    assert.equal(detail.intervalSeconds, width);
+    assert.equal(detail.period, period);
+    assert.deepEqual(detail.sources, expected.sources);
+    assert.deepEqual(detail.running, minute.running);
+    const sources = new Map();
+    for (const [i, bar] of detail.intervals.entries()) {
+      assert.equal(bar.at, start + (900 - period + i * width) * 1000);
+      assert.equal(bar.calls, bar.sources.reduce((total, row) => total + row.calls, 0));
+      for (const row of bar.sources) {
+        const id = [row.connectionId, row.projectId].join('/');
+        sources.set(id, (sources.get(id) || 0) + row.calls);
+      }
+    }
+    assert.deepEqual(sources, new Map(expected.sources.map(row => [[row.connectionId, row.projectId].join('/'), row.calls])));
+    assert.deepEqual(detail.intervals[0].sources, [period === 300
+      ? {connectionId:'personal', projectId:null, calls:1}
+      : {connectionId:'studio', projectId:'project', calls:1}]);
+    assert.deepEqual(detail.intervals.at(-1).sources, [{connectionId:'studio', projectId:'project', calls:1}]);
+  }
+  assert.throws(() => activity.snapshot('period', 10), /Unknown activity period/);
+  setTime(start + 1800000);
+  assert.deepEqual(activity.snapshot('ranges').ranges[900].sources, []);
+  assert.ok(activity.snapshot('period', 900).intervals.every(bar => !bar.calls && !bar.sources.length));
+});
+
+test('polling cannot split a finished burst, and calls in the oldest interval expire individually', () => {
+  const {activity, setTime} = tracker(0);
+  for (const second of [10, 21, 23, 35]) {
+    setTime(second * 1000);
+    activity.begin('studio', 'project')(true);
+  }
+  const occupied = ({firstBin, bins}) => bins.flatMap((calls, i) => calls ? [[firstBin + i, calls]] : []);
+  for (let second = 40; second < 70; second++) {
+    setTime(second * 1000);
+    const pulse = activity.snapshot('ranges');
+    assert.deepEqual(occupied(pulse), [[2,1],[4,2],[7,1]]);
+    assert.deepEqual(occupied(pulse.ranges[300]), [[0,3],[1,1]]);
+    assert.deepEqual(occupied(pulse.ranges[900]), [[0,4]]);
+    assert.equal(pulse.sources[0].calls, 4);
+  }
+  for (const [second, expected] of [[70, [[4,2],[7,1]]], [81, [[4,1],[7,1]]], [83, [[7,1]]], [95, []]]) {
+    setTime(second * 1000);
+    const pulse = activity.snapshot('pulse');
+    assert.deepEqual(occupied(pulse), expected);
+    assert.equal(pulse.sources[0]?.calls || 0, expected.reduce((total, [, calls]) => total + calls, 0));
+  }
 });
 
 test('weekly streak crosses years and outlasts the four-week calendar, with an open week to continue it', () => {

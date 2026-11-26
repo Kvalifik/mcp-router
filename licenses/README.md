@@ -10,3 +10,4 @@ License texts for copied UI components and dependencies whose installed packages
 - tailwindcss (for @tailwindcss/oxide-wasm32-wasi; identical to the tailwindcss package LICENSE): https://github.com/tailwindlabs/tailwindcss/blob/main/LICENSE
 - napi-rs (for @napi-rs/wasm-runtime, retrieved 23 November 2026): https://github.com/napi-rs/napi-rs/blob/main/LICENSE
 - wasm-util (for @tybys/wasm-util, retrieved 23 November 2026): https://github.com/toyobayashi/wasm-util/blob/main/LICENSE
+- [Manrope font license](https://github.com/google/fonts/blob/main/ofl/manrope/OFL.txt)

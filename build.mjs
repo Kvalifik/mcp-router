@@ -15,6 +15,7 @@ const resourcesFor = output => path.join(output, platform === 'darwin' ? 'MCP Ro
 const paths = await packager({
   icon: platform === 'darwin' ? `${dir}/assets/icons/MCPRouter.icns` : `${dir}/assets/icons/MCPRouter.ico`,
   dir, name: 'MCP Router', executableName: 'MCP Router', appBundleId: 'dk.kvalifik.mcp-router',
+  appCopyright: `Copyright © ${new Date().getFullYear()} Kvalifik ApS`,
   ...nativeVersions(version, platform),
   platform, arch, out: `${dir}/dist`,
   overwrite: true, prune: true, asar: false,

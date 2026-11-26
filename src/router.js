@@ -2,7 +2,7 @@ import { runReadCode } from './read-code.js';
 import { RouterActivity } from './activity.js';
 import { AgentError, authorizationRequired, upstreamError, checkUpstreamResponse, upstreamDiagnostics, transientUpstreamRead } from './agent-errors.js';
 import { initializeInventory, syncProjects, setDefaults, purgeConnection } from './discovery.js';
-import { CATALOG, permissions, validatePermissions, validateWorkspacePermissions, validateConnectionPermissions, operation, allowed, requirePermissions, prepareArguments, checkOwnership, resultOf, channelClient } from './permissions.js';
+import { CATALOG, permissions, validatePermissions, validateWorkspacePermissions, validateConnectionPermissions, connectionPermissionEdits, operation, allowed, requirePermissions, prepareArguments, checkOwnership, resultOf, channelClient } from './permissions.js';
 import { randomUUID } from 'node:crypto';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
@@ -167,7 +167,7 @@ export class Router {
     if (!['connections', 'projects'].includes(kind) || !Object.hasOwn(this.store.data[kind], id)) throw new Error('Unknown item');
     const item = this.store.data[kind][id];
     if (item.deletedAt) throw new Error('Item is deleted');
-    const allowed = kind === 'projects' ? ['name', 'enabled', 'read', 'permissions', 'useDefaultName', 'favourite', 'channel'] : ['name', 'useDefaultName', 'dismissNaming', 'workspacePermissions', 'connectionPermissions', 'accessMode'];
+    const allowed = kind === 'projects' ? ['name', 'enabled', 'read', 'permissions', 'useDefaultName', 'favourite', 'channel'] : ['name', 'useDefaultName', 'dismissNaming', 'workspacePermissions', 'connectionPermissions', 'permissionEdits', 'accessMode'];
     if (!updates || Object.keys(updates).some(k => !allowed.includes(k))) throw new Error('Unsupported permission or field');
     if ('accessMode' in updates && !['managed', 'direct'].includes(updates.accessMode)) throw new Error('Invalid access mode');
     if ('channel' in updates && !(kind==='projects'?['inherit','stable','beta']:['stable','beta']).includes(updates.channel)) throw new Error('Invalid MCP channel');
@@ -180,6 +180,11 @@ export class Router {
     else if ('read' in updates && item.permissions) updates.permissions = { ...item.permissions, 'site:read': updates.read };
     if ('connectionPermissions' in updates) updates.connectionPermissions=validateConnectionPermissions(updates.connectionPermissions);
     if ('workspacePermissions' in updates) updates.workspacePermissions=validateWorkspacePermissions(updates.workspacePermissions,item.sites||[]);
+    if ('permissionEdits' in updates) {
+      if ('workspacePermissions' in updates || 'connectionPermissions' in updates) throw new Error('Choose one permission update format');
+      Object.assign(updates, connectionPermissionEdits(item, updates.permissionEdits));
+      delete updates.permissionEdits;
+    }
     if (kind === 'projects' && ('permissions' in updates || 'read' in updates || updates.enabled === true)) item.usesDefaultPermissions = false;
     if ('name' in updates) { item.nameOverride = updates.name.trim(); if (kind === 'projects') item.sourceName ||= item.name; }
     if (updates.useDefaultName && kind === 'connections' && !item.sourceName) throw new Error('Webflow has not provided a workspace name');
@@ -332,16 +337,18 @@ export class Router {
     const selectedOperation=id=>{const op=operation(id,this.channel(p));if(!available(op))throw new Error('Operation unavailable on the selected MCP channel');return op;};
     const requireOperation=op=>{
       if(op.scope==='connection') {
-        if(workspacePolicy().connectionPermissions[op.permission]!==true)throw new AgentError('router_permission_denied','Enable the required account-wide connection permission in Workspace permissions. Project grants do not authorize this action.');
+        if(workspacePolicy().connectionPermissions[op.permission]!==true)throw new AgentError('router_permission_denied','Open Connection permissions and enable the required action under Discovery and app creation.');
         requirePermissions(p,op.extraPermissions);
       }else if(op.scope==='workspace') {
-        if(workspacePolicy().permissions[op.permission]!==true)throw new AgentError('router_permission_denied',`Enable the required ${op.title} permission in the connection’s Workspace permissions settings. Project permissions do not grant workspace access.`);
+        const policy = workspacePolicy();
+        if (!policy.workspaceId) throw new AgentError('router_permission_denied', 'Webflow has not identified a workspace for this project on the selected channel. Use site operations for this project.');
+        if(policy.permissions[op.permission]!==true)throw new AgentError('router_permission_denied',`Open Connection permissions and enable the required ${op.title} permission under Workspace actions for this workspace.`);
         requirePermissions(p,op.extraPermissions);
       }else requirePermissions(p,[op.permission,...op.extraPermissions]);
     };
     if(name==='get_project_operations') {
       const operations=CATALOG.filter(op=>available(op)&&allowed(p,op,workspacePolicy().permissions,workspacePolicy().connectionPermissions));
-      if(args.operationId){const op=selectedOperation(args.operationId);requireOperation(op);return {...op,notes:'Site IDs are selected by the router. Supply pageId separately for page tools. Workspace operations require separately saved workspace permissions and can affect all sites in that workspace. Connection operations require account-wide grants; standalone app creation does not inject a site ID and Webflow chooses the workspace. Read project instructions with prepare_project before writes.'};}
+      if(args.operationId){const op=selectedOperation(args.operationId);requireOperation(op);return {...op,notes:'Site IDs are selected by the router. Supply pageId separately for page tools. Workspace operations can affect every site in the workspace and require an explicit grant for that workspace in Connection permissions. Discovery and standalone app creation require separate grants for this connection. Standalone creation can deploy to a new site and has no workspace selector. Read project instructions with prepare_project before writes.'};}
       return operations.map(({id,title,mode,permission,extraPermissions,page,scope})=>({id,area:title,mode,permission,extraPermissions,requiresPageId:page,...(scope?{scope,...(scope==='workspace'?{workspaceId:workspacePolicy().workspaceId}:{})}:{})}));
     }
     if(['prepare_project','get_project_guidance'].includes(name))requirePermissions(p,['agent_instructions:read']);

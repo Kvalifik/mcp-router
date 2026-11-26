@@ -32,11 +32,19 @@ The capture retries fully transparent window images up to three times and fails
 if macOS still returns a blank capture. Review both PNGs after regenerating them, especially when layout or permission
 groups change. Demo names and presets live in `scripts/capture-readme.mjs`.
 
-The toolbar graph uses fictional routed calls. For activity interaction checks, run
-`npx electron scripts/capture-readme.mjs --verify-activity`. This checks the
-project breakdown, frozen and live minute selection, day selection, and the
-compact dark layout. It writes review captures under the system temporary
-directory and preserves both README screenshots.
+The header graph uses fictional routed calls. For activity interaction checks, run
+`npx electron scripts/capture-readme.mjs --verify-activity`. This checks header
+alignment of dialog controls and toolbar buttons, equal-width bars, stable heights and
+time intervals for a four-call burst, centered idle dots,
+chevron padding, switch colors, opening Activity directly from either toolbar,
+each time range’s totals and sources, animated and reduced-motion range changes,
+the toolbar’s in-progress cue and stable width, selecting and clearing an interval by
+pointer or keyboard, toolbar access above dialogs, primary button colors and
+translucent borders, chart bars, scroll boundaries, and scrolling to the
+weekly calendar. It also checks which fonts rendered in each window. It writes
+light and dark review captures of the renderer under the system temporary
+directory, including the overview and permissions dialog. These can be used for
+review while the Mac is locked. The README uses the native window captures.
 
 For a screen recording, run `npm run demo`. This opens the same isolated,
 fictional demo with both connections expanded and simulated traffic flowing, and keeps it open until you close
@@ -65,8 +73,14 @@ state, including in this preview mode.
 
 For the same interaction checks without replacing screenshots, use
 `npx electron scripts/capture-readme.mjs --verify-attention`.
-This also verifies the connection menu's Workspace permissions dialog, its
+This also verifies the connection menu's Connection permissions dialog, its
 default-off state and scope explanation, and saving without changing project grants.
+The Direct check covers individual sites with no workspace metadata and update
+notifications beneath the toolbar while About is open. It also exercises the
+Kvalifik link, Apps, Settings, Activity and compact expand button during an
+unsaved edit. It checks that closing a second dialog restores the edit in the
+desktop app and that the browser Settings menu works with a dialog open.
+Both checks verify that only the Beta badge shows its tooltip and that the switch remains accessible to pointer and keyboard users.
 
 The attention verification also exercises connection access modes: Managed is the
 default, Direct shows its authorization-wide scope before saving, project controls

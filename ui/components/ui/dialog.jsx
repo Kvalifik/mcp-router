@@ -29,6 +29,22 @@ function DialogClose({
   return <DialogPrimitive.Close data-slot="dialog-close" {...props} />
 }
 
+function DialogCloseButton({ className }) {
+  return <DialogPrimitive.Close asChild>
+    <Button type="button" variant="ghost" size="icon-sm" data-slot="dialog-close" aria-label="Close"
+      className={cn("text-muted-foreground hover:text-foreground", className)}>
+      <XIcon />
+    </Button>
+  </DialogPrimitive.Close>
+}
+
+function DialogTitleRow({ className, children }) {
+  return <div data-slot="dialog-title-row" className="flex min-w-0 items-center gap-2">
+    <div className={cn("flex min-w-0 flex-1 items-center gap-1", className)}>{children}</div>
+    <DialogCloseButton />
+  </div>
+}
+
 function DialogOverlay({
   className,
   ...props
@@ -48,31 +64,33 @@ function DialogOverlay({
 function DialogContent({
   className,
   children,
+  workspaceOpen,
   showCloseButton = true,
   ...props
 }) {
+  const body = <>{children}{showCloseButton && <DialogCloseButton className="absolute top-4 right-4" />}</>
+  const panel = "grid w-full gap-4 rounded-lg border bg-background p-6 shadow-lg outline-none sm:max-w-lg"
+  if (workspaceOpen !== undefined) {
+    return <div data-slot="dialog-overlay" data-state={workspaceOpen ? "open" : "closed"} className="workspace-overlay">
+      <DialogPrimitive.Content data-slot="dialog-workarea" className="dialog-viewport" style={{pointerEvents:"none"}}
+        onInteractOutside={event => {
+          // Toolbar menus and notifications can receive focus and clicks alongside the panel.
+          if (event.detail.originalEvent.type !== "pointerdown" || !event.target.matches?.(".workspace-overlay")) event.preventDefault()
+        }} {...props}>
+        <div data-slot="dialog-content" className={cn(panel, className)} onKeyDown={event => {
+          // Let the browser tab between the panel and toolbar in normal document order.
+          if (event.key === "Tab") event.stopPropagation()
+        }}>{body}</div>
+      </DialogPrimitive.Content>
+    </div>
+  }
   return (
     <DialogPortal data-slot="dialog-portal">
       <DialogOverlay>
-      <DialogPrimitive.Content
-        data-slot="dialog-content"
-        className={cn(
-          "fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] sm:translate-x-[-50%] sm:translate-y-[-50%] gap-4 rounded-lg border bg-background p-6 shadow-lg duration-200 outline-none sm:max-w-lg",
-          className
-        )}
-        {...props}
-      >
-        {children}
-        {showCloseButton && (
-          <DialogPrimitive.Close
-            data-slot="dialog-close"
-            className="absolute top-4 right-4 rounded-xs opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
-          >
-            <XIcon />
-            <span className="sr-only">Close</span>
-          </DialogPrimitive.Close>
-        )}
-      </DialogPrimitive.Content>
+          <DialogPrimitive.Content data-slot="dialog-content" className={cn(panel,
+            "fixed top-1/2 left-1/2 z-50 max-w-[calc(100%-2rem)] sm:-translate-x-1/2 sm:-translate-y-1/2", className)} {...props}>
+            {body}
+          </DialogPrimitive.Content>
       </DialogOverlay>
     </DialogPortal>
   )
@@ -123,7 +141,7 @@ function DialogTitle({
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      className={cn("text-lg leading-none font-semibold", className)}
+      className={cn("type-heading", className)}
       {...props}
     />
   )
@@ -149,6 +167,7 @@ export {
   DialogDescription,
   DialogFooter,
   DialogHeader,
+  DialogTitleRow,
   DialogOverlay,
   DialogPortal,
   DialogTitle,

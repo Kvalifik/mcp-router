@@ -14,22 +14,32 @@ default browser, where you can find the source code, documentation, and issues.
 **Report a bug or suggest a feature** is available in both Settings and About MCP
 Router and opens the repository’s GitHub Issues page.
 
-Save confirmations and other app messages appear beneath the header. While a dialog is open, its messages appear inside it.
+Save confirmations and other app messages appear beneath the toolbar. An open dialog fits into the space below them.
 
 ## Router activity
 
-The lavender graph beside project search shows calls finished in the last 60 seconds.
-Open it to see the connections and projects behind the graph and any calls still in
-progress. Direct calls are attributed to their connection. Managed calls are grouped
-under the project used to route them.
+The lavender graph in the header shows how many calls finished in the last
+minute, for example **12/min**. The menu bar panel shows bars and a chevron.
+Each toolbar bar covers a fixed five-second interval, or ten seconds in a narrow window.
+The newest interval is on the right. Calls drop out individually after 60 seconds.
+The bars use a fixed scale that compresses larger bursts, so the same count keeps the same height as it moves left.
+When traffic is idle, both graphs show a row of lavender dots.
+While calls are in progress, the rightmost bar pulses. With reduced motion it has a steady outline.
+Hover for the rate and the number of calls in progress. Click the graph to open **Activity** over your projects.
+The dialog opens on **1 min**. Choose **5 min** or **15 min** for a longer view.
+The breakdown shows all calls that finished in the selected period, grouped by
+connection and project. Direct calls appear under their connection. Calls still
+in progress appear separately.
 
-Choose **Open activity** to inspect the last 15 minutes of this router session.
-Select a bar to hold the chart and its breakdown still, or use the arrow keys on
-the selected minute. **Resume live** follows the current minute. **Projects** returns
-to the list with your search, expanded connections, and scroll position preserved.
+Click a bar to hold the chart and inspect the calls in that interval. Click the
+highlighted bar again to return to live totals, or choose another period to see
+its totals. With a keyboard, use the arrow keys to move between bars and Enter
+or Space to toggle the highlight. Close Activity to return to the same place in your project list.
+The toolbar stays active while a dialog is open. You can follow the Kvalifik link, use Apps or Settings, inspect Activity, or open the main window from the menu bar panel. Closing a dialog opened from the toolbar brings you back to your previous dialog with its edits intact.
 
-**Weekly rhythm** shows daily totals for the current calendar week and the previous
-three, using the router computer’s local dates and Monday as the start of the week.
+Scroll past the call breakdown to **Weekly rhythm**. It shows daily totals for
+the current calendar week and the previous three, using the router computer’s
+local dates and Monday as the start of the week.
 Select a day for its connection totals. One successful routed call makes a week
 active. A streak carries into the following week, giving you until Sunday to
 extend it. A dash marks a date before tracking began. History starts when you
@@ -73,7 +83,7 @@ connection’s **More options → Access mode** to choose **Direct Webflow** and
 **Enable Direct Webflow** after reviewing the scope explanation.
 
 In Direct mode, **project permissions do not apply**. Project enable switches and
-project, workspace and account permission settings are inactive. Webflow’s selected
+project and connection permission settings are inactive. Webflow’s selected
 OAuth authorization determines access, potentially including other projects and
 workspaces, even projects disabled in the router. A connection is not necessarily
 limited to one workspace. Stable and Beta grants remain separate; Direct does not
@@ -197,7 +207,7 @@ turning off Delete and Publish permissions. Presets take effect when you save.
 - Connections expand to show their projects; global search opens matching groups. Enabled projects are listed first. **More options → Sync projects** refreshes project availability for enabled, connected connections; projects cannot be deleted locally. Previously trashed projects return disabled when available.
 - Projects follow their Webflow names until locally renamed. **Use default name** removes an override. Connections use a provider workspace name when available; otherwise their local label is retained and no Webflow default is claimed. Labels can always be overwritten.
 - All changes also require **Instructions → Read** so the agent can load project rules before writing.
-- **Cloud Apps** separates Read, Write, Delete, and Publish. App creation attaches to the selected site and can deploy immediately, so it requires Write, Publish, and Custom code Write. Creating/changing environments can change live routing and also requires Publish. Deploy/redeploy use Publish; app/environment removal also requires Delete. App, environment, and deployment IDs are verified in sequence. Existing standalone apps can be managed only through their approved backing site; standalone creation uses a separate account-wide permission described below.
+- **Cloud Apps** separates Read, Write, Delete, and Publish. App creation attaches to the selected site and can deploy immediately, so it requires Write, Publish, and Custom code Write. Creating/changing environments can change live routing and also requires Publish. Deploy/redeploy use Publish; app/environment removal also requires Delete. App, environment, and deployment IDs are verified in sequence. Existing standalone apps can be managed only through their approved backing site; standalone creation uses a separate connection permission described below.
 - **Cloud logs & variables → Read** is separate from ordinary Cloud Apps Read. It exposes raw logs and non-secret environment-variable values, which may contain sensitive content. Secret variables remain subject to Webflow’s masking. The router does not save these response bodies to its audit log.
 - **Campaigns** has separate Read, Write, Delete, and Publish. Writes require Custom code Write; campaign creation also requires Pages Write and Assets Write, and campaign deletion requires Pages Delete and Assets Delete. **Publish** launches or removes campaign landing pages and page variations on the live site, so it also requires Pages Publish and Custom code Write. It starts off for existing projects and saved defaults. Campaign, variation, suggestion, landing-page and custom-domain targets stay within the selected site. Campaign Hub discovery returns only the selected site. Creation and campaign publishing are asynchronous: inspect task status before considering them complete or retrying.
 - **Site Access** controls reading site members, granting/changing roles, and revoking access to that site. Revoke uses Delete. Workspace-wide membership is controlled separately below.
@@ -207,15 +217,32 @@ turning off Delete and Publish permissions. Presets take effect when you save.
 - These categories govern MCP actions. Editing operations can replace values or affect live settings without a separate publish call. Delete does not mean every edit is reversible, and disabling Publish does not make all writes draft-only.
 - Webflow OAuth grants, account roles, paid-plan restrictions, and active Designer/MCP Bridge requirements still apply. The router cannot provide functionality absent from Webflow's MCP server.
 
-### Workspace permissions
+### Connection permissions
 
-Open a connection’s menu → **Workspace permissions** to grant **Workspace Members**
+Open a connection’s menu → **Connection permissions**. Webflow lets you authorize
+individual sites or a workspace. The router discovers the sites returned by each
+Stable or Beta authorization and applies your local permissions within that access.
+A site can report its parent workspace even when you selected only that site.
+Seeing workspace controls tells you which workspace an action would affect.
+Webflow still checks what the signed-in user authorized.
+
+A **β** badge beside a switch means the action requires Beta. Hover over the badge for the tooltip. Screen readers announce the requirement with the switch.
+
+**Discovery and app creation** controls two actions for the connection.
+**Workspace actions** controls membership and Workspace AEO for each identified
+workspace. When Webflow supplies no workspace ID, you can still use the site’s
+project settings. Saving changes updates only the switches you edited.
+
+Under **Workspace actions**, grant **Workspace Members**
 Read, Write, or Delete for a specific workspace. All start disabled, even when a
 project has Full access. Read includes members, invitations and assignable site
 roles; Write includes invitations and workspace-role changes; Delete removes
 members from the entire workspace. These grants can affect sites that are disabled
 or not individually enabled in the router. Invitations and role changes may consume
 Webflow seats. Use Site Access when the change should affect only one site.
+
+When a connection includes multiple workspaces, each workspace has its own
+controls, identified by its name or a site it includes.
 
 The workspace must appear in the connection’s verified project inventory. Agents
 use an enabled project in that workspace as context for operation discovery and
@@ -374,7 +401,7 @@ The desktop app also checks on startup and every six hours while it is open.
 
 Signed Mac builds download the update ZIP in the background and check its size and
 SHA-256. Select the version number in the banner to read that release’s notes on GitHub.
-In the banner beneath the app title, choose **Update** when you are ready. Electron verifies the
+Choose **Update** in the notification when you are ready. Notifications extend beneath the toolbar. An open dialog uses the space below them, and its notification actions remain available. Electron verifies the
 app signature and restarts, briefly disconnecting active AI clients. Quitting
 normally keeps the current version. Your connections and settings stay saved.
 
@@ -416,9 +443,10 @@ the selected total; both shows connections/projects (for example, `2/7`).
 Connections counts enabled connections with at least one ready authorization;
 Projects counts enabled, available projects with permissions and
 a ready authorization for their selected Stable or Beta version. These are
-configured access counts, not live AI sessions. Enabled switches preserve your
-selection even when access is not ready. Healthy views show ordinary counts with
-no readiness banner or extra status text. Disabled connections do not create warnings.
+configured access counts, not live AI sessions. Purple switches show which
+connections and projects you have enabled, even when access is not ready.
+Healthy views show ordinary counts with no readiness banner or extra status text.
+Disabled connections do not create warnings.
 Counts update when router state is saved, without a polling timer.
 
 When access needs attention, the menu bar icon gains a warning triangle (including
@@ -457,11 +485,13 @@ and deletion-confirmation flows. Clicking outside or pressing Escape dismisses
 the popover. Right-click the menu bar item to open the app or quit. Closing the
 main window keeps the router running; quitting stops it.
 
+Settings groups default AI access first, app preferences and connection ordering next, and diagnostics, updates and help last.
+
 In the Apps menu, a checkmark identifies an app that is already set up. Each
 installed app opens a submenu with a non-clickable setup status and a separate
 Set up or Reconnect action. An exclamation mark indicates a configuration that
-needs reconnecting; unconfigured apps have no status icon. The Not installed
-submenu lists supported apps absent from this computer. Setup status describes the saved configuration,
+needs reconnecting or that MCP Router cannot read; unconfigured apps have no status icon. The Not installed
+submenu, grouped with Copy configuration below the app list, lists supported apps absent from this computer. Setup status describes the saved configuration,
 not whether the app is running.
 
 Reviewed Beta-only operations are hidden and rejected on Stable projects. On both
@@ -506,14 +536,14 @@ Stable. Page branches remain separate operations.
 
 Beta supports the reviewed GSAP, Cloud Apps, Campaigns, Members and Optimize
 operations and Modal schemas. AEO recommendation settings have a separate project
-write grant. Under Workspace permissions, two default-off **account-wide** connection
-grants allow listing all accessible workspaces and creating standalone Cloud apps.
-Standalone creation can create a site, deploy code and set its folder/access mode in
-the workspace chosen by Webflow; it requires Custom code write and Cloud Apps publish
-on the context project as well as preparation. It does not enable the new project
+write grant. Under **Connection permissions → Discovery and app creation**, two
+default-off connection grants allow listing all accessible workspaces and creating standalone Cloud apps.
+Standalone creation can deploy code to a new site and set its folder and access mode.
+The request has no workspace selector. It requires Custom code write and Cloud Apps
+publish on the context project as well as preparation. It does not enable the new project
 in the router. Use `data_apps_tool.create_standalone_app` for this path; regular
 `create_app` always attaches to the approved project. Existing saved project or
-workspace-member permissions never grant these account-wide capabilities.
+workspace-member permissions never grant these connection-wide capabilities.
 
 ### Beta slot defaults and Release details
 
@@ -592,7 +622,7 @@ current rules, validate and preview the exact change, then use its preview token
 A rule update replaces that whole rule type. Follow Webflow's explicit confirmation
 flow for high-risk changes and inspect per-host results after partial failures.
 
-In **Workspace permissions**, **Workspace AEO** Read and Write are separate,
+Under **Connection permissions → Workspace actions**, **Workspace AEO** Read and Write are separate,
 default-off Beta grants. They cover brands, topics and tracked prompts across the
 verified workspace, including sites disabled in the router. Write creates topics
 and prompts; it does not grant project access. Workspace Members Delete also allows

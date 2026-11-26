@@ -1,5 +1,10 @@
 import { localDay, mondayOf, offsetDay } from './activity-calendar.js';
 
+// Inspector intervals have clock boundaries that are easy to recognize.
+const detailIntervals = new Map([[60, 5], [300, 30], [900, 60]]);
+export const pulsePeriods = [...detailIntervals.keys()];
+export const pulseIntervals = 12;
+
 // Retain only counts and router-owned IDs. Never take upstream arguments or
 // responses here, including for Direct calls that have no trusted project ID.
 function addSource(sources, connectionId, projectId, calls = 1) {
@@ -36,7 +41,7 @@ export class RouterActivity {
   pruneSeconds(second) {
     if (this.lastPrunedSecond === second) return;
     this.lastPrunedSecond = second;
-    const earliest = Math.floor(second / 60) * 60 - 14 * 60;
+    const earliest = second - pulsePeriods.at(-1) + 1;
     for (const at of this.seconds.keys()) {
       if (at < earliest || at > second) this.seconds.delete(at);
     }
@@ -82,7 +87,37 @@ export class RouterActivity {
     }
   }
 
-  snapshot(view) {
+  pulseWindow(second, duration, detailed = false) {
+    const start = second - duration + 1;
+    const binSeconds = detailed ? detailIntervals.get(duration) : duration / pulseIntervals;
+    const count = duration / binSeconds;
+    // A rolling window can overlap two partial clock intervals, one at each end.
+    // Only count seconds still inside it, even in the oldest partial interval.
+    const firstBin = Math.floor(second / binSeconds) - count;
+    const bins = Array(count + 1).fill(0);
+    const binSources = detailed ? bins.map(() => new Map()) : null;
+    const sources = new Map();
+    for (let at = start; at <= second; at++) {
+      const bucket = this.seconds.get(at);
+      if (!bucket) continue;
+      const index = Math.floor(at / binSeconds) - firstBin;
+      for (const row of bucket.values()) {
+        bins[index] += row.calls;
+        addSource(sources, row.connectionId, row.projectId, row.calls);
+        if (binSources) addSource(binSources[index], row.connectionId, row.projectId, row.calls);
+      }
+    }
+    const rows = [...sources.values()];
+    if (!detailed) return { firstBin, bins, sources: rows };
+    return {
+      period: duration, intervalSeconds: binSeconds, sources: rows,
+      intervals: bins.map((calls, i) => ({
+        at: (firstBin + i) * binSeconds * 1000, calls, sources: [...binSources[i].values()]
+      }))
+    };
+  }
+
+  snapshot(view, period = 60) {
     const now = this.clock();
     const second = Math.floor(now / 1000);
     this.pruneSeconds(second);
@@ -102,6 +137,7 @@ export class RouterActivity {
         at: (start + i * 60) * 1000, calls: 0, sources: new Map()
       }));
       for (const [at, sources] of this.seconds) {
+        if (at < start) continue;
         const minute = minutes[Math.floor((at - start) / 60)];
         for (const row of sources.values()) {
           minute.calls += row.calls;
@@ -110,19 +146,19 @@ export class RouterActivity {
       }
       return { asOf: now, startedAt: Math.min(this.startedAt, now), minutes: minutes.map(minute => ({ ...minute, sources: [...minute.sources.values()] })) };
     }
-    if (view !== 'pulse') throw new Error('Unknown activity view');
-    const bins = Array(12).fill(0);
-    const sources = new Map();
+    if (!['pulse', 'ranges', 'period'].includes(view)) throw new Error('Unknown activity view');
     const running = new Map();
     for (const call of this.running) addSource(running, call.connectionId, call.projectId);
-    for (let i = 0; i < 60; i++) {
-      const bucket = this.seconds.get(second - 59 + i);
-      if (!bucket) continue;
-      for (const row of bucket.values()) {
-        bins[Math.floor(i / 5)] += row.calls;
-        addSource(sources, row.connectionId, row.projectId, row.calls);
-      }
+    const summary = { asOf: now, startedAt: Math.min(this.startedAt, now), running: [...running.values()] };
+    if (view === 'period') {
+      if (!detailIntervals.has(period)) throw new Error('Unknown activity period');
+      return { ...summary, ...this.pulseWindow(second, period, true) };
     }
-    return { asOf: now, bins, sources: [...sources.values()], running: [...running.values()] };
+    const [minute, ...longerPeriods] = pulsePeriods;
+    const pulse = { ...summary, ...this.pulseWindow(second, minute) };
+    if (view === 'ranges') {
+      pulse.ranges = Object.fromEntries(longerPeriods.map(period => [period, this.pulseWindow(second, period)]));
+    }
+    return pulse;
   }
 }

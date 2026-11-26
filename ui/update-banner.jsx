@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { X } from 'lucide-react';
 import { AnimatedReveal } from '@/components/ui/animated-content';
 import { Button } from '@/components/ui/button';
 
@@ -59,10 +60,10 @@ export function useUpdateBanner() {
     return () => clearTimeout(timer);
   }, [notice]);
 
-  return {notice, check, report};
+  return {notice, check, report, dismiss:() => setNotice(null)};
 }
 
-export function UpdateBanner({notice, report}) {
+export function UpdateBanner({notice, report, dismiss}) {
   const {state, text, version} = notice || {};
   const desktop = window.routerDesktop;
   function failed(reason) { report({state: 'error', reason}, true); }
@@ -78,5 +79,6 @@ export function UpdateBanner({notice, report}) {
       {state === 'ready' && <Button size="xs" title="Restart MCP Router to install. Active AI connections will briefly disconnect." aria-label="Update and restart MCP Router" onClick={() => desktop.installUpdate(version).catch(() => failed('install'))}>Update</Button>}
       {state === 'available' && <Button size="xs" onClick={() => desktop.downloadUpdate(version).catch(() => failed('download'))}>Download</Button>}
     </div>}
+    {notice.temporary && <Button type="button" size="icon-xs" variant="ghost" aria-label="Dismiss update notification" onClick={dismiss}><X /></Button>}
   </div>}</AnimatedReveal>;
 }

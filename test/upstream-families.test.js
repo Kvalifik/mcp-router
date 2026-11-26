@@ -255,10 +255,45 @@ test('refreshed Modal schemas apply on Stable and Beta and retain existing canva
 });
 
 
-test('account-wide Beta grants are explicit, revoked in flight, and never supplied by project permissions',async t=>{
+test('a single authorized site keeps site access with or without workspace metadata and respects Webflow denials', async t => {
+ const f = fixture(t);
+ f.grant(PERMISSIONS);
+ const workspaceRead = 'data_members_tool.list_workspace_members';
+ const siteRead = 'data_members_tool.list_site_members';
+ f.c.sites = [{id:'site', name:'Example'}];
+ assert((await f.router.call('get_project_operations', {projectId:'project'})).some(op => op.id === siteRead));
+ await f.read(siteRead);
+ await assert.rejects(f.read(workspaceRead, {workspace_id:'workspace'}), /has not identified a workspace/);
+ f.c.sites[0].workspaceId = 'workspace';
+ await assert.rejects(f.read(workspaceRead, {workspace_id:'workspace'}), /Workspace actions/);
+ f.workspace({'workspace_members:read':true});
+ f.setIntercept((tool, action) => {
+   if (action === 'list_workspace_members') throw Object.assign(new Error('Forbidden'), {status:403});
+ });
+ await assert.rejects(f.read(workspaceRead, {workspace_id:'workspace'}), error => error.feedback?.code === 'upstream_access_denied');
+ assert.equal(f.calls.filter(call => call.action === 'list_workspace_members').length, 1);
+ await f.read(siteRead);
+});
+
+test('editing visible connection switches preserves other grants and rejects an edit if its workspace disappeared', t => {
+ const f = fixture(t);
+ const save = permissionEdits => f.router.edit('connections', f.c.id, {permissionEdits});
+ f.c.workspacePermissions = {earlier:{'workspace_members:read':true},workspace:{'workspace_members:write':true}};
+ save({workspaces:{workspace:{'workspace_members:read':true}}});
+ assert.deepEqual(f.c.workspacePermissions.workspace, {'workspace_members:read':true,'workspace_members:write':true});
+ f.c.sites = [{id:'site'}];
+ save({connection:{'workspace_discovery:read':true}});
+ assert.equal(f.c.workspacePermissions.earlier['workspace_members:read'], true);
+ assert.throws(() => save({connection:{'workspace_discovery:read':false},workspaces:{workspace:{'workspace_members:read':false}}}), /Invalid workspace/);
+ assert.equal(f.c.connectionPermissions['workspace_discovery:read'], true);
+ assert.equal(f.c.workspacePermissions.workspace['workspace_members:read'], true);
+ assert.throws(() => f.router.edit('projects', 'project', {permissionEdits:{}}));
+});
+
+test('connection-wide Beta grants are explicit, revoked in flight, and never supplied by project permissions',async t=>{
  const f=fixture(t);f.grant(PERMISSIONS);f.c.beta={tokens:{access_token:'synthetic-beta'},sites:f.c.sites};f.store.data.projects.project.channel='beta';
  const op='data_apps_tool.create_standalone_app',params={name:'Example app',source_url:'https://github.com/example/synthetic',branch:'main',folder_id:'workspace-folder',site_specific_access:'restricted',dry_run:true};
- await assert.rejects(f.write(op,params),/account-wide/);
+ await assert.rejects(f.write(op,params),/Connection permissions/);
  assert.throws(()=>f.router.edit('projects','project',{permissions:{'standalone_apps:write':true}}));
  const enable=grants=>f.router.edit('connections',f.c.id,{connectionPermissions:grants});
  assert.throws(()=>enable({'site:read':true}));

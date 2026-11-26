@@ -1,0 +1,83 @@
+@font-face {
+  font-family: Manrope;
+  src: url("./fonts/manrope-variable.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+}
+@font-face {
+  font-family: Denton;
+  src: local("Denton-Thin"), local("Denton Thin");
+  font-style: normal;
+  font-weight: 100;
+}
+@font-face {
+  font-family: "Denton Condensed";
+  src: local("DentonCondensed-Thin"), local("Denton Condensed Thin");
+  font-style: normal;
+  font-weight: 100;
+}
+
+/* Published Kvalifik type settings for regular, small and tiny copy, buttons,
+   and the two smallest display headings. Layout dimensions remain in rem. */
+:root {
+  --router-sans: Manrope, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --router-serif: Denton, Georgia, serif;
+  --router-display: "Denton Condensed", var(--router-serif);
+  --body-weight: 425;
+  --emphasis-weight: 600;
+  --strong-weight: 625;
+  --body-tracking: 0em;
+  --small-tracking: .01em;
+  --small-leading: 1.45;
+  --heading-tracking: 0em;
+  --heading-leading: 1;
+  --section-leading: 1.2;
+  font-family: var(--router-sans);
+  font-weight: var(--body-weight);
+  line-height: 1.45;
+  letter-spacing: var(--body-tracking);
+}
+:root.dark { --body-weight: 400; --emphasis-weight: 550; --strong-weight: 600; }
+@media (max-width: 479px) {
+  :root {
+    --router-display: var(--router-serif);
+    --body-tracking: .01em;
+    --small-tracking: .02em;
+    --small-leading: 1.5;
+    --heading-tracking: .02em;
+    --heading-leading: 1.1;
+    --section-leading: 1.1;
+  }
+}
+
+@theme inline {
+  --font-sans: var(--router-sans);
+  --font-weight-normal: var(--body-weight);
+  --font-weight-medium: var(--emphasis-weight);
+  --font-weight-semibold: var(--strong-weight);
+  --text-base--line-height: 1.45;
+  --text-base--letter-spacing: var(--body-tracking);
+  --text-sm--line-height: var(--small-leading);
+  --text-sm--letter-spacing: var(--small-tracking);
+  --text-xs--line-height: 1.5;
+  --text-xs--letter-spacing: .02em;
+}
+
+.type-heading, .type-section {
+  font-size: calc(var(--kvalifik-heading-size) * 0.6);
+  font-weight: 100;
+  letter-spacing: var(--heading-tracking);
+}
+.type-heading {
+  --kvalifik-heading-size: clamp(30px, calc(30px + (100vw - 400px) / 52), 50px);
+  font-family: var(--router-display);
+  line-height: var(--heading-leading);
+}
+.type-section {
+  --kvalifik-heading-size: clamp(26px, calc(26px + (100vw - 400px) / 260), 30px);
+  font-family: var(--router-serif);
+  line-height: var(--section-leading);
+}
+:where([data-slot="button"], .activity-periods button) { line-height: 1.2; letter-spacing: .01em; }
+:where(strong, b) { font-weight: var(--emphasis-weight); }

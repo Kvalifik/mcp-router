@@ -10,9 +10,14 @@ import { fileURLToPath } from 'node:url';
 import { Store } from './store.js';
 import { OAuthManager, nonce } from './oauth.js';
 import { Router } from './router.js';
+import { pulsePeriods } from './activity.js';
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const DATA_DIR = process.env.ROUTER_DATA_DIR || path.join(ROOT, '.local');
+const assetTypes = new Map([
+  ['js', 'text/javascript'], ['css', 'text/css'], ['png', 'image/png'],
+  ['svg', 'image/svg+xml'], ['woff2', 'font/woff2'],
+]);
 
 const json = (res, data, status = 200) => { res.writeHead(status, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(data)); };
 async function body(req) {
@@ -109,14 +114,18 @@ export function createDashboard(router, oauth, origin, { managementToken = nonce
       if (req.method === 'GET' && url.pathname === '/api/state') { const summary = router.store.summary(); return json(res, { ...summary, accessStatus: access.accessStatus(summary), csrf }); }
       if (req.method === 'GET' && url.pathname === '/api/activity') {
         const view = url.searchParams.get('view') || 'pulse';
-        if (!['pulse', 'minutes', 'weeks'].includes(view)) return json(res, { error: 'Unknown activity view' }, 400);
-        return json(res, router.activity.snapshot(view));
+        if (!['pulse', 'ranges', 'period', 'minutes', 'weeks'].includes(view)) return json(res, { error: 'Unknown activity view' }, 400);
+        const period = Number(url.searchParams.get('period') ?? 60);
+        if (view === 'period' && !pulsePeriods.includes(period)) return json(res, { error: 'Unknown activity period' }, 400);
+        return json(res, router.activity.snapshot(view, period));
       }
-      if (req.method === 'GET' && (url.pathname === '/' || /^\/assets\/[A-Za-z0-9_-]+\.(js|css|png|svg)$/.test(url.pathname))) {
+      const extension = /^\/assets\/[A-Za-z0-9_-]+\.([a-z0-9]+)$/.exec(url.pathname)?.[1];
+      const contentType = url.pathname === '/' ? 'text/html' : assetTypes.get(extension);
+      if (req.method === 'GET' && contentType) {
         const name = url.pathname === '/' ? 'index.html' : url.pathname.slice(1);
-        res.setHeader('Content-Type', name.endsWith('.js') ? 'text/javascript' : name.endsWith('.css') ? 'text/css' : name.endsWith('.svg') ? 'image/svg+xml' : name.endsWith('.png') ? 'image/png' : 'text/html');
         const file = path.join(ROOT, 'public', name);
         if (!fs.existsSync(file)) return json(res, { error: 'Not found' }, 404);
+        res.setHeader('Content-Type', contentType);
         return res.end(fs.readFileSync(file));
       }
       if (req.method !== 'POST' || req.headers.origin !== origin || req.headers['x-router-csrf'] !== csrf || !req.headers['content-type']?.startsWith('application/json')) return json(res, { error: 'Request denied' }, 403);

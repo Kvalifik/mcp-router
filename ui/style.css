@@ -1,10 +1,13 @@
 @import "tailwindcss";
+@import "./typography.css";
 @custom-variant dark (&:is(.dark *));
 @theme inline {
  --color-background:var(--background); --color-foreground:var(--foreground);
  --color-card:var(--background); --color-card-foreground:var(--foreground);
  --color-popover:var(--background); --color-popover-foreground:var(--foreground);
  --color-primary:var(--primary); --color-primary-foreground:var(--primary-foreground);
+ --color-router-accent:var(--router-accent);
+ --color-action:var(--action); --color-action-foreground:var(--action-foreground); --color-action-hover:var(--action-hover); --color-action-border:rgb(0 0 0 / 8%);
  --color-secondary:var(--secondary); --color-secondary-foreground:var(--foreground);
  --color-muted:var(--secondary); --color-muted-foreground:var(--muted-foreground);
  --color-accent:var(--secondary); --color-accent-foreground:var(--foreground);
@@ -23,9 +26,15 @@
     to { height:0; }
   }
 }
-:root { --background:#fff; --foreground:#18181b; --primary:#18181b; --primary-foreground:#fff; --secondary:#f4f4f5; --muted-foreground:#71717a; --border:#e4e4e7; --ring:#a1a1aa; --destructive:#dc2626; --app-background:#fafafa; --popover:var(--background); --popover-foreground:var(--foreground); --radius:0.5rem; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; font-size:14px; color:var(--foreground); background:var(--app-background); }
+:root { --background:#fff; --foreground:#18181b; --primary:#18181b; --primary-foreground:#fff; --secondary:#f4f4f5; --muted-foreground:#71717a; --border:#e4e4e7; --ring:#a1a1aa; --destructive:#dc2626; --app-background:#fafafa; --popover:var(--background); --popover-foreground:var(--foreground); --radius:0.5rem; font-size:14px; color:var(--foreground); background:var(--app-background); }
 :root.dark { --background:#18181b; --foreground:#fafafa; --primary:#fafafa; --primary-foreground:#18181b; --secondary:#27272a; --muted-foreground:#a1a1aa; --border:#3f3f46; --ring:#71717a; --destructive:#f87171; --app-background:#09090b; }
-* { border-color:var(--border); }
+/* The light lavender in assets/icons/app-icon.svg. */
+:root { --router-accent:#cfbff3; --action:#d7c9f4; --action-foreground:#3f324d; --action-hover:var(--router-accent); --toolbar-height:64px; }
+:root.dark { --action:#453a52; --action-foreground:#f4eefb; --action-hover:#554764; }
+@layer base {
+  * { border-color:var(--border); }
+  :focus-visible { outline:2px solid var(--ring); outline-offset:2px; }
+}
 body { margin:0; overflow:hidden; }
 button { cursor:pointer; }
 button:disabled { cursor:not-allowed; }
@@ -41,7 +50,7 @@ button:disabled { cursor:not-allowed; }
 .input-clear[data-visible="true"] { opacity:1; scale:1; pointer-events:auto; }
 @media (prefers-reduced-motion:reduce) { .animated-reveal, .input-clear { transition:none; } }
 /* Keep the modal shell out of the scroll flow. Only its content region scrolls. */
-.dialog-shell { background:var(--app-background); display:flex; flex-direction:column; max-height:calc(100dvh - 64px - 2rem); top:calc(50% + 32px); overflow:hidden; }
+.dialog-shell { --dialog-inset:1.5rem; padding:var(--dialog-inset); background:var(--app-background); display:flex; flex-direction:column; min-height:0; max-height:100%; position:relative; pointer-events:auto; overflow:hidden; }
 .dialog-form { display:flex; flex-direction:column; gap:1rem; min-height:0; overflow:visible; }
 /* Header and body are separate layout regions: only tbody scrolls. */
 .permission-frame { background:var(--background); display:flex; min-height:0; overflow:hidden; border:1px solid var(--color-border); border-radius:6px; }
@@ -57,15 +66,29 @@ button:disabled { cursor:not-allowed; }
 .permission-table td[colspan] { grid-column:1 / -1; }
 .permission-table tbody tr + tr { border-top:1px solid var(--border); }
 .permission-table tbody tr { border-bottom:0; }
-.dialog-scroll { min-height:0; max-height:60dvh; overflow-x:hidden; overflow-y:scroll; overscroll-behavior:contain; }
+.dialog-scroll {
+  min-height:0; max-height:60dvh; overflow-x:hidden; overflow-y:scroll; overscroll-behavior:contain;
+  margin-inline:calc(-1 * var(--dialog-inset));
+  padding:.75rem max(0px, calc(var(--dialog-inset) - var(--scrollbar-size))) .75rem var(--dialog-inset);
+  scroll-padding-block:.75rem;
+  border-block:1px solid transparent;
+}
+.dialog-scroll[data-scrollable] { border-block-color:var(--border); }
+/* A final scrolling region reaches the window edge; the last row still has breathing room. */
+.dialog-shell > .dialog-scroll:is(:last-child, :has(+ [data-slot="dialog-close"])) {
+  border-bottom-width:0;
+  margin-bottom:calc(-1 * var(--dialog-inset));
+  padding-bottom:var(--dialog-inset);
+  max-height:none;
+}
 .project-list { max-height:52dvh; overflow-x:hidden; overflow-y:scroll; overscroll-behavior:auto; }
-.project-access-badge, .project-beta-badge { width:20px; height:20px; padding:3px; justify-content:center; flex-shrink:0; border:1px solid var(--border); border-radius:999px; color:var(--muted-foreground); }
+.project-access-badge, .beta-badge { width:20px; height:20px; padding:3px; justify-content:center; flex-shrink:0; border:1px solid var(--border); border-radius:999px; color:var(--muted-foreground); }
 .project-access-badge { background:var(--secondary); }
-.project-beta-badge { background:transparent; }
-.project-access-badge svg, .project-beta-badge svg { width:12px; height:12px; }
-.project-beta-badge > span { font-size:12px; }
-.project-access-badge:hover, .project-beta-badge:hover,
-.project-access-badge:focus-visible, .project-beta-badge:focus-visible { background:var(--secondary); color:var(--foreground); }
+.beta-badge { background:transparent; }
+.project-access-badge svg, .beta-badge svg { width:12px; height:12px; }
+.beta-badge > span { font-size:12px; }
+.project-access-badge:hover, .beta-badge:hover,
+.project-access-badge:focus-visible, .beta-badge:focus-visible { background:var(--secondary); color:var(--foreground); }
 .access-issue-badge { position:relative; overflow:visible; width:20px; height:20px; padding:3px; border:1px solid var(--border); border-radius:999px; background:var(--secondary); color:var(--muted-foreground); }
 .access-issue-badge::before { content:""; position:absolute; inset:-3px; border-radius:999px; }
 .access-issue-badge svg { width:12px; height:12px; }
@@ -80,13 +103,14 @@ button:disabled { cursor:not-allowed; }
 
 /* One title bar; reserve space for native controls on each desktop platform. */
 .router-shell { display:flex; flex-direction:column; height:100dvh; }
+.router-workspace { position:relative; display:flex; flex:1; min-height:0; }
 .update-banner-reveal { --reveal-gap:0px; }
 @starting-style {
   .update-banner-reveal[data-open="true"] { grid-template-rows:0fr; opacity:0; }
 }
-.update-banner { display:flex; flex-wrap:wrap; align-items:center; gap:8px; flex:none; min-height:36px; padding:5px 12px; border-bottom:1px solid var(--border); background:var(--muted); }
+.update-banner { display:flex; flex-wrap:wrap; align-items:center; gap:8px; flex:none; min-height:36px; padding:5px 12px; border-bottom:1px solid var(--border); background:var(--app-background); }
 .router-main { flex:1; min-height:0; overflow-x:hidden; overflow-y:scroll; padding:0 16px 20px; overscroll-behavior:contain; }
-.app-header { flex:none; position:relative; z-index:60; height:64px; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:0 16px; border-bottom:1px solid var(--border); background:var(--app-background); }
+.app-header { flex:none; position:relative; z-index:60; height:var(--toolbar-height); display:flex; align-items:center; justify-content:space-between; gap:16px; padding:0 16px; border-bottom:1px solid var(--border); background:var(--app-background); }
 .app-header-integrated { -webkit-app-region:drag; user-select:none; }
 .app-header-mac { padding-left:96px; }
 .app-header-windows { padding-right:calc(100vw - env(titlebar-area-width, calc(100vw - 138px)) + 16px); }
@@ -98,6 +122,7 @@ body:has([data-slot="dropdown-menu-content"]) .app-header-integrated, .app-heade
 /* Shared inset thumbs and softly tinted tracks, without native track bevels. */
 @property --scrollbar-size { syntax:"<length>"; inherits:true; initial-value:0px; }
 :is(.project-list, .dialog-scroll, .router-main, .dialog-shell) { --scrollbar-size:0px; transition:--scrollbar-size 180ms cubic-bezier(0.2, 0, 0, 1); }
+.dialog-scroll { transition-property:--scrollbar-size, border-top-color, border-bottom-color; }
 :is(.project-list, .dialog-scroll, .router-main, .dialog-shell)[data-scrollable] { --scrollbar-size:12px; }
 @media (prefers-reduced-motion:reduce) {
   :is(.project-list, .dialog-scroll, .router-main, .dialog-shell) { transition:none; }
@@ -108,24 +133,32 @@ body:has([data-slot="dropdown-menu-content"]) .app-header-integrated, .app-heade
 :is(.permission-scroll, .project-list, .dialog-scroll, .router-main, .dialog-shell)::-webkit-scrollbar-thumb { background:var(--muted-foreground); border:3px solid transparent; background-clip:padding-box; border-radius:999px; }
 :is(.project-list, .dialog-scroll, .router-main, .dialog-shell)::-webkit-scrollbar-thumb { border-width:calc(var(--scrollbar-size) / 4); }
 :is(.permission-scroll, .project-list, .dialog-scroll, .router-main, .dialog-shell)::-webkit-scrollbar-corner { background:var(--secondary); }
-[data-slot="dialog-overlay"] { top:64px; }
+[data-slot="dialog-overlay"]:not(.workspace-overlay) { top:var(--toolbar-height); }
+.workspace-overlay { position:absolute; inset:0; z-index:50; background:rgb(0 0 0 / 50%); }
+.workspace-overlay:empty { display:none; }
+/* One outside click dismisses the open menu before the panel underneath it. */
+body:has(:is([data-slot="popover-content"], [data-slot="dropdown-menu-content"])[data-state="open"]) .workspace-overlay { pointer-events:none; }
+.toolbar-notifications { flex:none; max-height:min(35dvh, 12rem); overflow-y:auto; pointer-events:auto; background:var(--app-background); }
+.dialog-viewport { height:100%; min-height:0; display:flex; align-items:center; justify-content:center; padding:1rem; outline:none; }
 
 
 /* The main desktop window cannot shrink below 640px. The menu bar loads this
    same interface at 400px; only its presentation changes. */
 .compact-window-only { display:none; }
-.app-client-menu, .app-settings-menu { height:32px; gap:4px; padding:0 8px; }
+.app-header-actions > button { height:32px; }
+.app-client-menu, .app-settings-menu { gap:4px; padding:0 8px; }
 @media (max-width:639px) {
   .full-window-only { display:none; }
   .compact-window-only { display:inline-flex; }
-  .app-header-actions > .compact-window-only { width:32px; height:32px; padding:0; }
-  .app-client-menu, .app-settings-menu { width:48px; height:32px; padding:0 8px; gap:4px; }
+  .app-header-actions { gap:4px; }
+  .app-header-actions > .compact-window-only { width:32px; padding:0; }
+  .app-client-menu, .app-settings-menu { width:40px; padding:0 5px; }
   .app-header { padding:0 12px; gap:8px; -webkit-app-region:no-drag; }
   .router-main { padding:0 10px 12px; }
   .router-toolbar { gap:8px; padding:12px 0; }
   .router-toolbar > div { min-width:0; }
   .router-toolbar > div:first-child > div { max-width:none; min-width:0; }
-  .app-header > div:first-child { max-width:calc(100% - 148px); text-align:left; }
+  .app-header > div:first-child { text-align:left; }
   .app-header h1, .app-header p { overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
   .project-row { display:grid; grid-template-columns:24px minmax(0,1fr) auto; column-gap:6px; row-gap:0; padding:10px; }
   .project-row > button { margin-left:0; grid-column:1; grid-row:1; }
@@ -139,11 +172,11 @@ body:has([data-slot="dropdown-menu-content"]) .app-header-integrated, .app-heade
   .project-title h3 { min-width:0; }
   .dialog-shell [data-slot="dialog-footer"] { flex-direction:row; flex-wrap:wrap; justify-content:flex-end; }
   .project-list { max-height:none; }
+  .dialog-viewport { padding:0; }
   .dialog-shell {
-    inset:64px 0 0; width:100%; max-width:none;
-    height:calc(100dvh - 64px); max-height:none;
+    width:100%; max-width:none; height:100%;
     transform:none; translate:none; border:0; border-radius:0; box-shadow:none;
-    padding:16px; gap:12px; overflow-y:scroll;
+    --dialog-inset:16px; gap:12px; overflow-y:scroll;
   }
   .dialog-shell .dialog-form { flex:1; }
   .dialog-shell .dialog-scroll { flex:1; max-height:none; }
@@ -179,7 +212,7 @@ body:has([data-slot="dropdown-menu-content"]) .app-header-integrated, .app-heade
   .project-title { flex:1; min-width:0; flex-direction:column; align-items:flex-start; gap:2px; }
   .project-title h3 { max-width:100%; }
   .project-links { max-width:100%; gap:4px; }
-  .project-site-link { width:auto; min-width:0; flex-shrink:1; padding:0 6px; margin-left:-6px; height:20px; gap:4px; font-weight:400; }
+  .project-site-link { width:auto; min-width:0; flex-shrink:1; padding:0 6px; margin-left:-6px; height:20px; gap:4px; font-weight:var(--body-weight); }
   .project-site-link svg { flex-shrink:0; }
   .project-badges { margin-left:auto; flex-shrink:0; }
 }
@@ -195,10 +228,12 @@ body:has([data-slot="dropdown-menu-content"]) .app-header-integrated, .app-heade
   animation:popup-in 220ms cubic-bezier(0.2, 0, 0, 1) both;
 }
 [data-slot="tooltip-content"] { transform-origin:var(--radix-tooltip-content-transform-origin); }
+[data-slot="dialog-workarea"][data-state="closed"] [data-slot="dialog-content"],
 :is([data-slot="dialog-content"], [data-slot="popover-content"], [data-slot="dropdown-menu-content"], [data-slot="dropdown-menu-sub-content"], [data-slot="tooltip-content"])[data-state="closed"] {
   animation:popup-out 140ms cubic-bezier(0.4, 0, 1, 1) both;
   pointer-events:none;
 }
+[data-slot="dialog-workarea"][data-state="closed"] { animation:compact-dialog-hold-out 140ms both; }
 [data-slot="dialog-overlay"] { animation:backdrop-in 220ms ease-out both; }
 [data-slot="dialog-overlay"][data-state="closed"] { animation:backdrop-out 140ms ease-in both; }
 @media (max-width:639px) {
@@ -214,8 +249,5 @@ body:has([data-slot="dropdown-menu-content"]) .app-header-integrated, .app-heade
   [data-slot="dialog-content"] { --popup-travel:24px; }
 }
 @media (prefers-reduced-motion:reduce) {
-  :is([data-slot="dialog-content"], [data-slot="dialog-overlay"], [data-slot="popover-content"], [data-slot="dropdown-menu-content"], [data-slot="dropdown-menu-sub-content"], [data-slot="tooltip-content"]) { animation:none; }
+  :is([data-slot="dialog-workarea"], [data-slot="dialog-content"], [data-slot="dialog-overlay"], [data-slot="popover-content"], [data-slot="dropdown-menu-content"], [data-slot="dropdown-menu-sub-content"], [data-slot="tooltip-content"]) { animation:none; }
 }
-
-.dialog-shell > .update-banner-reveal[data-open="false"] { display:none; }
-.dialog-shell > .update-banner-reveal .update-banner { padding-right:2.5rem; }

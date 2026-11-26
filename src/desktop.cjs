@@ -16,7 +16,7 @@ else {
   app.whenReady().then(async () => {
     const { offerApplicationMove } = require('./mac-install.cjs');
     if (await offerApplicationMove({ app, dialog })) return;
-    app.setAboutPanelOptions({ applicationName: 'MCP Router', applicationVersion: app.getVersion(), copyright: 'Copyright © 2026 Kvalifik ApS', credits: 'Connect multiple Webflow workspaces to your AI tools through one MCP connection. Independent software; not affiliated with or endorsed by Webflow or connected AI providers. contact@kvalifik.dk' });
+    app.setAboutPanelOptions({ applicationName: 'MCP Router', applicationVersion: app.getVersion(), copyright: `Copyright © ${new Date().getFullYear()} Kvalifik ApS`, credits: 'Connect multiple Webflow workspaces to your AI tools through one MCP connection. Independent software; not affiliated with or endorsed by Webflow or connected AI providers. contact@kvalifik.dk' });
     const { main } = await import('./server.js');
     const { managementToken, router } = await main();
     const allowed = event => [win, popover].some(window => window && !window.isDestroyed() && event.sender === window.webContents && event.senderFrame === window.webContents.mainFrame) && event.senderFrame?.url === origin + '/';
@@ -39,6 +39,9 @@ else {
       router.store.data.settings ||= {}; router.store.data.settings.menuBar = value; router.store.save(); return value;
     });
     ipcMain.handle('open-main-window', event => { if(!allowed(event))throw new Error('Denied'); showMain(); });
+    ipcMain.on('hide-menu-bar-panel', event => {
+      if (allowed(event) && event.sender === popover?.webContents) popover.hide();
+    });
     const nativeMenuIcons = Object.fromEntries(['SunMoon','PanelTop','Monitor','Server','ArrowDownUp','ShieldCheck','Activity','RefreshCw','Info','Pencil','Trash2','MessageSquare','Code2','Terminal','Plus','Copy','Check','TriangleAlert','CloudOff','Eye','Ban','CheckCheck','Unplug','Split','Power'].map(name=>{
       const icon=nativeImage.createEmpty();
       icon.addRepresentation({scaleFactor:2,buffer:require('node:fs').readFileSync(path.join(__dirname,`../assets/icons/menu/${name}.png`))});
@@ -78,7 +81,6 @@ else {
         popover.webContents.setWindowOpenHandler(()=>({action:'deny'}));
         popover.webContents.on('will-navigate',(event,url)=>{if(url!==origin+'/')event.preventDefault();});
         popover.on('blur',()=>{if(!nativeMenus.has(popover))popover?.hide();});
-        popover.webContents.on('before-input-event',(event,input)=>{if(input.key==='Escape'&&input.type==='keyDown'){popover.hide();event.preventDefault();}});
         popover.on('closed',()=>{popover=null;});
         try { await popover.loadURL(origin); } catch { popover?.destroy(); return; }
       }
