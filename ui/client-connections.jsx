@@ -171,7 +171,10 @@ export function AppSetupPrompt({apps, hasEnabledProject}) {
     menuButton.current?.focus();
   }
   return <AnimatedReveal show={show} className="app-setup-reveal full-window-only">{show && <section aria-label="AI app setup" className="mt-4 flex items-center gap-3 rounded-lg border bg-background p-3">
-    <p className="min-w-0 flex-1 text-sm"><AnimatedWords>{message}</AnimatedWords></p>
+    <p className="flex min-w-0 flex-1 items-center gap-2 text-sm">
+      <Sparkles aria-hidden="true" className="size-4 shrink-0" />
+      <span><AnimatedWords>{message}</AnimatedWords></span>
+    </p>
     {action}
     <Button size="icon-xs" variant="ghost" aria-label="Dismiss AI app setup" onClick={dismiss}><X /></Button>
   </section>}</AnimatedReveal>;
